@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>技能（Skills） | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html" class="active">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 技能（Skills）</nav>
+<h1>技能（Skills）</h1>
+<p>noteSkills API 处于实验阶段。API 和行为在未来的版本中可能仍会发生变化。</p>
+
+<p>Skills 是一种为 LLM 配备可重用、自包含的行为指令的机制。 一个 skill 捆绑了一个名称、一个简短的描述以及一段指令主体（其内容）， 以及可选的资源（例如参考资料、素材、模板等）。 LLM 按需加载 skill，保持初始上下文较小，仅在实际需要时才会拉取详细的指令。</p>
+
+<p>noteSkills 是根据 Agent Skills 规范设计的。</p>
+
+<h2>创建 Skills</h2>
+
+<h3>从文件系统创建</h3>
+
+<p>通常，每个 skill 存在于其自己的目录中，其中包含一个 SKILL.md 文件。 该文件必须以一个 YAML front matter 块开头，该块声明了 skill 的名称和描述。 front matter 下方的一切都成为 skill 的内容 —— 即当 LLM 激活该 skill 时提供给它的指令。</p>
+
+<pre><code>skills/├── docx/│ ├── SKILL.md│ └── references/│ └── tracked-changes.md ← 作为资源加载└── data-analysis/ └── SKILL.md</code></pre>
+
+<p>SKILL.md 示例：</p>
+
+<pre><code>---name: docxdescription: 使用修订功能编辑和审阅 Word 文档---当用户要求你编辑 Word 文档时：1. 始终使用修订功能，以便可以审阅编辑内容。 ...</code></pre>
+
+<p>skill 目录中除 SKILL.md 本身以及 scripts/ 子目录下的文件之外的任何文件都会自动作为 SkillResource 加载，供 LLM 按需读取。</p>
+
+<p>使用 langchain4j-skills 模块中的 FileSystemSkillLoader 从文件系统加载 skills：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-skills&lt;/artifactId&gt; &lt;version&gt;1.22.0-beta32&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<pre><code>// 加载在直接子目录中找到的所有 skills：List&lt;FileSystemSkill&gt; skills = FileSystemSkillLoader.loadSkills(Path.of(&quot;skills/&quot;));// 或者通过目录加载单个 skill：FileSystemSkill skill = FileSystemSkillLoader.loadSkill(Path.of(&quot;skills/docx&quot;));</code></pre>
+
+<h3>从 Classpath 创建</h3>
+
+<p>ClassPathSkillLoader 的工作方式与 FileSystemSkillLoader 类似，但从 classpath 而不是文件系统解析 skill 目录。当 skills 捆绑在您的 JAR 中或位于 src/main/resources 下时，这非常有用：</p>
+
+<pre><code>src/main/resources/└── skills/ ├── docx/ │ ├── SKILL.md │ └── references/ │ └── tracked-changes.md └── data-analysis/ └── SKILL.md</code></pre>
+
+<pre><code>// 从 classpath 目录加载所有 skills：List&lt;FileSystemSkill&gt; skills = ClassPathSkillLoader.loadSkills(&quot;skills&quot;);// 或者加载单个 skill：FileSystemSkill skill = ClassPathSkillLoader.loadSkill(&quot;skills/docx&quot;);</code></pre>
+
+<p>默认情况下，ClassPathSkillLoader 使用线程的上下文类加载器。 如果需要，您可以传递自定义 ClassLoader：</p>
+
+<pre><code>FileSystemSkill skill = ClassPathSkillLoader.loadSkill(&quot;skills/docx&quot;, myClassLoader);</code></pre>
+
+<p>与 FileSystemSkillLoader 一样，SKILL.md 格式、资源加载规则和 scripts/ 排除规则也适用。</p>
+
+<h3>以编程方式创建</h3>
+
+<p>Skills 不必基于文件系统。 您可以使用构建器 API 从任何来源创建它们 —— 数据库、远程 API、运行时生成：</p>
+
+<pre><code>Skill skill = Skill.builder() .name(&quot;incident-response&quot;) .description(&quot;用于诊断和解决生产事故的分步运行手册&quot;) .content(&quot;&quot;&quot; 当生产告警触发时： 1. 调用 `fetchRecentLogs(serviceName)` 获取最近 5 分钟的日志。 2. 调用 `checkServiceHealth(serviceName)` 获取当前健康指标。 3. 根据结果，调用 `createIncidentTicket(summary, severity)`。 4. 如果严重性为 CRITICAL，还要调用 `pageOnCall(incidentId)`。 &quot;&quot;&quot;) .build();</code></pre>
+
+<p>您还可以以编程方式附加资源：</p>
+
+<pre><code>SkillResource reference = SkillResource.builder() .relativePath(&quot;references/tone-guide.md&quot;) .content(&quot;使用温暖、简洁的语言。避免使用专业术语。&quot;) .build();Skill skill = Skill.builder() .name(&quot;customer-support&quot;) .description(&quot;处理客户支持咨询&quot;) .content(&quot;请遵循 references/tone-guide.md 中的语气指南 ...&quot;) .resources(List.of(reference)) .build();</code></pre>
+
+<h2>模式</h2>
+
+<p>Skills 可以以两种不同的模式与 AI Service 集成，具体取决于您需要多少控制权和信任度。</p>
+
+<h3>工具模式（推荐）</h3>
+
+<p>类：Skills（来自 langchain4j-skills 模块）</p>
+
+<p>这对应于 Agent Skills 规范中描述的基于工具的智能体集成方法。</p>
+
+<p>在此模式下，LLM 激活一个 skill 以接收分步指令，然后通过调用您显式注册的工具来执行这些指令。 LLM 在推理时无法访问文件系统 —— 所有 skill 内容和资源都会预先加载到内存中（例如通过 FileSystemSkillLoader），activate_skill 和 read_skill_resource 工具返回的是预先加载的内容，而不是从磁盘读取。 由于只能调用您预定义的工具，因此不存在任意代码执行的风险。</p>
+
+<h4>已注册的工具</h4>
+
+<p>| 工具 | 注册时机 | | activate_skill | 始终注册。LLM 调用此工具以将 skill 的完整指令加载到上下文中。 | | read_skill_resource | 当至少一个 skill 拥有资源时注册。LLM 调用此工具以读取各个参考文件。 | | Skill-scoped 工具 | 在 skill 激活之后。 |</p>
+
+<h4>工作原理</h4>
+
+<ul><li>系统消息列出了可用的 skills（名称和描述），以便 LLM 进行选择。</li><li>用户提出需要特定 skill 的问题。</li><li>LLM 调用 activate_skill(&quot;my-skill&quot;) 来接收其指令。</li><li>LLM 按照这些指令完成任务，并可选择在过程中读取资源文件。</li></ul>
+
+<h4>Skill 示例</h4>
+
+<p>Skills 描述了策略 —— 调用的确切顺序、必需的参数、错误处理步骤以及示例，而实际执行则保留在类型安全且经过测试的 Java 代码中：</p>
+
+<pre><code>---name: process-orderdescription: 端到端处理客户订单---要处理订单：1. 调用 `validateOrder(orderId)` 检查订单是否有效。2. 调用 `reserveInventory(orderId)` 预留所需库存。3. 仅当预留成功时，才调用 `chargePayment(orderId)`。4. 最后，调用 `sendConfirmationEmail(orderId)`。如果任何步骤失败，请在报告错误之前调用 `rollbackOrder(orderId)`。</code></pre>
+
+<h4>接线配置</h4>
+
+<p>将 Skills 的 ToolProvider 与您的常规工具一起传递给 AI Service 构建器。 使用 formatAvailableSkills() 将 skill 目录注入到系统消息中，以便 LLM 知道它可以激活哪些 skills：</p>
+
+<pre><code>Skills skills = Skills.from(FileSystemSkillLoader.loadSkills(Path.of(&quot;skills/&quot;)));MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .tools(new OrderTools()) // 您的工具 .toolProvider(skills.toolProvider()) // 或者如果您已经配置了 tool provider，则使用 .toolProviders(myToolProvider, skills.toolProvider()) .systemMessage(&quot;您可以访问以下 skills：\n&quot; + skills.formatAvailableSkills() + &quot;\n当用户的请求与这些 skills 中的某一个相关时，请先使用 `activate_skill` 工具激活它，然后再继续。&quot;) .build();</code></pre>
+
+<p>formatAvailableSkills() 返回一个 XML 格式的块，列出每个 skill 的名称和描述：</p>
+
+<pre><code>&lt;available_skills&gt; &lt;skill&gt; &lt;name&gt;process-order&lt;/name&gt; &lt;description&gt;端到端处理客户订单&lt;/description&gt; &lt;/skill&gt; &lt;skill&gt; &lt;name&gt;data-analysis&lt;/name&gt; &lt;description&gt;分析表格数据并生成图表&lt;/description&gt; &lt;/skill&gt;&lt;/available_skills&gt;</code></pre>
+
+<h4>自定义</h4>
+
+<p>每个工具的名称、描述和参数元数据都可以通过构建器上相应的配置类进行覆盖：</p>
+
+<pre><code>Skills skills = Skills.builder() .skills(mySkills) .activateSkillToolConfig(ActivateSkillToolConfig.builder() .name(...) // 工具名称（默认：&quot;activate_skill&quot;） .description(...) // 工具描述 .parameterName(...) // 参数名称（默认：&quot;skill_name&quot;） .parameterDescription(...) // 参数描述 .throwToolArgumentsExceptions(...) // 抛出 ToolArgumentsException 而不是 ToolExecutionException（默认：false） .build()) .readResourceToolConfig(ReadResourceToolConfig.builder() .name(...) // 工具名称（默认：&quot;read_skill_resource&quot;） .description(...) // 工具描述 .skillNameParameterName(...) // skill_name 参数名称（默认：&quot;skill_name&quot;） .skillNameParameterDescription(...) // skill_name 参数描述 .relativePathParameterName(...) // relative_path 参数名称（默认：&quot;relative_path&quot;） .relativePathParameterDescription(...) // 静态描述（优先于 provider） .relativePathParameterDescriptionProvider(...) // 基于可用资源的动态描述 .throwToolArgumentsExceptions(...) // 抛出 ToolArgumentsException 而不是 ToolExecutionException（默认：false） .build()) .build();</code></pre>
+
+<h4>Skill 范围内的工具</h4>
+
+<p>您可以直接将工具附加到某个 skill。这些工具仅在通过 activate_skill 工具激活该 skill 后才会暴露给 LLM。 这使得 LLM 的工具列表保持小巧且专注，并确保特定 skill 的工具仅在相关时才出现。</p>
+
+<h5>使用 @Tool 注解的方法</h5>
+
+<p>附加工具的最简单方式是传递带有 @Tool 注解方法的对象：</p>
+
+<pre><code>class OrderTools { @Tool(&quot;通过 ID 验证客户订单&quot;) String validateOrder(String orderId) { // 验证逻辑 return &quot;valid&quot;; } @Tool(&quot;为客户订单收取付款&quot;) String chargePayment(String orderId) { // 付款逻辑 return &quot;charged&quot;; }}Skill skill = Skill.builder() .name(&quot;process-order&quot;) .description(&quot;端到端处理客户订单&quot;) .content(&quot;&quot;&quot; 要处理订单： 1. 调用 `validateOrder(orderId)` 检查订单是否有效。 2. 调用 `chargePayment(orderId)`。 &quot;&quot;&quot;) .tools(new OrderTools()) .build();</code></pre>
+
+<p>也可以使用 toBuilder() 将工具附加到已构建的 skill —— 例如，向从文件系统加载的 skill 添加工具：</p>
+
+<pre><code>FileSystemSkill skill = FileSystemSkillLoader.loadSkill(Path.of(&quot;skills/process-order&quot;));Skill skillWithTools = skill.toBuilder() .tools(new OrderTools()) .build();</code></pre>
+
+<h5>使用 Tool Providers</h5>
+
+<p>您还可以将 ToolProviders 附加到 skill —— 例如，仅在 skill 激活后才暴露来自 MCP 服务器的工具：</p>
+
+<pre><code>ToolProvider mcpToolProvider = McpToolProvider.builder() .mcpClients(mcpClient) .toolFilter((tool, mcpClient) -&gt; tool.name().startsWith(&quot;inventory_&quot;)) .build();Skill skill = Skill.builder() .name(&quot;inventory-management&quot;) .description(&quot;管理仓库库存&quot;) .content(&quot;&quot;&quot; 使用库存工具检查库存水平并更新数量。 &quot;&quot;&quot;) .toolProviders(mcpToolProvider) .build();</code></pre>
+
+<h5>使用 Map&lt;ToolSpecification, ToolExecutor&gt;</h5>
+
+<p>为了完全控制工具规范和执行逻辑，您可以直接传递一个 map：</p>
+
+<pre><code>ToolSpecification validateOrder = ToolSpecification.builder() .name(&quot;validateOrder&quot;) .description(&quot;通过 ID 验证客户订单&quot;) .addParameter(&quot;orderId&quot;, JsonSchemaProperty.STRING, JsonSchemaProperty.description(&quot;订单 ID&quot;)) .build();ToolExecutor validateOrderExecutor = (request, memoryId) -&gt; { String orderId = parseOrderId(request.arguments()); return validate(orderId);};Skill skill = Skill.builder() .name(&quot;process-order&quot;) .description(&quot;端到端处理客户订单&quot;) .content(&quot;&quot;&quot; 要处理订单： 1. 调用 `validateOrder(orderId)` 检查订单是否有效。 &quot;&quot;&quot;) .tools(Map.of(validateOrder, validateOrderExecutor)) .build();</code></pre>
+
+<p>这三种方式可以组合使用 —— @Tool 方法、ToolProviders 和 Map 条目会合并成一组 Skill 范围内的工具：</p>
+
+<pre><code>Skill skill = Skill.builder() .name(&quot;process-order&quot;) .description(&quot;端到端处理客户订单&quot;) .content(&quot;...&quot;) .tools(new OrderTools()) .tools(Map.of(validateOrder, validateOrderExecutor)) .toolProviders(mcpToolProvider) .build();</code></pre>
+
+<h5>接线配置</h5>
+
+<pre><code>Skills skills = Skills.from(skill);MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .chatMemory(MessageWindowChatMemory.withMaxMessages(100)) .toolProvider(skills.toolProvider()) .systemMessage(&quot;您可以访问以下 skills：\n&quot; + skills.formatAvailableSkills() + &quot;\n当用户的请求与这些 skills 中的某一个相关时，请先激活它。&quot;) .build();</code></pre>
+
+<h5>Skill 范围内的工具如何工作</h5>
+
+<ul><li>在 skill 激活之前，LLM 只能看到 activate_skill（以及 read_skill_resource）工具。 Skill 范围内的工具不包括在工具列表中。</li><li>当 LLM 调用 activate_skill(&quot;process-order&quot;) 时，激活操作会记录在 ToolExecutionResultMessage 中。</li><li>在下一次 LLM 调用之前（在同一个 AI Service 调用内），AI Service 会根据当前消息重新评估动态 tool provider。 Skill 范围内的工具（例如 validateOrder）将变为可见状态，并且 LLM 可以在同一 AI Service 调用中立即调用它们。 Skill 范围内的工具在下一次 AI Service 调用中保持对 LLM 可见，仅当 skill 被停用时才会变得不可见。</li></ul>
+
+<h5>将 Skills 与工具搜索结合使用</h5>
+
+<p>Skills 与工具搜索一起使用。当两者都被配置时，它们彼此独立运行：</p>
+
+<ul><li>Skill 范围内的工具永远不可搜索。它们不会出现在可搜索的工具池中，也无法通过 tool_search_tool 找到。它们仅在 LLM 激活相应的 skill 之后才可见。</li><li>常规工具保持可搜索。通过 AI Service 上的 .tools(...)（而不是在 skill 上）注册的工具继续保持可搜索，无论是否有 skill 被激活。</li><li>activate_skill 始终可见。它被标记为 ALWAYS_VISIBLE，因此即使启用了工具搜索，LLM 也始终可以调用它。</li></ul>
+
+<pre><code>Skills skills = Skills.from(mySkills);MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .chatMemory(MessageWindowChatMemory.withMaxMessages(100)) .tools(new MySearchableTools()) // 这些是可搜索的 .toolProvider(skills.toolProvider()) // Skill 范围内的工具不可搜索 .toolSearchStrategy(new SimpleToolSearchStrategy()) .systemMessage(&quot;您可以访问以下 skills：\n&quot; + skills.formatAvailableSkills() + &quot;\n当用户的请求与这些 skills 中的某一个相关时，请先激活它。&quot;) .build();</code></pre>
+
+<h3>Shell 模式（实验性）</h3>
+
+<p>类：ShellSkills（来自 langchain4j-experimental-skills-shell 模块）</p>
+
+<p>这对应于 Agent Skills 规范中描述的基于文件系统的智能体集成方法。</p>
+
+<p>warningShell 执行本质上是不安全的。 命令直接在宿主进程环境中运行，没有任何沙箱、容器化或权限限制。 行为不当或被提示注入的 LLM 可以在运行您应用程序的机器上执行任意命令。 仅在您完全信任输入并接受相关风险的可控环境中使用此模式。</p>
+
+<p>在此模式下，LLM 获得一个 run_shell_command 工具，并使用 shell 命令直接从文件系统读取 skill 指令。 没有 activate_skill 或 read_skill_resource 工具 —— LLM 像人类开发人员一样浏览 skill 文件。</p>
+
+<h4>已注册的工具</h4>
+
+<p>| 工具 | 注册时机 | | run_shell_command | 始终注册。LLM 运行 shell 命令以读取 SKILL.md 文件、资源文件并执行脚本。 |</p>
+
+<h4>工作原理</h4>
+
+<ul><li>系统消息列出可用的 skills 以及它们的绝对文件系统路径。</li><li>用户提出需要特定 skill 的问题。</li><li>LLM 运行 cat /path/to/skills/docx/SKILL.md 来读取指令。</li><li>LLM 通过运行进一步的 shell 命令来遵循这些指令。</li></ul>
+
+<h4>依赖项</h4>
+
+<p>Shell 执行位于一个独立的实验性工件中 —— 将其添加到您的构建中：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-experimental-skills-shell&lt;/artifactId&gt; &lt;version&gt;1.22.0-beta32&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<h4>接线配置</h4>
+
+<p>所有 skills 必须基于文件系统（通过 FileSystemSkillLoader 加载）。 使用 ShellSkills 而不是 Skills：</p>
+
+<pre><code>ShellSkills skills = ShellSkills.from(FileSystemSkillLoader.loadSkills(Path.of(&quot;skills/&quot;)));MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .toolProvider(skills.toolProvider()) // 或者如果您已经配置了 tool provider，则使用 .toolProviders(myToolProvider, skills.toolProvider()) .systemMessage(&quot;您可以访问以下 skills：\n&quot; + skills.formatAvailableSkills() + &quot;\n当用户的请求与这些 skills 中的某一个相关时，请在继续之前先读取其 SKILL.md。&quot;) .build();</code></pre>
+
+<p>formatAvailableSkills() 包含一个 &lt;location&gt; 字段，因此 LLM 确切地知道在哪里找到每个 SKILL.md：</p>
+
+<pre><code>&lt;available_skills&gt; &lt;skill&gt; &lt;name&gt;docx&lt;/name&gt; &lt;description&gt;使用修订功能编辑和审阅 Word 文档&lt;/description&gt; &lt;location&gt;/path/to/skills/docx/SKILL.md&lt;/location&gt; &lt;/skill&gt; &lt;skill&gt; &lt;name&gt;data-analysis&lt;/name&gt; &lt;description&gt;分析表格数据并生成图表&lt;/description&gt; &lt;location&gt;/path/to/skills/data-analysis/SKILL.md&lt;/location&gt; &lt;/skill&gt;&lt;/available_skills&gt;</code></pre>
+
+<h4>何时使用 Shell 模式</h4>
+
+<p>此模式最适合用于实验和原型设计，或者您希望使用社区发布的第三方 skills（例如来自 agentskills.io 生态系统的 skills）而无需先将其移植到 Java。 它允许您快速连接一个可用的工作流，然后在解决方案成熟时将各个操作迁移到工具。</p>
+
+<h4>自定义</h4>
+
+<p>使用 RunShellCommandToolConfig 来调整工作目录、输出限制和参数名称：</p>
+
+<pre><code>ShellSkills skills = ShellSkills.builder() .skills(mySkills) .runShellCommandToolConfig(RunShellCommandToolConfig.builder() .name(...) // 工具名称（默认：&quot;run_shell_command&quot;） .description(...) // 工具描述（默认：包括操作系统名称） .commandParameterName(...) // 命令参数名称（默认：&quot;command&quot;） .commandParameterDescription(...) // 命令参数描述 .timeoutSecondsParameterName(...) // 超时参数名称（默认：&quot;timeout_seconds&quot;） .timeoutSecondsParameterDescription(...) // 超时参数描述 .workingDirectory(...) // 命令的工作目录（默认：JVM 的 user.dir） .maxStdOutChars(...) // 结果中的最大 stdout 字符数（默认：10_000） .maxStdErrChars(...) // 结果中的最大 stderr 字符数（默认：10_000） .executorService(...) // 用于读取 stdout/stderr 流的 ExecutorService .throwToolArgumentsExceptions(...) // 抛出 ToolArgumentsException 而不是 ToolExecutionException（默认：false） .build()) .build();</code></pre>
+
+<div class="prev-next">
+  <a href="observability.html"><div class="label">← 上一篇</div><div>可观测性</div></a>
+  <a href="customizable-http-client.html"><div class="label">下一篇 →</div><div>可定制 HTTP 客户端</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,77 @@
+warning 针对 Kotlin 用户的破坏性变更。ChatModel 现在声明了一个 Java 成员方法
+chatAsync(ChatRequest): CompletableFuture<ChatResponse>。在 Kotlin 中，相同签名的成员方法会优先
+于扩展函数，因此原先解析到 suspend 扩展（返回 ChatResponse）的单参数裸调用，
+现在会解析到该成员方法（返回 CompletableFuture<ChatResponse>）：
+
+```
+// 变更前 —— 解析到 suspend 扩展，返回 ChatResponse：val response: ChatResponse = model.chatAsync(request)// 变更后 —— 单参数裸调用解析到 Java 成员方法（返回 CompletableFuture）：val future: CompletableFuture<ChatResponse> = model.chatAsync(request)// 迁移方案 —— 等待 future 完成……val response: ChatResponse = model.chatAsync(request).await()// ……或者传入 coroutineContext，仍然会选中 suspend 扩展：val response: ChatResponse = model.chatAsync(request, Dispatchers.IO)
+```
+
+Kotlin 是一门面向 JVM（以及其他平台）的静态类型语言，能够以简洁优雅的代码与 Java 库实现无缝的互操作。
+LangChain4j 利用 Kotlin 扩展函数和类型安全的构建器，为 Java API 增加了 Kotlin 专属的便利特性。
+这使得用户能够使用为 Kotlin 量身定制的额外功能来扩展现有的 Java 类。
+
+## 入门
+
+将 langchain4j-kotlin 模块添加到项目依赖中：
+
+```
+ <dependency> <groupId>dev.langchain4j</groupId> <artifactId>langchain4j-kotlin</artifactId> <version>[LATEST_VERSION]</version></dependency>
+```
+
+如果你想使用 data class，请确保 classpath 中包含 Jackson 的 kotlin 模块。对于 Maven，添加一个运行时依赖：
+
+```
+ <dependency> <groupId>com.fasterxml.jackson.module</groupId> <artifactId>jackson-module-kotlin</artifactId> <version>[LATEST_VERSION]</version> <scope>runtime</scope></dependency>
+```
+
+## ChatModel 扩展
+
+下面的 Kotlin 代码演示了如何在 LangChain4j 中使用协程、suspend 函数以及类型安全的构建器与 ChatModel 交互。
+
+```
+val model = OpenAiChatModel.builder() .apiKey("YOUR_API_KEY") // 更多配置参数 ... .build()CoroutineScope(Dispatchers.IO).launch { val response = model.chat { messages += systemMessage("You are a helpful assistant") messages += userMessage("Hello!") parameters { temperature = 0.7 } } println(response.aiMessage().text())}
+```
+
+整个交互过程使用 Kotlin 的协程异步完成：
+
+- CoroutineScope(Dispatchers.IO).launch：在为阻塞任务（如网络或文件 I/O）做过优化的 IO 调度器上执行该流程。这能避免阻塞调用线程，从而保证响应性。
+- model.chat 是一个 suspend 函数，它使用 builder 块来组织聊天请求。这种方式能够减少样板代码，并让代码更易读、更易于维护。
+
+对于更高级的场景，为了支持自定义的 ChatRequestParameters，类型安全的构建器函数接受自定义的 builder：
+
+```
+fun <B : DefaultChatRequestParameters.Builder<*>> parameters( builder: B = DefaultChatRequestParameters.builder() as B, configurer: ChatRequestParametersBuilder<B>.() -> Unit)
+```
+
+用法示例：
+
+```
+ model.chat { messages += systemMessage("You are a helpful assistant") messages += userMessage("Hello!") parameters(OpenAiChatRequestParameters.builder()) { temperature = 0.7 // DefaultChatRequestParameters.Builder 的属性 builder.seed(42) // OpenAiChatRequestParameters.Builder 的属性 }}
+```
+
+## 流式使用场景
+
+StreamingChatModel 扩展为那些需要在 AI 模型生成响应时增量处理结果的场景提供了功能。
+这在需要实时反馈的应用中特别有用，例如聊天界面、实时编辑器，或需要逐 token 流式交互的系统。
+借助 Kotlin 协程，chatFlow 扩展函数将来自语言模型的流式响应转换为一个结构化且可取消的 Flow 序列，
+从而实现一种协程友好、非阻塞的实现方式。
+
+下面展示如何使用 chatFlow 实现一次完整的交互：
+
+```
+val flow = model.chatFlow { // 与非流式场景类似 messages += userMessage("Can you explain how streaming works?") parameters { // ChatRequestParameters temperature = 0.7 maxOutputTokens = 42 }}runBlocking { // 必须在协程上下文中运行 flow.collect { reply -> when (reply) { is StreamingChatModelReply.PartialResponse -> { print(reply.partialResponse) // 来一部分就输出一部分 } is StreamingChatModelReply.CompleteResponse -> { println("\nComplete: ${reply.response.aiMessage().text()}") } is StreamingChatModelReply.Error -> { println("Error occurred: ${reply.cause.message}") } } }}
+```
+
+可以查看这个测试用例作为示例。
+
+## 编译器兼容性
+
+在 Kotlin 中定义工具时，请确保将 Kotlin 编译配置为保留方法参数的 Java 反射元数据，即将 javaParameters 设置为 true。
+该项设置是必需的，它能保证工具规范中的参数名称保持正确。
+
+使用 Gradle 时，可通过以下配置来实现：
+
+```
+kotlin { compilerOptions { javaParameters = true }}
+```

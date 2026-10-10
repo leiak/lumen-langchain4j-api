@@ -1,0 +1,286 @@
+LangChain4j 在很多地方都会读写 JSON：它与大语言模型（LLM）提供商之间交换的请求和响应、
+AI Service 解析的结构化输出、你持久化的聊天记忆，等等。默认情况下它使用 Jackson 2 来完成这些工作。
+LangChain4j 如何使用 JSON，以及如何接入你自己的映射器，已在 JSON 章节中介绍。
+
+如果你的应用程序正在使用 Jackson 3，可以让 LangChain4j 改用它。
+
+## 开启 Jackson 3
+
+添加一个依赖：
+
+```
+<dependency> <groupId>dev.langchain4j</groupId> <artifactId>langchain4j-jackson3</artifactId> <version>1.22.0-beta32</version></dependency>
+```
+
+对包括 langchain4j-agentic 在内的所有模块来说，这就已经足够了。LangChain4j 通过 ServiceLoader 发现该模块，
+并把它的 JSON 处理都路由到 Jackson 3。无需任何配置，也无需调用任何 API；如果你移除该依赖，
+一切又会回到 Jackson 2。
+
+这一支持被拆分到两个工件中，上面的 langchain4j-jackson3 会同时引入二者，因此除非你有特别的理由，
+应当使用这一个：
+
+| 工件 | 覆盖范围 | 依赖 |
+| langchain4j-core-jackson3 | langchain4j-core 中的所有内容：提供商的请求和响应、结构化输出、聊天记忆序列化、Agent 状态 | langchain4j-core |
+| langchain4j-jackson3 | 上面的全部，外加 InMemoryEmbeddingStore 的持久化（这一部分位于 langchain4j 模块中） | langchain4j-core-jackson3 以及 langchain4j |
+
+仅在你应用只使用 langchain4j-core 以及一个没有 langchain4j 模块的提供商时，才单独添加
+langchain4j-core-jackson3——例如一个直接构建模型的框架集成。把它和 langchain4j-jackson3
+一起添加虽然不必要，但也没有坏处。
+
+## 保持不变的部分
+
+更换 JSON 库很容易意外改变行为，所以这个模块在这一点上下了不少功夫。Jackson 3 修改了若干默认设置，
+而其中几乎每一个会影响 LangChain4j 读写的，都被还原回了 Jackson 2 的行为。少数刻意保留的差异
+列在“刻意保留的差异”部分。
+
+| 设置项 | Jackson 3 默认 | 本模块的处理方式 |
+| ALLOW_FINAL_FIELDS_AS_MUTATORS | 禁用 | 启用 |
+| USE_GETTERS_AS_SETTERS | 禁用 | 启用 |
+| SORT_PROPERTIES_ALPHABETICALLY | 启用 | 禁用 |
+| FAIL_ON_TRAILING_TOKENS | 启用 | 禁用 |
+| FAIL_ON_NULL_FOR_PRIMITIVES | 启用 | 禁用 |
+| READ_ENUMS_USING_TO_STRING | 启用 | 禁用：通过 name() 读取枚举 |
+| WRITE_ENUMS_USING_TO_STRING | 启用 | 禁用：通过 name() 写入枚举 |
+| DETECT_PARAMETER_NAMES | 启用 | 禁用，结构化输出和工具参数除外（见下文） |
+| FAIL_ON_UNKNOWN_PROPERTIES | 禁用 | 启用：目标类型中不存在的字段在结构化输出、工具参数、聊天记忆、Agent 状态以及持久化的向量存储中会失败；提供商响应仍然忽略未知字段 |
+| FAIL_ON_EMPTY_BEANS | 禁用 | 启用：没有任何可写内容的对象——例如字段都是私有且没有 getter 的对象——会失败，而不是被序列化为 {} |
+
+其中第一条最为关键：没有它，一个 final 集合字段会被留空而不会被填充，并且不会有任何提示。
+
+DETECT_PARAMETER_NAMES 仅在代码使用 -parameters 编译时才有效，Spring Boot 和 Quarkus 项目通常
+默认开启这一选项。对于结构化输出和工具参数，会使用构造函数的参数名，就像启用
+jackson-module-parameter-names 时 Jackson 2 编解码器所做的那样——而 Spring Boot 和 Quarkus 中
+默认就有该模块：这样，只有一个带参数的构造函数的类（例如一个 Lombok @AllArgsConstructor 注解的类）
+就可以被读取。聊天记忆、Agent 状态以及其他编解码器则不使用参数名，与 Jackson 2 一致。
+
+无论编译器如何设置，要显式选择一个构造函数，请为其添加注解：
+
+- 添加 @JsonCreator(mode = JsonCreator.Mode.DELEGATING)，以便通过一个单参数构造函数读取简单值，例如 "abc"；
+- 添加 @JsonCreator，并为每个参数添加 @JsonProperty("name")，以便通过一个带参数的构造函数读取对象。
+这两种方式在两个 Jackson 版本下都适用。
+
+## 刻意保留的差异
+
+有少数几处差异是刻意保留的，因为把它们恢复回去的代价大于收益：
+
+- 日期和时间以 ISO-8601 字符串形式写入。java.util.Date 和 Calendar 会被写成
+"1970-01-01T00:00:00.000Z" 而不是 epoch 毫秒。当类路径上有 jackson-datatype-jsr310
+时（Spring Boot 和 Quarkus 应用通常都有），Jackson 2 也将 Instant、OffsetDateTime 和 Duration
+写成数字；本模块则将它们写成 ISO-8601 字符串，LLM 读取字符串要可靠得多。对于 Date、Instant 和 Duration，
+读取时仍然支持数字形式。
+- java.time.Month 被写成从 1 开始的数字（1 表示一月）。使用 jackson-datatype-jsr310 时，
+Jackson 2 会写成 "JANUARY"，并且从 0 开始把数字当作位置读取，所以 1 会被视为 FEBRUARY。
+两个版本都能按名称读取。
+- 对于枚举，"" 被读取为 null，与缺失值相同。这同样适用于必填枚举：就像缺失字段一样，
+"" 会得到 null 而不是错误。Jackson 2 反而会失败，但提供商确实会发送这种值——这正是发现这个问题的原因，
+即一个 OpenAI 兼容服务在工具调用中返回 "type": ""，而 LLM 也可能对可选枚举返回 ""。
+对于对象、Map 或 List，"" 仍然会失败，与 Jackson 2 的行为相同。
+- 私有的单参数构造函数不会被用于读取简单值。Jackson 2 会使用它；在 Jackson 3 下，
+请为其添加 @JsonCreator(mode = JsonCreator.Mode.DELEGATING)。
+- 对于结构化输出和工具参数，当一个类同时拥有无参构造函数和带参构造函数，且使用 -parameters 编译时，
+会通过带参构造函数来创建实例。Jackson 2 使用无参构造函数，然后设置字段。这仅在该无参构造函数
+做了不仅仅是给字段赋值的事情时才有影响。
+- 像 xValue 这样带有 getXValue() getter 的字段会被写成 "xValue"。Jackson 2 会从 getter 推导出
+"xvalue"：对于结构化输出、工具结果和 Agent 状态，它会同时写入 "xValue" 和 "xvalue"，
+而对于提供商请求则只写 "xvalue"。由 Jackson 2 以这种重复键方式写入的 Agent 状态，
+在本模块下读取时会失败。
+失败会得到一个 LangChain4j 类型。
+默认情况下，JSON 失败会表现为一个包装了 Jackson 2 自身异常的 RuntimeException——
+也就是说，要对它做出反应的代码必须知道 Jackson 2。在本模块下，读写 JSON 失败时会改为抛出
+JsonReadException 或 JsonWriteException，二者均为 LangChain4jException，原始异常作为 cause 保留。
+
+这并非不一致，而是刻意为之：这些类型化异常正是 LangChain4j 在下一个主版本中要走的方向，
+在此之前 Jackson 2 编解码器保持不变，以确保已有代码能够继续工作。如果你原本按 Jackson 类型捕获 JSON 失败，
+那么在加入本模块时这就是唯一需要重新考虑的地方：
+
+```
+- } catch (JsonParseException e) {
++ } catch (JsonReadException e) {
+```
+
+捕获 RuntimeException 在两种情况下都可以。
+
+有两个地方无需 try/catch 块就会触及应用代码，因此在切换之前值得检查一下：
+
+工具参数错误处理器。当模型产生的工具参数不是合法 JSON 时，LangChain4j 会将该失败交给
+你通过 AiServices.toolArgumentsErrorHandler(...) 注册的处理器。在 Jackson 2 下，这个失败
+就是 Jackson 自身的 JsonParseException；在本模块下，它是一个 JsonReadException。
+如果处理器是按类型分支处理的，那么分支匹配就会失败，却不会有任何告警，
+因为处理器仍然会被调用，只是落入了另一个分支：
+
+```
+AiServices.builder(Assistant.class)
+  .toolArgumentsErrorHandler((error, context) -> {
+-   if (error instanceof JsonParseException) {
++   if (error instanceof JsonReadException) {
+     return ToolErrorHandlerResult.text("Please return valid JSON.");
+    }
+    throw error;
+  })
+```
+
+如果你希望处理器在两种情况下都能工作，可以匹配消息或匹配 RuntimeException。
+
+OutputParsingException 的 cause。当结构化输出无法解析时，LangChain4j 在两种情况下都会抛出
+OutputParsingException——这个类型本身不会改变。改变的是它内部的异常：
+从 Jackson 2 的 JsonProcessingException 变为 Jackson 3 的 StreamReadException。
+检查 getRootCause() 的代码也需要相同的处理。
+
+你已存储的数据仍然可读。Jackson 2 写入的聊天记忆和 InMemoryEmbeddingStore 文件可以被
+Jackson 3 正确读取，而 Jackson 3 写入的内容与 Jackson 2 写入的内容字节完全一致。
+这一点由测试覆盖，因此会保持稳定。
+
+## 移除 Jackson 2
+
+仅添加本模块并不会移除 Jackson 2——它仍然会作为普通的传递性依赖出现，并且两者可以长期共存。
+如果你希望彻底移除它，通常是可行的，因为一旦本模块存在，LangChain4j 就不再加载任何 Jackson 2 类。
+
+能否真正移除，取决于你使用的模块：
+
+| 模块 | 可以排除 Jackson 2 吗 |
+| langchain4j-core、langchain4j | 可以——它们自带 Jackson 2 编解码器，但这些只是兜底方案，本模块存在时不会加载它们 |
+| 提供商模块——OpenAI、Anthropic、Mistral、Ollama、Gemini 以及其他 | 可以 |
+| 向量存储、网页搜索、代码执行 | 可以 |
+| langchain4j-agentic | 可以 |
+| langchain4j-guardrails | 不可以——JsonExtractorOutputGuardrail 刻意使用一个普通的 Jackson 2 ObjectMapper 来解析，
+以确保 guardrail 与原本一样严格 |
+| langchain4j-mcp | 不可以——Jackson 的 JsonNode 出现在其公开 API 中，因此该模块在所有路径上都会加载 Jackson 2 |
+| langchain4j-vespa | 不可以——其 HTTP 客户端使用的是 Retrofit 自己的 Jackson 2 转换器 |
+| 任何使用厂商 SDK 的——AWS、Azure、Google | 不可以——SDK 本身就依赖 Jackson 2 |
+
+Maven 的 exclusion 仅作用于其所声明的依赖，因此你需要在你声明的每一个 LangChain4j
+依赖上都添加排除项，而不仅仅是第一个：
+
+```
+<dependency>
+  <groupId>dev.langchain4j</groupId>
+  <artifactId>langchain4j</artifactId>
+  <version>1.22.0</version>
+  <exclusions>
+    <exclusion>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </exclusion>
+    <exclusion>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </exclusion>
+  </exclusions>
+</dependency>
+<!-- 以及同样地作用于 langchain4j-open-ai，以及你用到的任何其他 LangChain4j 模块 -->
+```
+
+不要排除 com.fasterxml.jackson.core:jackson-annotations。它仍使用 2.x 的坐标，但是共享的：
+Jackson 3 依赖于它，并且读取这些注解。
+
+这一配置并非“看起来应该能工作”，而是在每个 pull request 上都实际构建并运行的：
+integration-tests/integration-tests-jackson3 是一个完全按这种方式组装的应用——core、主模块、
+一个提供商、Agent 和本模块，整个依赖图中都排除了 Jackson 2——它的测试覆盖了 AI Service 的
+结构化输出、工具调用、聊天记忆持久化、向量存储持久化以及 Agent 状态持久化。如果其中任何一项
+开始需要 Jackson 2，这些测试就会因找不到类而失败。
+
+如果你使用了 MCP、Vespa 或云厂商 SDK，Jackson 2 会保留下来。即使如此，开启本模块依然能让 LangChain4j
+自身序列化的所有内容统一走 Jackson 3 这条单一路径。
+
+## 如果你编写提供商或 DTO
+
+如果你贡献了一种在线类型，需要注意两点。
+
+命名应放在编解码器上，而不是类型上。@JsonNaming 位于 Jackson 2 的 databind 包中，
+因此 Jackson 3 根本看不到它——字段名会以默认的 camelCase 静默输出。请改为在编解码器上设置命名：
+
+```
+ProviderJson.codec(ProviderJsonSpec.builder()
+  .propertyNaming(ProviderJsonSpec.PropertyNaming.SNAKE_CASE)
+  .build());
+```
+
+如果单个字段需要不同的名称，@JsonProperty("...") 在两个版本下都适用，因为它来自两个版本
+共享的工件 jackson-annotations。
+
+基于 builder 的 DTO 需要在其 builder 上添加 @JsonCreator 和字段可见性。
+@JsonDeserialize(builder = ...) 也是 databind 的注解，因此在 Jackson 3 下，DTO 改为通过作用于
+接受 builder 的构造函数之上的 @JsonCreator 来构建。Jackson 3 通过直接写入其私有字段来填充该 builder，
+因此 builder 还需要 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)。
+若缺少该注解，响应能解析而不会报错，但字段会保持为 null。三者必须同时存在。
+
+builder 方法是否会被执行，取决于其上的注解。这是需要内化的部分，因为它是静默发生的，
+而且规则并不像你猜测的那样。Jackson 2 通过调用 builder 的 setter 然后调用 build() 来填充 builder。
+Jackson 3 仅在 setter 带有属性标记时才会调用它，否则直接写入字段，而且根本不会调用 build()：
+
+| 在 builder setter 上 | Jackson 2 | Jackson 3 |
+| @JsonSetter("odd-name")、@JsonProperty、裸露的 @JsonSetter | 会调用 | 会调用 |
+| 仅 @JsonAlias | 会调用 | 不会调用——别名将忽略 |
+| 没有注解 | 会调用 | 不会调用——字段被直接写入 |
+| build() | 会调用 | 从不调用 |
+
+因此两个编解码器可能在同一个类型中的不同属性上做出不同的处理，这也正是为什么这里
+应当形成规则而非仅仅依赖人盯人：
+
+把类型所保证的内容放在两条路径都会经过的地方。默认值应放在 builder 的字段上，而不是
+放在 build() 中。防御性拷贝或任何规范化应放在构造函数中，而不是放在 setter 中。
+别名需要在 builder 的字段上也加上 @JsonAlias，而不只是 setter 上。
+
+上述每一条都曾出过问题：一个在 build() 中设置默认值的类型，曾丢掉了所有 mistral-ai 工具调用；
+一个只在 setter 上的 @JsonAlias，曾丢掉了 vLLM、OpenRouter 和 Groq 的推理内容；
+一个未加注解的 setter 中的 unmodifiableList(...)，导致同一响应在一个编解码器下可变，
+在另一个下不可变。它们都没有抛出任何异常。
+
+支持此可选功能的模块会声明一个 jackson3 的 Maven profile，它会将 langchain4j-jackson3
+放入该模块的测试 classpath，以便其既有测试在 Jackson 3 上运行。CI 在每个 pull request 上
+都会运行所有这些测试，你也可以用同样的方式运行单个模块：
+
+```
+mvn test -Pjackson3 -pl langchain4j-your-module
+```
+
+在相信结果之前，先确认该模块的 pom.xml 确实声明了该 profile：Maven 会忽略所选模块
+未声明的 profile，因此上述命令会报告成功，运行的却全是 Jackson 2。添加该 profile
+本身也是迁移一个模块的一部分。
+
+该 profile 把 langchain4j-core-jackson3（而不是 langchain4j-jackson3）放到测试 classpath 上，
+因为后者依赖于 langchain4j 模块，会让其构建所依赖的模块产生循环依赖。InMemoryEmbeddingStore
+持久化（即需要完整工件的部分）由 langchain4j-jackson3 自身的测试以及
+integration-tests/integration-tests-jackson3 覆盖。
+
+langchain4j-open-ai 还包含 OpenAiBuilderCreatorParityTest，该测试会把通过 builder 构建的
+每个基于 builder 的 DTO 与从 {} 解析出的同一个 DTO 进行比较。前面提到的缺少 build() 调用
+会导致二者产生差异，因此该测试会一次性捕捉到整个 OpenAI 在线模型中所有这一类的问题。
+当基于 builder 的 DTO 缺少 @JsonCreator 或其 builder 缺少 @JsonAutoDetect 时，同一测试
+也会失败。
+
+## 如果你接入自己的 JSON
+
+使用 Jackson 3 不需要这一节——添加依赖就够了。本节面向的是那些向 LangChain4j 提供自己配置的
+JSON 映射器、而不是让它自己选取的场景（langchain4j-jackson3 本身也是这么做的）。
+
+LangChain4j 没有一个统一的 JSON 入口。它在下面这些位置各自通过 ServiceLoader 请求一个编解码器，
+以便各处的选择可以分别进行：
+
+| 服务接口 | 决定 LangChain4j 如何读写 |
+| dev.langchain4j.spi.json.JsonCodecFactory | 通用 JSON——AI Service 的结构化输出、模型的工具参数 |
+| dev.langchain4j.spi.json.ProviderJsonCodecFactory | 与 LLM 提供商之间交换的请求和响应 |
+| dev.langchain4j.spi.json.StateJsonCodecFactory | 类型事先未知的、因而带有类型名称的状态——Agent 状态 |
+| dev.langchain4j.spi.data.message.ChatMessageJsonCodecFactory | 你持久化的聊天记忆 |
+| dev.langchain4j.spi.agent.tool.ToolSpecificationJsonCodecFactory | ToolSpecification.toJson() 和 ToolSpecification.fromJson(String) |
+| dev.langchain4j.spi.prompt.structured.StructuredPromptFactory | @StructuredPrompt 模板 |
+| dev.langchain4j.spi.store.embedding.inmemory.InMemoryEmbeddingStoreJsonCodecFactory | InMemoryEmbeddingStore.serializeToJson() |
+
+最后一个位于 langchain4j 中，其余的都在 langchain4j-core 中。它们都标注为 @Internal，
+这里的意思是它们面向集成而非应用，并且可能在小版本之间发生变化。
+
+框架自己的实现优先。如果已有某个组件提供这些接口（Quarkus 提供了四个），那么添加本模块
+并不会把它挤掉。Jackson 3 的工厂声明的优先级低于其他任何实现，因此只有当没有其他服务声明时
+它们才会生效。这一切都是静默发生的：不会有警告被记录下来，因为决定使用哪个实现的正是优先级。
+这意味着在这种框架下，开启本模块在设计上就是“局部的”：提供商流量和 Agent 状态会切到 Jackson 3，
+而框架拥有的服务仍然使用它自己的编解码器。如果你想让整个应用都使用 Jackson 3，请移除
+该框架的注册。
+
+要么实现全部接口，要么清楚自己遗漏了哪个。每个接口都是独立解析的，对于没有任何实现
+注册的接口，将回退到 Jackson 2。只回答一部分而忽略其他部分既不算错误，也不会产生任何警告——
+它只会产生一个结果混杂的应用，例如聊天记忆由你的映射器写入，而 Agent 状态由另一个库处理。
+如果你故意遗漏某一个，那么得到的就是回退行为。
+
+如果你已经在集成旧版本，那么其中两个接口值得再看一看：ProviderJsonCodecFactory 和
+StateJsonCodecFactory 是新增的，因此一个不知晓这两个接口的既有集成会继续工作，
+只是为提供商流量和 Agent 状态默默使用 Jackson 2。

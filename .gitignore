@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Build artifacts (keep site/ as it's the deliverable, but ignore temp files)
+*.tmp
+*.bak
+
+# Sensitive info
+.env
+.env.local
+*.pem
+secrets/
+
+# Large transient files
+/tmp/

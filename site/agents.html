@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能体与智能体 AI | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html" class="active">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 智能体与智能体 AI</nav>
+<h1>智能体与智能体 AI</h1>
+<p>note本节介绍如何使用 langchain4j-agentic 模块构建智能体 AI 应用。请注意，整个模块目前仍处于实验阶段，可能会在未来版本中发生变化。</p>
+
+<h2>智能体系统</h2>
+
+<p>尽管对于 AI 智能体尚无普遍认同的定义，但一些新兴的模式展示了如何协调和组合多个 AI 服务的能力，以创建能够完成更复杂任务的 AI 增强型应用。这些模式通常被称为“智能体系统”或“智能体 AI”。它们通常涉及使用大语言模型（LLM）来编排任务的执行、管理工具使用，并在多次交互中维护上下文。</p>
+
+<p>根据 Anthropic 研究人员最近发表的一篇文章，这些智能体系统架构可以分为两大类：工作流和纯智能体。</p>
+
+<p>本教程讨论的 langchain4j-agentic 模块提供了一组抽象和工具，帮助你构建工作流和纯智能体 AI 应用。它允许你定义工作流、管理工具使用，并在与不同 LLM 的交互中维护上下文。</p>
+
+<h2>LangChain4j 中的智能体</h2>
+
+<p>LangChain4j 中的智能体使用 LLM 执行特定任务或一组任务。智能体可以通过一个接口来定义，接口中包含单个方法，这与普通的 AI 服务类似，只需为其添加 @Agent 注解。</p>
+
+<pre><code>public interface CreativeWriter { @UserMessage(&quot;&quot;&quot; You are a creative writer. Generate a draft of a story no more than 3 sentences long around the given topic. Return only the story and nothing else. The topic is {{topic}}. &quot;&quot;&quot;) @Agent(&quot;Generates a story based on the given topic&quot;) String generateStory(@V(&quot;topic&quot;) String topic);}</code></pre>
+
+<p>一种好的做法是，在该注解中同时提供对智能体用途的简短描述，特别是在将其用于纯智能体模式时，其他智能体需要了解此智能体的能力，才能就是否以及何时使用它做出明智的决策。该描述也可以在构建智能体时通过智能体构建器的 description 方法以编程方式提供。</p>
+
+<p>智能体还必须具有一个在智能体系统内部唯一标识其身份的名称。该名称既可以在 @Agent 注解中指定，也可以通过智能体构建器的 name 方法以编程方式指定。如果未指定，则该名称将取自已使用 @Agent 注解的该方法的名称。</p>
+
+<p>现在可以使用 AgenticServices.agentBuilder() 方法构建此智能体的实例，需指定接口和要使用的 chat model。</p>
+
+<pre><code>CreativeWriter creativeWriter = AgenticServices .agentBuilder(CreativeWriter.class) .chatModel(myChatModel) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>本质上，智能体就是普通的 AI 服务，提供相同的功能，但能够与其他智能体组合以创建更复杂的工作流和智能体系统。</p>
+
+<p>与普通 AI 服务的另一主要区别是 outputKey 参数的存在，它用于指定共享变量的名称，智能体调用的结果将存储在该变量中，以便在同一智能体系统中其他智能体可以访问。或者，输出名称也可以直接在 @Agent 注解中声明，而不是像此示例那样以编程方式指定，从而可以在代码中省略它而在此处添加。</p>
+
+<pre><code>@Agent(outputKey = &quot;story&quot;, description = &quot;Generates a story based on the given topic&quot;)</code></pre>
+
+<p>AgenticServices 类提供了一组静态工厂方法，用于创建和定义 langchain4j-agentic 框架所提供的各种智能体。</p>
+
+<h2>引入 AgenticScope</h2>
+
+<p>langchain4j-agentic 模块引入了 AgenticScope 的概念，它是参与智能体系统的智能体之间共享的数据集合。AgenticScope 用于存储共享变量，智能体可以写入这些变量以传递其产生的结果，也可以由其他智能体读取以组合执行其任务所需的信息。这使智能体能够有效地协作，并根据需要共享信息和结果。</p>
+
+<p>AgenticScope 还会自动注册其他相关信息，例如所有智能体的调用序列及其响应。它在调用智能体系统的主智能体时自动创建，并在必要时通过回调以编程方式提供。AgenticScope 的不同用法将在介绍 langchain4j-agentic 实现的智能体模式时通过实际示例加以说明。</p>
+
+<h2>工作流模式</h2>
+
+<p>langchain4j-agentic 模块提供了一组抽象，用于以编程方式编排多个智能体并创建智能体工作流模式。这些模式可以组合使用，以创建更复杂的工作流。</p>
+
+<h3>顺序工作流</h3>
+
+<p>顺序工作流是最简单的模式，其中多个智能体按顺序被依次调用，每个智能体的输出作为下一个智能体的输入传递。当你需要按特定顺序执行一系列任务时，这种模式非常有用。</p>
+
+<p>例如，最好用前面定义的 CreativeWriter 智能体搭配一个 AudienceEditor 智能体，对生成的故事进行编辑，使其更适合特定受众。</p>
+
+<pre><code>public interface AudienceEditor { @UserMessage(&quot;&quot;&quot; You are a professional editor. Analyze and rewrite the following story to better align with the target audience of {{audience}}. Return only the story and nothing else. The story is &quot;{{story}}&quot;. &quot;&quot;&quot;) @Agent(&quot;Edits a story to better fit a given audience&quot;) String editStory(@V(&quot;story&quot;) String story, @V(&quot;audience&quot;) String audience);}</code></pre>
+
+<p>以及一个非常类似的 StyleEditor，执行相同的工作但针对特定风格。</p>
+
+<pre><code>public interface StyleEditor { @UserMessage(&quot;&quot;&quot; You are a professional editor. Analyze and rewrite the following story to better fit and be more coherent with the {{style}} style. Return only the story and nothing else. The story is &quot;{{story}}&quot;. &quot;&quot;&quot;) @Agent(&quot;Edits a story to better fit a given style&quot;) String editStory(@V(&quot;story&quot;) String story, @V(&quot;style&quot;) String style);}</code></pre>
+
+<p>请注意，此智能体的输入参数带有变量名注解。事实上，传递给智能体的参数值不是直接提供的，而是从 AgenticScope 中具有这些名称的共享变量中获取的。这允许智能体访问工作流中前一个智能体的输出。如果智能体类在编译时使用了 -parameters 选项，从而在运行时保留方法参数的名称，则可以省略 @V 注解，变量名将自动从参数名推断出来。</p>
+
+<p>此时，可以创建一个组合了这三个智能体的顺序工作流，其中 CreativeWriter 的输出作为 AudienceEditor 和 StyleEditor 的输入，最终输出是编辑过的故事。</p>
+
+<pre><code>CreativeWriter creativeWriter = AgenticServices .agentBuilder(CreativeWriter.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();AudienceEditor audienceEditor = AgenticServices .agentBuilder(AudienceEditor.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();StyleEditor styleEditor = AgenticServices .agentBuilder(StyleEditor.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();UntypedAgent novelCreator = AgenticServices .sequenceBuilder() .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .build();Map&lt;String, Object&gt; input = Map.of( &quot;topic&quot;, &quot;dragons and wizards&quot;, &quot;style&quot;, &quot;fantasy&quot;, &quot;audience&quot;, &quot;young adults&quot;);String story = (String) novelCreator.invoke(input);</code></pre>
+
+<p>这里的 novelCreator 智能体实际上是一个实现了顺序工作流的智能体系统，它组合了这三个子智能体，一个接一个地调用它们。由于此智能体的定义未提供类型化接口，因此顺序智能体构建器返回的是 UntypedAgent 实例，这是一个可以使用输入映射调用的通用智能体。</p>
+
+<pre><code>public interface UntypedAgent { @Agent Object invoke(Map&lt;String, Object&gt; input);}</code></pre>
+
+<p>输入映射中的值被复制到 AgenticScope 共享变量中，以便子智能体可以访问。novelCreator 智能体的输出也取自 AgenticScope 中名为 &quot;story&quot; 的共享变量，该变量在小说创建和编辑工作流执行期间被所有其他智能体反复重写。</p>
+
+<p>注意，即使是单个智能体也可以定义为 UntypedAgent 实例，而无需提供类型化接口。例如，CreativeWriter 智能体可以定义如下：</p>
+
+<pre><code>UntypedAgent creativeWriter = AgenticServices.agentBuilder() .chatModel(BASE_MODEL) .description(&quot;Generate a story based on the given topic&quot;) .userMessage(&quot;&quot;&quot; You are a creative writer. Generate a draft of a story no more than 3 sentences long around the given topic. Return only the story and nothing else. The topic is {{topic}}. &quot;&quot;&quot;) .inputKey(String.class, &quot;topic&quot;) .returnType(String.class) // String 是 untyped 智能体的默认返回类型 .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>另一方面，即使是工作流智能体，也可以选择性地提供类型化接口，从而可以使用强类型输入和输出进行调用。在这种情况下，可以将 UntypedAgent 接口替换为更具体的接口，例如：</p>
+
+<pre><code>public interface NovelCreator { @Agent String createNovel(@V(&quot;topic&quot;) String topic, @V(&quot;audience&quot;) String audience, @V(&quot;style&quot;) String style);}</code></pre>
+
+<p>这样 novelCreator 智能体可以按如下方式创建和使用：</p>
+
+<pre><code>NovelCreator novelCreator = AgenticServices .sequenceBuilder(NovelCreator.class) .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .build();String story = novelCreator.createNovel(&quot;dragons and wizards&quot;, &quot;young adults&quot;, &quot;fantasy&quot;);</code></pre>
+
+<h3>循环工作流</h3>
+
+<p>充分利用 LLM 能力的一种常见方法是使用它们迭代地优化一段文本（例如故事），通过重复调用可以编辑或改进它的智能体。这可以通过使用循环工作流模式来实现，其中智能体被多次调用，直到满足某个条件为止。</p>
+
+<p>可以使用 StyleScorer 智能体根据风格与所需风格的一致程度生成分数。</p>
+
+<pre><code>public interface StyleScorer { @UserMessage(&quot;&quot;&quot; You are a critical reviewer. Give a review score between 0.0 and 1.0 for the following story based on how well it aligns with the style &#x27;{{style}}&#x27;. Return only the score and nothing else. The story is: &quot;{{story}}&quot; &quot;&quot;&quot;) @Agent(&quot;Scores a story based on how well it aligns with a given style&quot;) double scoreStyle(@V(&quot;story&quot;) String story, @V(&quot;style&quot;) String style);}</code></pre>
+
+<p>然后可以在循环中与 StyleEditor 一起使用此智能体，以迭代地改进故事，直到分数达到某个阈值（例如 0.8），或达到最大迭代次数为止。</p>
+
+<pre><code>StyleEditor styleEditor = AgenticServices .agentBuilder(StyleEditor.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();StyleScorer styleScorer = AgenticServices .agentBuilder(StyleScorer.class) .chatModel(BASE_MODEL) .outputKey(&quot;score&quot;) .build();UntypedAgent styleReviewLoop = AgenticServices .loopBuilder() .subAgents(styleScorer, styleEditor) .maxIterations(5) .exitCondition( agenticScope -&gt; agenticScope.readState(&quot;score&quot;, 0.0) &gt;= 0.8) .build();</code></pre>
+
+<p>这里 styleScorer 智能体将其输出写入 AgenticScope 中名为 &quot;score&quot; 的共享变量，并且在循环的退出条件中访问和评估同一变量。</p>
+
+<p>exitCondition 方法接受一个 Predicate&lt;AgenticScope&gt; 作为参数，默认情况下在每次智能体调用后进行评估，使循环在条件满足时立即退出，从而尽可能减少智能体调用次数。但是，也可以选择在循环结束时才检查退出条件，从而强制在测试该条件之前调用所有智能体，方法是使用 testExitAtLoopEnd(true) 方法配置循环构建器。或者，exitCondition 方法也可以接受 BiPredicate&lt;AgenticScope, Integer&gt; 作为参数，该参数将当前循环迭代计数器作为第二个参数。例如，以下循环定义：</p>
+
+<pre><code>UntypedAgent styleReviewLoop = AgenticServices .loopBuilder() .subAgents(styleScorer, styleEditor) .maxIterations(5) .testExitAtLoopEnd(true) .exitCondition( (agenticScope, loopCounter) -&gt; { double score = agenticScope.readState(&quot;score&quot;, 0.0); return loopCounter &lt;= 3 ? score &gt;= 0.8 : score &gt;= 0.6; }) .build();</code></pre>
+
+<p>会使循环在前 3 次迭代中分数至少为 0.8 时退出，否则会降低质量期望，以至少 0.6 的分数终止循环，同时也强制在退出条件满足后最后一次调用 styleEditor 智能体。</p>
+
+<p>在配置好此 styleReviewLoop 之后，可以将其视为单个智能体，并与 CreativeWriter 智能体放在顺序中，从而创建一个 StyledWriter 智能体：</p>
+
+<pre><code>public interface StyledWriter { @Agent String writeStoryWithStyle(@V(&quot;topic&quot;) String topic, @V(&quot;style&quot;) String style);}</code></pre>
+
+<p>它实现了更复杂的工作流，结合了故事生成和风格审查过程。</p>
+
+<pre><code>CreativeWriter creativeWriter = AgenticServices .agentBuilder(CreativeWriter.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();StyledWriter styledWriter = AgenticServices .sequenceBuilder(StyledWriter.class) .subAgents(creativeWriter, styleReviewLoop) .outputKey(&quot;story&quot;) .build();String story = styledWriter.writeStoryWithStyle(&quot;dragons and wizards&quot;, &quot;comedy&quot;);</code></pre>
+
+<h3>并行工作流</h3>
+
+<p>有时并行调用多个智能体非常有用，特别是当它们可以独立处理同一输入时。这可以通过使用并行工作流模式来实现，其中多个智能体被同时调用，并且它们的输出被合并到单个结果中。</p>
+
+<p>例如，让我们使用电影和美食专家为具有特定心情的美好夜晚生成一些计划，将符合该心情的电影和餐食结合起来。</p>
+
+<pre><code>public interface FoodExpert { @UserMessage(&quot;&quot;&quot; You are a great evening planner. Propose a list of 3 meals matching the given mood. The mood is {{mood}}. For each meal, just give the name of the meal. Provide a list with the 3 items and nothing else. &quot;&quot;&quot;) @Agent List&lt;String&gt; findMeal(@V(&quot;mood&quot;) String mood);}public interface MovieExpert { @UserMessage(&quot;&quot;&quot; You are a great evening planner. Propose a list of 3 movies matching the given mood. The mood is {mood}. Provide a list with the 3 items and nothing else. &quot;&quot;&quot;) @Agent List&lt;String&gt; findMovie(@V(&quot;mood&quot;) String mood);}</code></pre>
+
+<p>由于两个专家的工作是相互独立的，因此可以使用 AgenticServices.parallelBuilder() 方法并行调用它们，如下所示：</p>
+
+<pre><code>FoodExpert foodExpert = AgenticServices .agentBuilder(FoodExpert.class) .chatModel(BASE_MODEL) .outputKey(&quot;meals&quot;) .build();MovieExpert movieExpert = AgenticServices .agentBuilder(MovieExpert.class) .chatModel(BASE_MODEL) .outputKey(&quot;movies&quot;) .build();EveningPlannerAgent eveningPlannerAgent = AgenticServices .parallelBuilder(EveningPlannerAgent.class) .subAgents(foodExpert, movieExpert) .executor(Executors.newFixedThreadPool(2)) .outputKey(&quot;plans&quot;) .output(agenticScope -&gt; { List&lt;String&gt; movies = agenticScope.readState(&quot;movies&quot;, List.of()); List&lt;String&gt; meals = agenticScope.readState(&quot;meals&quot;, List.of()); List&lt;EveningPlan&gt; moviesAndMeals = new ArrayList&lt;&gt;(); for (int i = 0; i &lt; movies.size(); i++) { if (i &gt;= meals.size()) { break; } moviesAndMeals.add(new EveningPlan(movies.get(i), meals.get(i))); } return moviesAndMeals; }) .build();List&lt;EveningPlan&gt; plans = eveningPlannerAgent.plan(&quot;romantic&quot;);</code></pre>
+
+<p>此处 EveningPlannerAgent 中定义的 AgenticScope 的 output 函数允许你组装两个子智能体的输出，创建一个 EveningPlan 对象列表，该列表结合了符合给定心情的电影和餐食。output 方法即使在并行工作流中特别有用，实际上也可以在任何工作流模式中使用，用于定义如何将子智能体的输出合并到单个结果中，而不是简单地从 AgenticScope 返回值。executor 方法还允许你选择性地提供一个 Executor，用于并行执行子智能体，否则将默认使用内部缓存线程池。</p>
+
+<h3>并行映射工作流</h3>
+
+<p>并行映射工作流是并行工作流的一种变体，其中同一个子智能体被并行多次执行，每个集合项执行一次。换句话说，它映射列表中的所有项，独立地处理每个项，多次调用同一子智能体。当你需要将同一操作应用于一批输入时，这非常有用。</p>
+
+<p>例如，让我们创建一个为一组人生成个性化星座运势的智能体：</p>
+
+<pre><code>public interface PersonAstrologyAgent { @SystemMessage(&quot;&quot;&quot; You are an astrologist that generates horoscopes based on the user&#x27;s name and zodiac sign. &quot;&quot;&quot;) @UserMessage(&quot;&quot;&quot; Generate the horoscope for {{person}}. The person has a name and a zodiac sign. Use both to create a personalized horoscope. &quot;&quot;&quot;) @Agent(description = &quot;An astrologist that generates horoscopes for a person&quot;, outputKey = &quot;horoscope&quot;) String horoscope(@V(&quot;person&quot;) Person person);}</code></pre>
+
+<p>使用 AgenticServices.parallelMapperBuilder()，你可以创建一个工作流，将此智能体分发到集合上，自动为每个项创建一个实例：</p>
+
+<pre><code>PersonAstrologyAgent personAstrologyAgent = AgenticServices .agentBuilder(PersonAstrologyAgent.class) .chatModel(BASE_MODEL) .outputKey(&quot;horoscope&quot;) .build();BatchHoroscopeAgent agent = AgenticServices .parallelMapperBuilder(BatchHoroscopeAgent.class) .subAgents(personAstrologyAgent) .itemsProvider(&quot;persons&quot;) .executor(Executors.newFixedThreadPool(3)) .build();List&lt;Person&gt; persons = List.of( new Person(&quot;Mario&quot;, &quot;aries&quot;), new Person(&quot;Luigi&quot;, &quot;pisces&quot;), new Person(&quot;Peach&quot;, &quot;leo&quot;));List&lt;String&gt; horoscopes = agent.generateHoroscopes(persons);</code></pre>
+
+<p>其中 BatchHoroscopeAgent 定义如下：</p>
+
+<pre><code>public interface BatchHoroscopeAgent extends AgentInstance { @Agent List&lt;String&gt; generateHoroscopes(@V(&quot;persons&quot;) List&lt;Person&gt; persons);}</code></pre>
+
+<p>itemsProvider 指定哪个参数包含要迭代的集合。但是，如果没有歧义，并且只有一个可迭代的参数（Collection 或数组），如本例所示，则可以安全地省略它。子智能体的每个实例从集合中接收一个项，一旦所有实例完成，它们的各个结果将自动聚合成一个列表并作为工作流结果返回。与并行工作流一样，可以选择性地提供 Executor。</p>
+
+<p>请注意，由于同一个智能体被独立调用以使用不同参数重复执行同一任务，因此为其保留任何 ChatMemory 都没有意义。因此，如果并行映射工作流尝试使用配置为使用 ChatMemory 的子智能体，LangChain4j 将抛出异常。</p>
+
+<h3>条件工作流</h3>
+
+<p>另一个常见的需求是仅在满足特定条件时调用某个智能体。例如，可能需要先对用户请求进行分类，然后再进行处理，以便根据请求的分类由不同的智能体进行处理。这可以通过使用以下 CategoryRouter 来实现：</p>
+
+<pre><code>public interface CategoryRouter { @UserMessage(&quot;&quot;&quot; Analyze the following user request and categorize it as &#x27;legal&#x27;, &#x27;medical&#x27; or &#x27;technical&#x27;. In case the request doesn&#x27;t belong to any of those categories categorize it as &#x27;unknown&#x27;. Reply with only one of those words and nothing else. The user request is: &#x27;{{request}}&#x27;. &quot;&quot;&quot;) @Agent(&quot;Categorizes a user request&quot;) RequestCategory classify(@V(&quot;request&quot;) String request);}</code></pre>
+
+<p>它返回 RequestCategory 枚举值。</p>
+
+<pre><code>public enum RequestCategory { LEGAL, MEDICAL, TECHNICAL, UNKNOWN}</code></pre>
+
+<p>这样，在定义了类似以下 MedicalExpert 智能体后：</p>
+
+<pre><code>public interface MedicalExpert { @UserMessage(&quot;&quot;&quot; You are a medical expert. Analyze the following user request under a medical point of view and provide the best possible answer. The user request is {{request}}. &quot;&quot;&quot;) @Agent(&quot;A medical expert&quot;) String medical(@V(&quot;request&quot;) String request);}</code></pre>
+
+<p>以及类似的 LegalExpert 和 TechnicalExpert 智能体，可以创建一个 ExpertRouterAgent：</p>
+
+<pre><code>public interface ExpertRouterAgent { @Agent String ask(@V(&quot;request&quot;) String request);}</code></pre>
+
+<p>它实现了条件工作流，根据用户请求的类别调用适当的智能体。</p>
+
+<pre><code>CategoryRouter routerAgent = AgenticServices .agentBuilder(CategoryRouter.class) .chatModel(BASE_MODEL) .outputKey(&quot;category&quot;) .build();MedicalExpert medicalExpert = AgenticServices .agentBuilder(MedicalExpert.class) .chatModel(BASE_MODEL) .outputKey(&quot;response&quot;) .build();LegalExpert legalExpert = AgenticServices .agentBuilder(LegalExpert.class) .chatModel(BASE_MODEL) .outputKey(&quot;response&quot;) .build();TechnicalExpert technicalExpert = AgenticServices .agentBuilder(TechnicalExpert.class) .chatModel(BASE_MODEL) .outputKey(&quot;response&quot;) .build();UntypedAgent expertsAgent = AgenticServices.conditionalBuilder() .subAgents( agenticScope -&gt; agenticScope.readState(&quot;category&quot;, RequestCategory.UNKNOWN) == RequestCategory.MEDICAL, medicalExpert) .subAgents( agenticScope -&gt; agenticScope.readState(&quot;category&quot;, RequestCategory.UNKNOWN) == RequestCategory.LEGAL, legalExpert) .subAgents( agenticScope -&gt; agenticScope.readState(&quot;category&quot;, RequestCategory.UNKNOWN) == RequestCategory.TECHNICAL, technicalExpert) .build();ExpertRouterAgent expertRouterAgent = AgenticServices .sequenceBuilder(ExpertRouterAgent.class) .subAgents(routerAgent, expertsAgent) .outputKey(&quot;response&quot;) .build();String response = expertRouterAgent.ask(&quot;I broke my leg what should I do&quot;);</code></pre>
+
+<h2>可选智能体</h2>
+
+<p>在某些情况下，工作流中的子智能体在其输入参数在 AgenticScope 中不可用时可能不需要执行。默认情况下，当智能体找不到其必需的参数之一时，整个智能体系统将失败并抛出 MissingArgumentException。但是，可以将智能体标记为可选（optional），这样当缺少其任何参数时，它的执行将被静默跳过，而不是使整个工作流失败。</p>
+
+<p>这可以通过智能体构建器的 optional 方法来实现。例如，考虑到上面定义的顺序工作流，可以将 AudienceEditor 智能体设为可选，这样即使未在输入中提供 audience，故事仍然会被生成并进行风格编辑。</p>
+
+<pre><code>CreativeWriter creativeWriter = AgenticServices .agentBuilder(CreativeWriter.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();AudienceEditor audienceEditor = AgenticServices .agentBuilder(AudienceEditor.class) .chatModel(BASE_MODEL) .optional(true) .outputKey(&quot;story&quot;) .build();StyleEditor styleEditor = AgenticServices .agentBuilder(StyleEditor.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();UntypedAgent novelCreator = AgenticServices .sequenceBuilder() .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .build();// 未提供 &quot;audience&quot; 键，因此 audienceEditor 将被跳过Map&lt;String, Object&gt; input = Map.of( &quot;topic&quot;, &quot;dragons and wizards&quot;, &quot;style&quot;, &quot;fantasy&quot;);String story = (String) novelCreator.invoke(input);</code></pre>
+
+<p>这里 audienceEditor 智能体被配置为可选。由于输入映射不包含 AudienceEditor 所需的 &quot;audience&quot; 键，因此它的调用将被跳过，工作流将直接进入 StyleEditor。也可以使用 @Agent 注解属性 @Agent(optional = true) 以声明方式将同一智能体标记为可选。</p>
+
+<h2>异步智能体</h2>
+
+<p>默认情况下，所有智能体的调用都在调用智能体系统根智能体的同一线程中执行，因此它们是同步的，这意味着智能体系统的执行将等待每个智能体完成后才能继续执行下一个。但是，在许多情况下这不是必需的，以异步方式调用智能体非常有用，可以使智能体系统的执行不必等待该智能体完成即可继续进行。</p>
+
+<p>为此，可以使用智能体构建器的 async 方法将智能体标记为异步。这样做时，该智能体的调用将在单独的线程中执行，智能体系统的执行将继续进行而不会等待该智能体完成。异步智能体的结果将在完成后立即在 AgenticScope 中可用，并且仅当其作为后续不同智能体调用的输入时，AgenticScope 才会被阻塞等待该结果。</p>
+
+<p>例如，由于它们彼此独立，在并行工作流一节中讨论的 FoodExpert 和 MovieExpert 智能体上通过 .async(true) 将它们标记为异步，即使在顺序工作流中使用时也将同时执行。与 parallelBuilder() 不同，sequenceBuilder() 没有 executor() 方法；可选的 executor() 仅属于并行工作流。</p>
+
+<pre><code>FoodExpert foodExpert = AgenticServices .agentBuilder(FoodExpert.class) .chatModel(BASE_MODEL) .async(true) .outputKey(&quot;meals&quot;) .build();MovieExpert movieExpert = AgenticServices .agentBuilder(MovieExpert.class) .chatModel(BASE_MODEL) .async(true) .outputKey(&quot;movies&quot;) .build();EveningPlannerAgent eveningPlannerAgent = AgenticServices .sequenceBuilder(EveningPlannerAgent.class) .subAgents(foodExpert, movieExpert) .outputKey(&quot;plans&quot;) .output(agenticScope -&gt; { List&lt;String&gt; movies = agenticScope.readState(&quot;movies&quot;, List.of()); List&lt;String&gt; meals = agenticScope.readState(&quot;meals&quot;, List.of()); List&lt;EveningPlan&gt; moviesAndMeals = new ArrayList&lt;&gt;(); for (int i = 0; i &lt; movies.size(); i++) { if (i &gt;= meals.size()) { break; } moviesAndMeals.add(new EveningPlan(movies.get(i), meals.get(i))); } return moviesAndMeals; }) .build();List&lt;EveningPlan&gt; plans = eveningPlannerAgent.plan(&quot;romantic&quot;);</code></pre>
+
+<h2>流式智能体</h2>
+
+<p>为了支持流式传输，还可以创建一个返回 TokenStream 的智能体：</p>
+
+<pre><code>public interface StreamingCreativeWriter { @UserMessage(&quot;&quot;&quot; You are a creative writer. Generate a draft of a story no more than 3 sentences long around the given topic. Return only the story and nothing else. The topic is {{topic}}. &quot;&quot;&quot;) @Agent(&quot;Generates a story based on the given topic&quot;) TokenStream generateStory(@V(&quot;topic&quot;) String topic);}</code></pre>
+
+<p>然后将其配置为使用 StreamingChatModel，以便在生成结果时可以立即使用它，而不必等待智能体调用完成。</p>
+
+<pre><code>StreamingCreativeWriter creativeWriter = AgenticServices.agentBuilder(StreamingCreativeWriter.class) .streamingChatModel(streamingBaseModel()) .outputKey(&quot;story&quot;) .build();TokenStream tokenStream = creativeWriter.generateStory(&quot;dragons and wizards&quot;);</code></pre>
+
+<p>在智能体系统内使用时，仅当流式智能体是最后调用的智能体时，它的流式响应才能传播到整个系统。在所有其他情况下，它的行为类似于异步智能体，因此后续智能体将需要等待其流式响应完成才能获取和使用其结果。</p>
+
+<p>例如，以下 StreamingReviewedWriter 智能体：</p>
+
+<pre><code>public interface StreamingReviewedWriter { @Agent TokenStream writeStory(@V(&quot;topic&quot;) String topic, @V(&quot;audience&quot;) String audience, @V(&quot;style&quot;) String style);}</code></pre>
+
+<p>由 3 个流式智能体的序列实现：</p>
+
+<pre><code>StreamingCreativeWriter creativeWriter = AgenticServices.agentBuilder(StreamingCreativeWriter.class) .streamingChatModel(streamingBaseModel()) .outputKey(&quot;story&quot;) .build();StreamingAudienceEditor audienceEditor = AgenticServices.agentBuilder(StreamingAudienceEditor.class) .streamingChatModel(streamingBaseModel()) .outputKey(&quot;story&quot;) .build();StreamingStyleEditor styleEditor = AgenticServices.agentBuilder(StreamingStyleEditor.class) .streamingChatModel(streamingBaseModel()) .outputKey(&quot;story&quot;) .build();StreamingReviewedWriter novelCreator = AgenticServices.sequenceBuilder(StreamingReviewedWriter.class) .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>调用此 novelCreator 智能体时：</p>
+
+<pre><code>TokenStream tokenStream = novelCreator.writeStory(&quot;dragons and wizards&quot;, &quot;young adults&quot;, &quot;fantasy&quot;);</code></pre>
+
+<p>前两个智能体的流式响应在内部被完全消费后，后续智能体的调用才会开始，并且仅最后一个 StyleEditor 智能体的流式响应会作为整个 novelCreator 智能体的流式响应传播出去。</p>
+
+<h2>动态 ChatModel 选择</h2>
+
+<p>默认情况下，智能体在构建时绑定到单个 ChatModel。但是，在某些情况下，你可能希望根据智能体系统的当前状态在每次调用时动态选择要使用的模型。例如，你可能希望对日常工作使用更便宜、更快的模型，并在质量阈值需要时切换到更强大的模型。</p>
+
+<p>AgentBuilder 上的 chatModel 方法具有接受 Function&lt;AgenticScope, ChatModel&gt; 的重载：</p>
+
+<pre><code>StoryEditor storyEditor = AgenticServices.agentBuilder(StoryEditor.class) .chatModel(scope -&gt; { CritiqueResult critique = (CritiqueResult) scope.readState(&quot;critique&quot;); return critique != null &amp;&amp; critique.score() &gt; 7.8 ? enhancedModel() : baseModel(); }) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>该函数接收当前 AgenticScope 并返回用于当前调用的 ChatModel。在此示例中，当要编辑的故事的评论分数低于 7.8 且仍有很大的改进空间时，StoryEditor 智能体默认使用 baseModel()。当分数超过该阈值并且最终优化可能需要更好的模型时，它将切换到 enhancedModel()。该函数在每次调用之前都会进行评估，因此同一智能体的不同调用之间模型可以更改。</p>
+
+<p>streamingChatModel 方法同样支持动态选择。</p>
+
+<h2>错误处理</h2>
+
+<p>在复杂的智能体系统中，可能会发生许多错误，例如智能体无法生成结果、外部工具不可用或智能体执行过程中发生意外错误。</p>
+
+<p>因此，errorHandler 方法允许你向智能体系统提供一个错误处理程序，它是一个转换 ErrorContext 的函数，定义如下：</p>
+
+<pre><code>record ErrorContext(String agentName, AgenticScope agenticScope, AgentInvocationException exception) { }</code></pre>
+
+<p>转换为 ErrorRecoveryResult，可以是以下 3 种之一：</p>
+
+<ul><li>ErrorRecoveryResult.throwException()，这是默认行为，简单地将引起问题的 Exception 向上传播到根调用者</li><li>ErrorRecoveryResult.retry()，可能采取一些纠正措施后重试智能体调用</li><li>ErrorRecoveryResult.result(Object result)，忽略问题并将提供的结果作为失败智能体的结果返回</li></ul>
+
+<p>例如，如果在顺序工作流的最早示例中省略了必需的参数：</p>
+
+<pre><code>UntypedAgent novelCreator = AgenticServices .sequenceBuilder() .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .build();Map&lt;String, Object&gt; input = Map.of( // 缺少 &quot;topic&quot; 条目以触发错误 // &quot;topic&quot;, &quot;dragons and wizards&quot;, &quot;style&quot;, &quot;fantasy&quot;, &quot;audience&quot;, &quot;young adults&quot;);</code></pre>
+
+<p>执行将失败并出现类似以下的异常：</p>
+
+<pre><code>dev.langchain4j.agentic.agent.MissingArgumentException: Missing argument: topic</code></pre>
+
+<p>为了解决此问题，在这种情况下，可以通过使用适当的 errorHandler 配置智能体来处理此错误并从中恢复，该 errorHandler 为 agenticScope 提供缺失的参数。</p>
+
+<pre><code>UntypedAgent novelCreator = AgenticServices.sequenceBuilder() .subAgents(creativeWriter, audienceEditor, styleEditor) .errorHandler(errorContext -&gt; { if (errorContext.agentName().equals(&quot;generateStory&quot;) &amp;&amp; errorContext.exception() instanceof MissingArgumentException mEx &amp;&amp; mEx.argumentName().equals(&quot;topic&quot;)) { errorContext.agenticScope().writeState(&quot;topic&quot;, &quot;dragons and wizards&quot;); errorRecoveryCalled.set(true); return ErrorRecoveryResult.retry(); } return ErrorRecoveryResult.throwException(); }) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<h2>跨智能体补偿</h2>
+
+<p>当智能体系统通过工具执行副作用（例如数据库写入、API 调用、金融交易）时，工作流中途发生故障可能会使系统处于不一致状态。跨智能体补偿试图解决或至少缓解此问题：如果层次结构中的任何智能体失败，则所有先前成功的带有 @CompensateFor 操作的工具调用都将按相反顺序进行补偿。</p>
+
+<p>这建立在每个智能体的 @CompensateFor 机制之上（请参阅 Tools）。而每个智能体的补偿处理单个智能体内的工具错误，跨智能体补偿则处理整个层次结构中智能体级别的失败。</p>
+
+<p>要启用此功能，请在组合智能体构建器上设置 compensateOnError(true)：</p>
+
+<pre><code>UntypedAgent transferWorkflow = AgenticServices.sequenceBuilder() .subAgents(creditAgent, debitAgent, notificationAgent) .compensateOnError(true) .outputKey(&quot;result&quot;) .build();</code></pre>
+
+<p>如果 notificationAgent 抛出异常，则 creditAgent 和 debitAgent 调用的具有 @CompensateFor 方法的工具将按相反的时间顺序进行补偿（最后执行的先补偿）。</p>
+
+<p>没有 @CompensateFor 注解的工具在补偿过程中将被简单地跳过。</p>
+
+<p>补偿操作使用 @CompensateFor 在工具类上定义，这与用于每个智能体工具补偿的注解相同：</p>
+
+<pre><code>public class AccountService { @Tool(&quot;Credits the given amount to the account&quot;) String credit(@P(name = &quot;amount&quot;) int amount) { // 执行信用操作 return &quot;credited &quot; + amount; } @CompensateFor(&quot;credit&quot;) void reverseCredit(int amount) { // 撤销信用操作 }}</code></pre>
+
+<p>请注意，补偿操作以尽力而为的策略执行：如果其中之一失败，则记录错误，并且剩余的补偿继续进行。</p>
+
+<h2>可观测性</h2>
+
+<p>跟踪和记录智能体的调用对于调试和理解整个智能体系统的整体行为至关重要。为此，langchain4j-agentic 模块允许你通过智能体构建器的 listener 方法注册 AgentListener，该监听器会在所有智能体调用及其结果时收到通知，其定义如下：</p>
+
+<pre><code>public interface AgentListener { default void beforeAgentInvocation(AgentRequest agentRequest) { } default void afterAgentInvocation(AgentResponse agentResponse) { } default void onAgentInvocationError(AgentInvocationError agentInvocationError) { } default void afterAgenticScopeCreated(AgenticScope agenticScope) { } default void beforeAgenticScopeDestroyed(AgenticScope agenticScope) { } default void beforeToolExecution(BeforeToolExecution beforeToolExecution) { } default void afterToolExecution(ToolExecution toolExecution) { } default boolean inheritedBySubagents() { return false; }}</code></pre>
+
+<p>请注意，该接口的所有方法都具有默认的空实现，因此仅实现相关方法是可行的。这也将允许你在不破坏现有实现的情况下在未来版本中添加新方法。</p>
+
+<p>例如，以下 CreativeWriter 智能体的配置将在调用它时记录到控制台，并显示其生成的故事。</p>
+
+<pre><code>CreativeWriter creativeWriter = AgenticServices.agentBuilder(CreativeWriter.class) .chatModel(baseModel()) .outputKey(&quot;story&quot;) .listener(new AgentListener() { @Override public void beforeAgentInvocation(AgentRequest request) { System.out.println(&quot;Invoking CreativeWriter with topic: &quot; + request.inputs().get(&quot;topic&quot;)); } @Override public void afterAgentInvocation(AgentResponse response) { System.out.println(&quot;CreativeWriter generated this story: &quot; + response.output()); } }) .build();</code></pre>
+
+<p>这些 listener 方法分别接收一个 AgentRequest 和 AgentResponse 作为参数，它们提供有关智能体调用的有用信息，例如其名称、接收的输入和产生的输出，以及用于该调用的 AgenticScope 实例。请注意，这些方法在与智能体调用相同的线程中调用，因此它们与之同步，不应执行长时间阻塞的操作。</p>
+
+<p>AgentListener 具有 2 个重要属性，它们是：</p>
+
+<ul><li>可组合的，这意味着你可以通过多次调用 listener 方法将多个监听器注册到同一智能体，并且它们将按注册的顺序收到通知；</li><li>可选的分层结构，这意味着默认情况下它们仅在直接注册的智能体本地有效，但它们也可以被其所有子智能体继承，只需使其 inheritedBySubagents 方法返回 true。在这种情况下，在顶层智能体上注册的监听器还将在任何级别上收到对其所有子智能体的调用通知，并与这些子智能体自己可能注册的所有监听器组合在一起。</li></ul>
+
+<h3>监控</h3>
+
+<p>利用 AgentListener 接口提供的可观测性功能，langchain4j-agentic 模块还提供了此接口的一个内置实现，配置为可由所有子智能体继承，称为 AgentMonitor，其目标是使用内存中的树结构记录所有智能体的调用，从而允许在智能体系统执行期间或之后检查调用序列及其结果。该监控器可以使用智能体构建器的 listener 方法注册为智能体系统根智能体的监听器。</p>
+
+<p>为了提供更全面的示例，让我们重新考虑用于生成和迭代优化故事直到满足所需风格质量的循环工作流，并在其上注册一些监听器，包括 AgentMonitor。</p>
+
+<pre><code>AgentMonitor monitor = new AgentMonitor();CreativeWriter creativeWriter = AgenticServices.agentBuilder(CreativeWriter.class) .listener(new AgentListener() { @Override public void beforeAgentInvocation(AgentRequest request) { System.out.println(&quot;Invoking CreativeWriter with topic: &quot; + request.inputs().get(&quot;topic&quot;)); } }) .chatModel(baseModel()) .outputKey(&quot;story&quot;) .build();StyleEditor styleEditor = AgenticServices.agentBuilder(StyleEditor.class) .chatModel(baseModel()) .outputKey(&quot;story&quot;) .build();StyleScorer styleScorer = AgenticServices.agentBuilder(StyleScorer.class) .name(&quot;styleScorer&quot;) .chatModel(baseModel()) .outputKey(&quot;score&quot;) .build();UntypedAgent styleReviewLoop = AgenticServices.loopBuilder() .subAgents(styleScorer, styleEditor) .maxIterations(5) .exitCondition(agenticScope -&gt; agenticScope.readState(&quot;score&quot;, 0.0) &gt;= 0.8) .build();UntypedAgent styledWriter = AgenticServices.sequenceBuilder() .subAgents(creativeWriter, styleReviewLoop) .listener(monitor) .listener(new AgentListener() { @Override public void afterAgentInvocation(AgentResponse response) { if (response.agentName().equals(&quot;styleScorer&quot;)) { System.out.println(&quot;Current score: &quot; + response.output()); } } }) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>这里 first agent listener 直接注册在 creativeWriter 智能体上，以便仅在该智能体被调用时记录要生成的故事的请求主题。第二个监听器注册在顶层 styledWriter 智能体上，因此它还将在该智能体任何级别的层次结构中针对所有子智能体被调用。这就是为什么该监听器的 afterAgentInvocation 方法检查正在调用的智能体是否是 styleScorer，并且仅在该情况下记录分配给所生成故事风格的当前分数。</p>
+
+<p>最后，还注册了 AgentMonitor 实例，并自动与其他 2 个监听器组合，作为 styledWriter 顶层智能体的另一个监听器，以便它可以跟踪整个智能体系统中的所有智能体调用。</p>
+
+<p>如下调用 styledWriter 智能体时：</p>
+
+<pre><code>Map&lt;String, Object&gt; input = Map.of( &quot;topic&quot;, &quot;dragons and wizards&quot;, &quot;style&quot;, &quot;comedy&quot;);String story = styledWriter.invoke(input);</code></pre>
+
+<p>AgentMonitor 以树结构记录所有智能体调用，其中还跟踪每个智能体调用的开始时间、结束时间、持续时间、token 数、输入和输出。此时可以从监控器中检索已记录的执行情况，例如将其打印到控制台进行检查。</p>
+
+<pre><code>MonitoredExecution execution = monitor.successfulExecutions().get(0);System.out.println(execution);</code></pre>
+
+<p>它将揭示生成和优化故事所需的智能体调用的嵌套序列，如下所示：</p>
+
+<pre><code>AgentInvocation{agent=Sequential, startTime=2026-03-18T17:27:28.099439515, finishTime=2026-03-18T17:27:38.683498783, duration=10584 ms, tokens=0, inputs={topic=dragons and wiz..., style=comedy}, output=In a realm wher...}|=&gt; AgentInvocation{agent=generateStory, startTime=2026-03-18T17:27:28.1.22.0287, finishTime=2026-03-18T17:27:31.033561726, duration=2932 ms, tokens=127, inputs={topic=dragons and wiz...}, output=In a realm wher...}|=&gt; AgentInvocation{agent=reviewLoop, startTime=2026-03-18T17:27:31.035952285, finishTime=2026-03-18T17:27:38.683438433, duration=7647 ms, tokens=0, inputs={score=0.8, topic=dragons and wiz..., style=comedy, story=In a realm wher...}, output=null} |=&gt; AgentInvocation{agent=scoreStyle, iteration=0, startTime=2026-03-18T17:27:31.036155107, finishTime=2026-03-18T17:27:31.671478699, duration=635 ms, tokens=152, inputs={style=comedy, story=In a realm wher...}, output=0.2} |=&gt; AgentInvocation{agent=editStory, iteration=0, startTime=2026-03-18T17:27:31.671711250, finishTime=2026-03-18T17:27:38.182881941, duration=6511 ms, tokens=491, inputs={style=comedy, story=In a realm wher...}, output=In a realm wher...} |=&gt; AgentInvocation{agent=scoreStyle, iteration=1, startTime=2026-03-18T17:27:38.183021641, finishTime=2026-03-18T17:27:38.683085876, duration=500 ms, tokens=439, inputs={style=comedy, story=In a realm wher...}, output=0.8}</code></pre>
+
+<p>最后，使用 HtmlReportGenerator 类公开的静态 generateReport 方法，还可以为 AgentMonitor 收集的数据生成可视化的 HTML 报告，包括智能体系统的拓扑结构和记录的执行情况。例如，为上述执行生成此报告：</p>
+
+<pre><code>HtmlReportGenerator.generateReport(monitor, Path.of(&quot;review-loop.html&quot;));</code></pre>
+
+<p>将在当前工作目录中生成一个类似以下的报告文件 review-loop.html：</p>
+
+<p>也可以独立生成拓扑和执行部分。要仅生成智能体系统的拓扑结构而不包含任何执行数据：</p>
+
+<pre><code>HtmlReportGenerator.generateTopology(styledWriter, Path.of(&quot;topology.html&quot;));</code></pre>
+
+<p>相反，要仅生成监控器记录的执行历史而不包含拓扑部分：</p>
+
+<pre><code>HtmlReportGenerator.generateExecution(monitor, Path.of(&quot;execution.html&quot;));</code></pre>
+
+<p>最后一个方法还支持按 memory id 进行过滤，例如 HtmlReportGenerator.generateExecution(monitor, memoryId, path)，而所有方法都具有将 HTML 作为 String 返回而不是写入文件的重载。</p>
+
+<p>默认情况下，AgentMonitor 每个结果（成功和失败，独立计数）最多保留 100 个会话（不同的 memory id）。超出限制时，最旧的会话将被自动驱逐。这使得将监控器附加到长期存在的单例智能体变得安全，而不必担心内存无限增长。</p>
+
+<p>可以随时通过 setMaxRetainedSessions 更改保留限制。如果新限制低于当前保留的会话数，则多余的条目将立即被驱逐：</p>
+
+<pre><code>monitor.setMaxRetainedSessions(20);</code></pre>
+
+<p>将其设置为 0 将完全禁用保留 — 监听器回调仍会触发，但不会在内存中保留任何内容。要显式删除所有保留的会话，请使用 clear() 方法：</p>
+
+<pre><code>monitor.clear();</code></pre>
+
+<p>这两种操作都不会影响正在进行的（飞行中的）执行。</p>
+
+<p>手动创建 AgentMonitor 并将其注册为监听器的另一种替代方法是，让你的智能体服务接口扩展 MonitoredAgent 接口。这样做时，构建器会自动创建并将 AgentMonitor 注册为监听器，并且可以通过 agentMonitor() 方法直接从智能体实例访问此监控器。</p>
+
+<p>例如，前面示例中定义的顺序智能体可以通过定义一个同时扩展 MonitoredAgent 接口的接口 StyledWriter 来转变为类型化且受监控的智能体：</p>
+
+<pre><code>public interface StyledWriter extends MonitoredAgent { @Agent(&quot;Write a creative story about the given topic&quot;) String generateStoryWithStyle(@V(&quot;topic&quot;) String topic, @V(&quot;style&quot;) String style);}</code></pre>
+
+<p>在构建此智能体时，无需显式创建或注册 AgentMonitor：</p>
+
+<pre><code>StyledWriter styledWriter = AgenticServices.sequenceBuilder(StyledWriter.class) .subAgents(creativeWriter, styleReviewLoop) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>监控器会自动注册，并且可以随时从智能体本身检索它：</p>
+
+<pre><code>AgentMonitor monitor = styledWriter.agentMonitor();</code></pre>
+
+<h2>声明式 API</h2>
+
+<p>到目前为止讨论的所有工作流模式都可以使用声明式 API 定义，这允许你以更简洁和可读的方式定义工作流。langchain4j-agentic 模块提供了一组注解，可以用于以更具声明性的风格定义智能体及其工作流。</p>
+
+<p>例如，前面小节中以编程方式定义的实现并行工作流的 EveningPlannerAgent 可以使用声明式 API 重写如下：</p>
+
+<pre><code>public interface EveningPlannerAgent { @ParallelAgent( outputKey = &quot;plans&quot;, subAgents = { FoodExpert.class, MovieExpert.class }) List&lt;EveningPlan&gt; plan(@V(&quot;mood&quot;) String mood); @ParallelExecutor static Executor executor() { return Executors.newFixedThreadPool(2); } @Output static List&lt;EveningPlan&gt; createPlans(@V(&quot;movies&quot;) List&lt;String&gt; movies, @V(&quot;meals&quot;) List&lt;String&gt; meals) { List&lt;EveningPlan&gt; moviesAndMeals = new ArrayList&lt;&gt;(); for (int i = 0; i &lt; movies.size(); i++) { if (i &gt;= meals.size()) { break; } moviesAndMeals.add(new EveningPlan(movies.get(i), meals.get(i))); } return moviesAndMeals; }}</code></pre>
+
+<p>在这种情况下，使用 @Output 注解的静态方法用于定义如何将子智能体的输出合并到单个结果中，与通过将 AgenticScope 的函数传递给 output 方法所完成的操作完全相同。</p>
+
+<p>一旦定义了此接口，就可以使用 AgenticServices.createAgenticSystem() 方法创建 EveningPlannerAgent 的实例，然后像以前一样使用它。</p>
+
+<pre><code>EveningPlannerAgent eveningPlannerAgent = AgenticServices .createAgenticSystem(EveningPlannerAgent.class, BASE_MODEL);List&lt;EveningPlan&gt; plans = eveningPlannerAgent.plan(&quot;romantic&quot;);</code></pre>
+
+<p>与 @Output 注解演示的类似，在定义智能体模式的接口中使用以下注解之一注解其他静态方法，可以以声明方式配置智能体系统，例如用于并行智能体的执行器、循环智能体的退出条件等。可用于此目的的注解列表如下：</p>
+
+<p>| 注解名称 | 描述 | | @Output | 组装由此智能体模式返回的输出，整合 AgenticScope 的不同状态。 | | @ActivationCondition | 仅在 ConditionalAgent 上可用，用于为一个或多个子智能体定义激活谓词，必须返回 boolean | | @BeforeCall | 在调用此智能体模式之前调用的操作，可用于初始化 AgenticScope 的状态。 | | @ErrorHandler | 在智能体操作期间发生错误时调用的操作，允许自定义错误处理逻辑。 | | @ExitCondition | 仅在 LoopAgent 上可用，用于定义循环的退出谓词，必须返回 boolean | | @ParallelExecutor | 仅在 ParallelAgent 和 ParallelMapperAgent 上可用，用于指定用于并行运行子智能体的执行器。 | | @AgentListenerSupplier | 返回在此智能体模式上注册的 AgentListener。 | | @PlannerSupplier | 返回此智能体模式使用的 Planner 实现。 | | @SupervisorRequest | 仅在 SupervisorAgent 上可用，用于定义将发送给监督者的请求。 |</p>
+
+<p>在前面的示例中，AgenticServices.createAgenticSystem() 方法也提供了一个 ChatModel，默认情况下用于创建此智能体系统中的所有子智能体，但是，也可以选择性地为给定子智能体指定不同的 ChatModel，方法是向其定义添加一个使用 @ChatModelSupplier 注解的静态方法，返回要用于该智能体的 ChatModel。例如，FoodExpert 智能体可以按如下方式定义其自己的 ChatModel：</p>
+
+<pre><code>public interface FoodExpert { @UserMessage(&quot;&quot;&quot; You are a great evening planner. Propose a list of 3 meals matching the given mood. The mood is {{mood}}. For each meal, just give the name of the meal. Provide a list with the 3 items and nothing else. &quot;&quot;&quot;) @Agent(outputKey = &quot;meals&quot;) List&lt;String&gt; findMeal(@V(&quot;mood&quot;) String mood); @ChatModelSupplier static ChatModel chatModel() { return FOOD_MODEL; }}</code></pre>
+
+<p>以类似的方式，在智能体接口中使用其他静态方法进行注解，可以以声明方式配置智能体的其他方面，例如其聊天记忆、它可以使用的工具等。请注意，虽然前面的注解列表仅适用于智能体模式，但下面的注解列表仅对基于 LLM 的最终智能体有意义，但 @AgentListenerSupplier 例外，它允许在智能体模式和最终智能体上注册监听器。此外，由于监督者模式是唯一在内部使用 LLM 的模式，因此可以在其上使用允许配置监督者本身使用的 ChatModel 的注解，例如 @ChatModelSupplier 和 @ChatMemoryProviderSupplier。除非下表中另有说明，否则这些方法必须没有参数。可用于此目的的注解列表如下：</p>
+
+<p>| 注解名称 | 描述 | | @ChatModelSupplier | 返回此智能体使用的 ChatModel。如果该方法没有参数，则它可以是固定模型；也可以是 AgenticScope 的函数。 | | @StreamingChatModelSupplier | 返回此智能体使用的 StreamingChatModel。如果该方法没有参数，则它可以是固定模型；也可以是 AgenticScope 的函数。 | | @ChatMemorySupplier | 返回此智能体使用的 ChatMemory。 | | @ChatMemoryProviderSupplier | 返回此智能体使用的 ChatMemoryProvider。此方法需要一个 Object 参数，用作所创建记忆的 memoryId。 | | @ContentRetrieverSupplier | 返回此智能体使用的 ContentRetriever。 | | @AgentListenerSupplier | 返回此智能体使用的 AgentListener。 | | @RetrievalAugmentorSupplier | 返回此智能体使用的 RetrievalAugmentor。 | | @ToolsSupplier | 返回此智能体使用的工具或工具集。它可以返回单个 Object 或 Object[] | | @ToolProviderSupplier | 返回此智能体使用的 ToolProvider。 | | @SystemMessageProviderSupplier | 提供动态系统消息。该方法接收 memoryId 作为 Object 并返回 String。 | | @UserMessageProviderSupplier | 提供动态用户消息。该方法接收 memoryId 作为 Object 并返回 String。 |</p>
+
+<p>为了给出此声明式 API 的另一个示例，让我们通过它重新定义在条件工作流部分中演示的 ExpertsAgent。</p>
+
+<pre><code>public interface ExpertsAgent { @ConditionalAgent(outputKey = &quot;response&quot;, subAgents = { MedicalExpert.class, TechnicalExpert.class, LegalExpert.class }) String askExpert(@V(&quot;request&quot;) String request); @ActivationCondition(MedicalExpert.class) static boolean activateMedical(@V(&quot;category&quot;) RequestCategory category) { return category == RequestCategory.MEDICAL; } @ActivationCondition(TechnicalExpert.class) static boolean activateTechnical(@V(&quot;category&quot;) RequestCategory category) { return category == RequestCategory.TECHNICAL; } @ActivationCondition(LegalExpert.class) static boolean activateLegal(@V(&quot;category&quot;) RequestCategory category) { return category == RequestCategory.LEGAL; }}</code></pre>
+
+<p>在这种情况下，@ActivationCondition 注解的值引用当使用该注解的方法返回 true 时将被激活的智能体类集合。</p>
+
+<p>请注意，还可以混合使用编程式和声明式风格来定义智能体和智能体系统，因此可以部分使用注解配置智能体，部分使用智能体构建器。也允许以声明方式完全定义智能体，然后以编程方式使用该智能体的类作为子智能体来实现智能体系统。例如，可以按如下方式以声明方式定义 CreativeWriter 和 AudienceEditor 智能体：</p>
+
+<pre><code>public interface CreativeWriter { @UserMessage(&quot;&quot;&quot; You are a creative writer. Generate a draft of a story long no more than 3 sentence around the given topic. Return only the story and nothing else. The topic is {{topic}}. &quot;&quot;&quot;) @Agent(description = &quot;Generate a story based on the given topic&quot;, outputKey = &quot;story&quot;) String generateStory(@V(&quot;topic&quot;) String topic); @ChatModelSupplier static ChatModel chatModel() { return baseModel(); }}public interface AudienceEditor { @UserMessage(&quot;&quot;&quot; You are a professional editor. Analyze and rewrite the following story to better align with the target audience of {{audience}}. Return only the story and nothing else. The story is &quot;{{story}}&quot;. &quot;&quot;&quot;) @Agent(description = &quot;Edit a story to better fit a given audience&quot;, outputKey = &quot;story&quot;) String editStory(@V(&quot;story&quot;) String story, @V(&quot;audience&quot;) String audience); @ChatModelSupplier static ChatModel chatModel() { return baseModel(); }}</code></pre>
+
+<p>然后只需使用它们的类作为子智能体即可按顺序以编程方式连接它们。</p>
+
+<pre><code>UntypedAgent novelCreator = AgenticServices.sequenceBuilder() .subAgents(CreativeWriter.class, AudienceEditor.class) .outputKey(&quot;story&quot;) .build();Map&lt;String, Object&gt; input = Map.of( &quot;topic&quot;, &quot;dragons and wizards&quot;, &quot;audience&quot;, &quot;young adults&quot;);String story = (String) novelCreator.invoke(input);</code></pre>
+
+<h2>强类型输入和输出</h2>
+
+<p>到目前为止，用于向智能体传递数据以及从智能体接收数据的所有输入和输出键都是通过简单的 String 标识的。但是，这种方法可能容易出错，因为它依赖于这些键的正确拼写。此外，这种方式无法将这些变量强绑定到特定类型，因此在从 AgenticScope 读取它们的值时必须进行类型检查和类型转换。为避免这些问题，可以选择使用 TypedKey 接口定义强类型的输入和输出键。</p>
+
+<p>例如，按照此方法，在介绍条件工作流时讨论的专家路由示例中使用的输入和输出键可以定义如下：</p>
+
+<pre><code>public static class UserRequest implements TypedKey&lt;String&gt; { }public static class ExpertResponse implements TypedKey&lt;String&gt; { }public static class Category implements TypedKey&lt;RequestCategory&gt; { @Override public RequestCategory defaultValue() { return RequestCategory.UNKNOWN; }}</code></pre>
+
+<p>这里 UserRequest 和 ExpertResponse 键都被强类型化为 String，而 Category 键被类型化为 RequestCategory 枚举，并且还提供了在该键不在 AgenticScope 中时使用的默认值。使用这些类型化的键，用于对用户请求进行分类的 CategoryRouter 智能体可以重新定义如下：</p>
+
+<pre><code>public interface CategoryRouter { @UserMessage(&quot;&quot;&quot; Analyze the following user request and categorize it as &#x27;legal&#x27;, &#x27;medical&#x27; or &#x27;technical&#x27;. In case the request doesn&#x27;t belong to any of those categories categorize it as &#x27;unknown&#x27;. Reply with only one of those words and nothing else. The user request is: &#x27;{{UserRequest}}&#x27;. &quot;&quot;&quot;) @Agent(description = &quot;Categorizes a user request&quot;, typedOutputKey = Category.class) RequestCategory classify(@K(UserRequest.class) String request);}</code></pre>
+
+<p>classify 方法的参数现在使用 @K 注解进行注解，表明其值必须取自由 UserRequest 类型键标识的 AgenticScope 变量。类似地，该智能体的输出将写入由 Category 类型键标识的 AgenticScope 变量。请注意，提示词模板也已更新为使用类型键的名称，默认情况下该名称对应于实现 TypedKey 接口的类的简单名称，在本例中为 {{UserRequest}}，但也可以通过实现 TypedKey 接口的 name() 方法来覆盖此约定。类似地，三个专家类智能体之一（MedicalExpert）可以重新定义如下：</p>
+
+<pre><code>public interface MedicalExpert { @UserMessage(&quot;&quot;&quot; You are a medical expert. Analyze the following user request under a medical point of view and provide the best possible answer. The user request is {{UserRequest}}. &quot;&quot;&quot;) @Agent(&quot;A medical expert&quot;) String medical(@K(UserRequest.class) String request);}</code></pre>
+
+<p>此时可以使用这些类型化的键创建整个智能体系统，以标识 AgenticScope 中的输入和输出变量。</p>
+
+<pre><code>CategoryRouter routerAgent = AgenticServices.agentBuilder(CategoryRouter.class) .chatModel(baseModel()) .build();MedicalExpert medicalExpert = AgenticServices.agentBuilder(MedicalExpert.class) .chatModel(baseModel()) .outputKey(ExpertResponse.class) .build();LegalExpert legalExpert = AgenticServices.agentBuilder(LegalExpert.class) .chatModel(baseModel()) .outputKey(ExpertResponse.class) .build();TechnicalExpert technicalExpert = AgenticServices.agentBuilder(TechnicalExpert.class) .chatModel(baseModel()) .outputKey(ExpertResponse.class) .build();UntypedAgent expertsAgent = AgenticServices.conditionalBuilder() .subAgents(scope -&gt; scope.readState(Category.class) == RequestCategory.MEDICAL, medicalExpert) .subAgents(scope -&gt; scope.readState(Category.class) == RequestCategory.LEGAL, legalExpert) .subAgents(scope -&gt; scope.readState(Category.class) == RequestCategory.TECHNICAL, technicalExpert) .build();ExpertChatbot expertChatbot = AgenticServices.sequenceBuilder(ExpertChatbot.class) .subAgents(routerAgent, expertsAgent) .outputKey(ExpertResponse.class) .build();String response = expertChatbot.ask(&quot;I broke my leg what should I do&quot;);</code></pre>
+
+<p>routerAgent 不需要以编程方式指定输出键，因为它已通过其接口中 @Agent 注解的 typedOutputKey 属性定义，而三个专家智能体仍需要以编程方式指定它，因为它们的接口未定义它，所以和往常一样，可以使用两种方法中的任何一种。此外，值得注意的是，当从 AgenticScope 读取值时（例如在条件工作流定义中），无需执行任何类型检查或类型转换，因为类型键已经提供了必要的类型信息。</p>
+
+<h2>纯智能体 AI</h2>
+
+<p>到目前为止，所有智能体都已通过确定性工作流连接和组合以创建智能体系统。但是，在某些情况下，智能体系统需要更加灵活和自适应，允许智能体根据上下文和先前交互的结果来决定如何进行。这通常被称为“纯智能体 AI”。</p>
+
+<p>为此，langchain4j-agentic 模块开箱即用地提供了一个监督者智能体（supervisor agent），该智能体可以接收一组子智能体，并能够自主生成计划，决定下一步调用哪个智能体，或者分配的任务是否已完成。</p>
+
+<p>为了提供其工作原理的示例，让我们定义几个可以从银行账户中存取款或将给定金额从一种货币兑换为另一种货币的智能体。</p>
+
+<pre><code>public interface WithdrawAgent { @SystemMessage(&quot;&quot;&quot; You are a banker that can only withdraw US dollars (USD) from a user account, &quot;&quot;&quot;) @UserMessage(&quot;&quot;&quot; Withdraw {{amount}} USD from {{user}}&#x27;s account and return the new balance. &quot;&quot;&quot;) @Agent(&quot;A banker that withdraw USD from an account&quot;) String withdraw(@V(&quot;user&quot;) String user, @V(&quot;amount&quot;) Double amount);}public interface CreditAgent { @SystemMessage(&quot;&quot;&quot; You are a banker that can only credit US dollars (USD) to a user account, &quot;&quot;&quot;) @UserMessage(&quot;&quot;&quot; Credit {{amount}} USD to {{user}}&#x27;s account and return the new balance. &quot;&quot;&quot;) @Agent(&quot;A banker that credit USD to an account&quot;) String credit(@V(&quot;user&quot;) String user, @V(&quot;amount&quot;) Double amount);}public interface ExchangeAgent { @UserMessage(&quot;&quot;&quot; You are an operator exchanging money in different currencies. Use the tool to exchange {{amount}} {{originalCurrency}} into {{targetCurrency}} returning only the final amount provided by the tool as it is and nothing else. &quot;&quot;&quot;) @Agent(&quot;A money exchanger that converts a given amount of money from the original to the target currency&quot;) Double exchange(@V(&quot;originalCurrency&quot;) String originalCurrency, @V(&quot;amount&quot;) Double amount, @V(&quot;targetCurrency&quot;) String targetCurrency);}</code></pre>
+
+<p>所有这些智能体都使用外部工具来执行其任务，具体来说是一个 BankTool，可用于从用户账户中存取款：</p>
+
+<pre><code>public class BankTool { private final Map&lt;String, Double&gt; accounts = new HashMap&lt;&gt;(); void createAccount(String user, Double initialBalance) { if (accounts.containsKey(user)) { throw new RuntimeException(&quot;Account for user &quot; + user + &quot; already exists&quot;); } accounts.put(user, initialBalance); } double getBalance(String user) { Double balance = accounts.get(user); if (balance == null) { throw new RuntimeException(&quot;No balance found for user &quot; + user); } return balance; } @Tool(&quot;Credit the given user with the given amount and return the new balance&quot;) Double credit(@P(&quot;user name&quot;) String user, @P(&quot;amount&quot;) Double amount) { Double balance = accounts.get(user); if (balance == null) { throw new RuntimeException(&quot;No balance found for user &quot; + user); } Double newBalance = balance + amount; accounts.put(user, newBalance); return newBalance; } @Tool(&quot;Withdraw the given amount with the given user and return the new balance&quot;) Double withdraw(@P(&quot;user name&quot;) String user, @P(&quot;amount&quot;) Double amount) { Double balance = accounts.get(user); if (balance == null) { throw new RuntimeException(&quot;No balance found for user &quot; + user); } Double newBalance = balance - amount; accounts.put(user, newBalance); return newBalance; }}</code></pre>
+
+<p>以及一个 ExchangeTool，可用于将一种货币兑换为另一种货币（也许使用提供最新汇率的 REST 服务）：</p>
+
+<pre><code>public class ExchangeTool { @Tool(&quot;Exchange the given amount of money from the original to the target currency&quot;) Double exchange(@P(&quot;originalCurrency&quot;) String originalCurrency, @P(&quot;amount&quot;) Double amount, @P(&quot;targetCurrency&quot;) String targetCurrency) { // 调用 REST 服务以获取汇率 }}</code></pre>
+
+<p>现在可以像往常一样使用 AgenticServices.agentBuilder() 方法创建这些智能体的实例，将它们配置为使用这些工具，然后将它们用作监督者智能体的子智能体。</p>
+
+<pre><code>BankTool bankTool = new BankTool();bankTool.createAccount(&quot;Mario&quot;, 1000.0);bankTool.createAccount(&quot;Georgios&quot;, 1000.0);WithdrawAgent withdrawAgent = AgenticServices .agentBuilder(WithdrawAgent.class) .chatModel(BASE_MODEL) .tools(bankTool) .build();CreditAgent creditAgent = AgenticServices .agentBuilder(CreditAgent.class) .chatModel(BASE_MODEL) .tools(bankTool) .build();ExchangeAgent exchangeAgent = AgenticServices .agentBuilder(ExchangeAgent.class) .chatModel(BASE_MODEL) .tools(new ExchangeTool()) .build();SupervisorAgent bankSupervisor = AgenticServices .supervisorBuilder() .chatModel(PLANNER_MODEL) .subAgents(withdrawAgent, creditAgent, exchangeAgent) .responseStrategy(SupervisorResponseStrategy.SUMMARY) .build();</code></pre>
+
+<p>请注意，子智能体也可以是实现工作流的复杂智能体，监督者会将其视为单个智能体。</p>
+
+<p>生成的 SupervisorAgent 通常将用户请求作为输入并生成响应，因此其签名如下所示：</p>
+
+<pre><code>public interface SupervisorAgent { @Agent String invoke(@V(&quot;request&quot;) String request);}</code></pre>
+
+<p>现在让我们假设使用此请求调用此智能体：</p>
+
+<pre><code>bankSupervisor.invoke(&quot;Transfer 100 EUR from Mario&#x27;s account to Georgios&#x27; one&quot;)</code></pre>
+
+<p>内部发生的情况是，监督者智能体将分析该请求并制定完成任务的计划，该计划由一系列 AgentInvocation 组成：</p>
+
+<pre><code>public record AgentInvocation(String agentName, Map&lt;String, String&gt; arguments) {}</code></pre>
+
+<p>例如，对于前面的请求，监督者可能会生成以下调用序列：</p>
+
+<pre><code>AgentInvocation{agentName=&#x27;exchange&#x27;, arguments={originalCurrency=EUR, amount=100, targetCurrency=USD}}AgentInvocation{agentName=&#x27;withdraw&#x27;, arguments={user=Mario, amount=115.0}}AgentInvocation{agentName=&#x27;credit&#x27;, arguments={user=Georgios, amount=115.0}}AgentInvocation{agentName=&#x27;done&#x27;, arguments={response=The transfer of 100 EUR from Mario&#x27;s account to Georgios&#x27; account has been completed. Mario&#x27;s balance is 885.0 USD, and Georgios&#x27; balance is 1.22.0 USD. The conversion rate was 1.15 EUR to USD.}}</code></pre>
+
+<p>最后一次调用是一个特殊的调用，表示监督者认为任务已经完成，并返回所有已执行操作的摘要作为响应。</p>
+
+<p>在许多情况下（例如本例），此摘要是应返回给用户的最终响应，但并非总是如此。假设你使用 SupervisorAgent 而不是普通的顺序工作流来创建故事并根据给定的风格和受众对其进行编辑，就像在最早的示例中那样。在这种情况下，用户只对最终故事感兴趣，而不是创建它的中间步骤的摘要。</p>
+
+<p>返回由最后调用的智能体生成的响应（而不是摘要）实际上是最常见的情况，因此这也是监督者智能体的默认行为。然而，对于这种情况，返回所有已执行事务的摘要更为合适，因此已通过 responseStrategy 方法对 SupervisorAgent 进行了相应的配置。</p>
+
+<p>下一节将讨论监督者智能体的此配置以及其他可能的自定义。</p>
+
+<h3>监督者的设计与自定义</h3>
+
+<p>更一般而言，在某些情况下可能无法预先确定监督者生成的摘要与最后调用的智能体的最后响应中的哪一个是应返回的最合适的响应。对于这些情况，已提供第二个智能体，该智能体接收这两个可能的响应以及原始用户请求，并对它们进行评分以决定哪一个更适合该请求，然后决定返回哪一个。</p>
+
+<p>SupervisorResponseStrategy 枚举使得启用此评分智能体或始终返回两个响应之一（跳过评分过程）成为可能。</p>
+
+<pre><code>public enum SupervisorResponseStrategy { SCORED, SUMMARY, LAST}</code></pre>
+
+<p>如前所述，默认行为是 LAST，其他策略实现可以使用 responseStrategy 方法在监督者智能体上进行配置。</p>
+
+<pre><code>AgenticServices.supervisorBuilder() .responseStrategy(SupervisorResponseStrategy.SCORED) .build();</code></pre>
+
+<p>例如，在银行示例中使用 SCORED 策略，它可能会产生以下响应分数：</p>
+
+<pre><code>ResponseScore{finalResponse=0.3, summary=1.0}</code></pre>
+
+<p>从而使监督者智能体将摘要作为对用户请求的最终响应返回。</p>
+
+<p>到目前为止描述的监督者智能体的体系结构如下图所示：</p>
+
+<p>监督者用于决定下一步要采取的操作的信息是其另一个关键方面。默认情况下，监督者仅使用本地聊天记忆，但在某些情况下，向其提供更全面的上下文（通过对子智能体的对话进行摘要生成）非常有用，这非常类似于上一节中关于上下文工程所讨论的内容，甚至可以同时结合这两种方法。这 3 种可能性由以下枚举表示：</p>
+
+<pre><code>public enum SupervisorContextStrategy { CHAT_MEMORY, SUMMARIZATION, CHAT_MEMORY_AND_SUMMARIZATION}</code></pre>
+
+<p>可以在使用上下文监督方法构建监督者智能体时设置 contextGenerationStrategy 方法：</p>
+
+<pre><code>AgenticServices.supervisorBuilder() .contextGenerationStrategy(SupervisorContextStrategy.SUMMARIZATION) .build();</code></pre>
+
+<p>监督者智能体的其他自定义点可能最终在将来实现并提供。</p>
+
+<h3>向监督者提供上下文</h3>
+
+<p>在许多实际场景中，监督者可以从可选上下文中受益：应指导规划的约束、政策或偏好（例如“优先使用内部工具”、“不调用外部服务”、“货币必须是 USD”等）。</p>
+
+<p>该上下文存储在 AgenticScope 中的变量中，名为 supervisorContext。你可以通过两种方式提供它：</p>
+
+<ul><li>构建时配置：</li></ul>
+
+<pre><code>SupervisorAgent bankSupervisor = AgenticServices .supervisorBuilder() .chatModel(PLANNER_MODEL) .supervisorContext(&quot;Policies: prefer internal tools; currency USD; no external APIs&quot;) .subAgents(withdrawAgent, creditAgent, exchangeAgent) .responseStrategy(SupervisorResponseStrategy.SUMMARY) .build();</code></pre>
+
+<ul><li>调用（类型化监督者）：添加使用 @V(&quot;supervisorContext&quot;) 注解的参数：</li></ul>
+
+<pre><code>public interface SupervisorAgent { @Agent String invoke(@V(&quot;request&quot;) String request, @V(&quot;supervisorContext&quot;) String supervisorContext);}// 示例调用（覆盖此次调用的构建时值）bankSupervisor.invoke( &quot;Transfer 100 EUR from Mario&#x27;s account to Georgios&#x27; one&quot;, &quot;Policies: convert to USD first; use bank tools only; no external APIs&quot;);</code></pre>
+
+<ul><li>调用（无类型监督者）：在输入映射中设置 supervisorContext：</li></ul>
+
+<pre><code>Map&lt;String, Object&gt; input = Map.of( &quot;request&quot;, &quot;Transfer 100 EUR from Mario&#x27;s account to Georgios&#x27; one&quot;, &quot;supervisorContext&quot;, &quot;Policies: convert to USD first; use bank tools only; no external APIs&quot;);String result = (String) bankSupervisor.invoke(input);</code></pre>
+
+<p>如果两者都提供，则调用值将覆盖构建时的 supervisorContext。</p>
+
+<h2>自定义智能体模式</h2>
+
+<p>到目前为止讨论的智能体模式由 langchain4j-agentic 模块开箱即用地提供，但如果它们都不适合你的应用程序的特定需求怎么办？在这种情况下，可以创建你自己的自定义模式，以适合你需求的方式编排一组子智能体之间的交互。</p>
+
+<p>更详细地说，智能体模式只是它所协调的子智能体的执行计划的规范。此计划可以通过实现以下 Planner 接口来定义：</p>
+
+<pre><code>public interface Planner { default void init(InitPlanningContext initPlanningContext) { } default Action firstAction(PlanningContext planningContext) { return nextAction(planningContext); } Action nextAction(PlanningContext planningContext);}</code></pre>
+
+<p>该接口具有三个方法：init、firstAction 和 nextAction。init 方法在执行开始时被调用一次，可用于初始化规划器所需的任何状态或数据结构。firstAction 方法被调用以确定智能体模式要采取的第一个操作，而 nextAction 方法在每次智能体执行后被调用，以根据 AgenticScope 的当前状态和先前智能体执行的结果确定要采取的下一个操作。</p>
+
+<p>请注意，引入 firstAction 方法仅是因为在许多情况下，方便使用一个单独的回调来定义 Planner 要调用的第一个智能体。但是，对于不需要此区别的情况，它提供了一个默认实现，只需将调用转发到 nextAction 方法，因此不必严格重写它。</p>
+
+<p>由 firstAction 和 nextAction 方法返回的 Action 类表示智能体模式要采取的下一步，可以是一个或多个要调用的子智能体的列表，也可以是表示执行已完成的信号。如果该操作仅指定一个子智能体调用，则它将按顺序执行，并在执行规划器本身的同一线程中执行，而如果有一个以上，它们将使用提供的 Executor 或 LangChain4j 默认的 Executor 并行执行。</p>
+
+<p>所有内置的智能体模式也使用此 Planner 抽象编写，了解其实现可以阐明其工作原理，并可作为创建你自己自定义模式的良好起点。例如，并行工作流可能是这些实现中最简单的，它定义如下：</p>
+
+<pre><code>public class ParallelPlanner implements Planner { private List&lt;AgentInstance&gt; agents; @Override public void init(InitPlanningContext initPlanningContext) { this.agents = initPlanningContext.subagents(); } @Override public Action firstAction(PlanningContext planningContext) { return call(agents); } @Override public Action nextAction(PlanningContext planningContext) { return done(); }}</code></pre>
+
+<p>这里 init 方法仅存储并行工作流配置的子智能体列表，而 firstAction 方法返回一个并行调用所有这些智能体的操作。一旦此并行执行完成，就不需要执行其他任何操作，因此 nextAction 方法仅返回用于表示执行终止的 done()。</p>
+
+<p>实现顺序工作流的 Planner 仅稍微复杂一些，因为它需要使用内部游标跟踪要调用的下一个子智能体，然后在 nextAction 方法中返回适当的操作，或者在已调用所有子智能体时发出执行终止的信号。</p>
+
+<pre><code>public class SequentialPlanner implements Planner { private List&lt;AgentInstance&gt; agents; private int agentCursor = 0; @Override public void init(InitPlanningContext initPlanningContext) { this.agents = initPlanningContext.subagents(); } @Override public Action nextAction(PlanningContext planningContext) { return agentCursor &gt;= agents.size() ? done() : call(agents.get(agentCursor++)); }}</code></pre>
+
+<p>要了解如何从规划器实现定义智能体系统，例如，可以按以下方式创建一个前面讨论的顺序工作流实例，用于为某个主题生成小说，然后针对特定风格和受众对其进行编辑：</p>
+
+<pre><code>UntypedAgent novelCreator = AgenticServices.plannerBuilder() .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .planner(SequentialPlanner::new) .build();</code></pre>
+
+<p>它完全等效于使用顺序工作流的专用 API：</p>
+
+<pre><code>UntypedAgent novelCreator = AgenticServices.sequenceBuilder() .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>plannerBuilder() 方法与所有其他智能体构建器类似，唯一的区别是它需要提供一个 Supplier&lt;Planner&gt;，返回此智能体系统要使用的特定规划器的新实例。当然，实现自定义规划器的智能体系统可以与 langchain4j-agentic 模块开箱即用提供的任何其他智能体模式无缝组合。</p>
+
+<p>在阐明了此 Planner 抽象的工作原理之后，现在可以通过实现它来创建你自己的自定义智能体模式。以下部分讨论了 langchain4j-agentic-patterns 模块中提供的两个自定义模式示例，它们在不同的场景中可能很有用。可以使用相同的方法创建其他自定义模式，并可以将其回馈给 LangChain4j 项目。</p>
+
+<h3>面向目标的智能体模式</h3>
+
+<p>工作流模式和监督者智能体代表了可能的智能体系统范围的两个端点：前者是完全确定且严格的，强制提前决定要调用的智能体序列，而后者是完全灵活且自适应的，但将调用的智能体序列的决定委托给非确定性 LLM。但是，在某些情况下，这两者之间的中间地带可能更合适，允许智能体以相对灵活的方式朝着特定目标工作，但也以算法方式确定应如何调用这些智能体。</p>
+
+<p>为了将此方法付诸实践，不仅整个智能体系统需要定义目标，而且每个子智能体也需要声明其自己的前置条件和后置条件。这对于计算导致以最快速度实现目标的智能体调用序列是必要的。但是，所有这些信息已经隐含地存在于智能体系统中，因为这些前置条件和后置条件只不过是每个智能体的所需输入和产生的输出，而最终目标就是整个智能体系统期望的输出。</p>
+
+<p>按照这个想法，可以计算参与智能体系统的所有子智能体的依赖关系图，然后实现一个 Planner，该 Planner 能够分析 AgenticScope 的初始状态，将其与期望的目标进行比较，然后使用该图来确定可以导致实现该目标的智能体调用序列。</p>
+
+<pre><code>public class GoalOrientedPlanner implements Planner { private String goal; private GoalOrientedSearchGraph graph; private List&lt;AgentInstance&gt; path; private int agentCursor = 0; @Override public void init(InitPlanningContext initPlanningContext) { this.goal = initPlanningContext.plannerAgent().outputKey(); this.graph = new GoalOrientedSearchGraph(initPlanningContext.subagents()); } @Override public Action firstAction(PlanningContext planningContext) { path = graph.search(planningContext.agenticScope().state().keySet(), goal); if (path.isEmpty()) { throw new IllegalStateException(&quot;No path found for goal: &quot; + goal); } return call(path.get(agentCursor++)); } @Override public Action nextAction(PlanningContext planningContext) { return agentCursor &gt;= path.size() ? done() : call(path.get(agentCursor++)); }}</code></pre>
+
+<p>如前所述，此处目标与基于规划器的智能体模式本身的最终输出相一致，而从初始状态到目标的路径是使用 GoalOrientedSearchGraph 计算的，该图通过分析所有子智能体的输入和输出键构建。然后将所调用的智能体序列计算为从当前状态到期望目标的该图上的最短路径。</p>
+
+<p>为了给出其工作原理的实际示例，让我们尝试构建一个面向目标的智能体系统，该系统可以从提示词中提取一个人的姓名和星座符号，为该星座生成星座运势，在互联网上查找相关的故事，最后创建一份结合所有这些信息的精美文档。我们可以使用以下 5 个智能体完成这组任务：</p>
+
+<pre><code>public interface HoroscopeGenerator { @SystemMessage(&quot;You are an astrologist that generates horoscopes based on the user&#x27;s name and zodiac sign.&quot;) @UserMessage(&quot;Generate the horoscope for {{person}} who is a {{sign}}.&quot;) @Agent(&quot;An astrologist that generates horoscopes based on the user&#x27;s name and zodiac sign.&quot;) String horoscope(@V(&quot;person&quot;) Person person, @V(&quot;sign&quot;) Sign sign);}public interface PersonExtractor { @UserMessage(&quot;Extract a person from the following prompt: {{prompt}}&quot;) @Agent(&quot;Extract a person from user&#x27;s prompt&quot;) Person extractPerson(@V(&quot;prompt&quot;) String prompt);}public interface SignExtractor { @UserMessage(&quot;Extract the zodiac sign of a person from the following prompt: {{prompt}}&quot;) @Agent(&quot;Extract a person from user&#x27;s prompt&quot;) Sign extractSign(@V(&quot;prompt&quot;) String prompt);}public interface Writer { @UserMessage(&quot;&quot;&quot; Create an amusing writeup for {{person}} based on the following: - their horoscope: {{horoscope}} - a current news story: {{story}} &quot;&quot;&quot;) @Agent(&quot;Create an amusing writeup for the target person based on their horoscope and current news stories&quot;) String write(@V(&quot;person&quot;) Person person, @V(&quot;horoscope&quot;) String horoscope, @V(&quot;story&quot;) String story);}public interface StoryFinder { @SystemMessage(&quot;&quot;&quot; You&#x27;re a story finder, use the provided web search tools, calling it once and only once, to find a fictional and funny story on the internet about the user provided topic. &quot;&quot;&quot;) @UserMessage(&quot;&quot;&quot; Find a story on the internet for {{person}} who has the following horoscope: {{horoscope}}. &quot;&quot;&quot;) @Agent(&quot;Find a story on the internet for a given person with a given horoscope&quot;) String findStory(@V(&quot;person&quot;) Person person, @V(&quot;horoscope&quot;) String horoscope);}</code></pre>
+
+<p>利用前面开发的 GoalOrientedPlanner，可以按如下方式将这些智能体组合在面向目标的智能体系统中：</p>
+
+<pre><code>HoroscopeGenerator horoscopeGenerator = AgenticServices.agentBuilder(HoroscopeGenerator.class) .chatModel(baseModel()) .outputKey(&quot;horoscope&quot;) .build();PersonExtractor personExtractor = AgenticServices.agentBuilder(PersonExtractor.class) .chatModel(baseModel()) .outputKey(&quot;person&quot;) .build();SignExtractor signExtractor = AgenticServices.agentBuilder(SignExtractor.class) .chatModel(baseModel()) .outputKey(&quot;sign&quot;) .build();Writer writer = AgenticServices.agentBuilder(Writer.class) .chatModel(baseModel()) .outputKey(&quot;writeup&quot;) .build();StoryFinder storyFinder = AgenticServices.agentBuilder(StoryFinder.class) .chatModel(baseModel()) .tools(new WebSearchTool()) .outputKey(&quot;story&quot;) .build();UntypedAgent horoscopeAgent = AgenticServices.plannerBuilder() .subAgents(horoscopeGenerator, personExtractor, signExtractor, writer, storyFinder) .outputKey(&quot;writeup&quot;) .planner(GoalOrientedPlanner::new) .build();</code></pre>
+
+<p>如前所述，此智能体系统的总体目标是生成文档，这也是基于 GOAP 的规划器本身的输出键。考虑到所有子智能体的输入和输出，GoalOrientedSearchGraph 构建的依赖关系图如下所示：</p>
+
+<p>使用类似 &quot;My name is Mario and my zodiac sign is pisces&quot; 的提示词调用此智能体系统时：</p>
+
+<pre><code>Map&lt;String, Object&gt; input = Map.of(&quot;prompt&quot;, &quot;My name is Mario and my zodiac sign is pisces&quot;);String writeup = horoscopeAgent.invoke(input);</code></pre>
+
+<p>GoalOrientedPlanner 将分析 AgenticScope 的初始状态（其中仅包含 prompt 变量），然后计算从该初始状态到期望目标（即 writeup）的依赖关系图上的最短路径，因此生成的智能体调用序列将是：</p>
+
+<pre><code>Agents path sequence: [extractPerson, extractSign, horoscope, findStory, write]</code></pre>
+
+<p>请注意，如前所述，此面向目标的智能体模式可以与任何其他现有智能体模式混合和组合。例如，这种可能性可用于克服此方法的一个明显局限性，即由于针对遵循最短路径到达特定目标进行了优化，因此在结构上不允许循环，因此在某些情况下，将循环智能体模式作为此面向目标的智能体模式的子智能体可能会很有用。</p>
+
+<h3>点对点智能体模式</h3>
+
+<p>到目前为止讨论的所有智能体系统都基于集中式和分层体系结构。事实上，所有工作流模式都有一个明确定义的顶层智能体，以编程方式预定的方式协调多个子智能体的活动。即使是监督者模式（由于其基于 LLM 的规划器智能体的存在而更加灵活和动态），仍然依赖于协调智能体来控制各个子智能体之间的交互。这种类型的体系结构适用于许多应用和场景，但它们也可能具有一些局限性，特别是在可伸缩性和容错方面。这就是为什么我们可能希望为多智能体系统提供一种替代的点对点方法，该方法可以通过采用更加去中心化和分布式的策略来克服这些局限性。</p>
+
+<p>在点对点智能体系统中，没有任何顶层智能体，所有智能体都是同等的对等体，它们通过 AgenticScope 的状态进行协调。具体而言，智能体由其自身所需输入作为 AgenticScope 中的状态变量的存在来触发。随后，由不同智能体的输出产生的这些变量中的一个或多个的更改可以重新触发该智能体的调用。该过程要么在 AgenticScope 达到稳定状态且无法再调用任何智能体时终止，要么在满足预定义的退出条件时终止，要么在达到最大智能体调用次数时终止。实现此点对点智能体模式的 Planner 实现可以按如下方式编写：</p>
+
+<pre><code>public class P2PPlanner implements Planner { private final int maxAgentsInvocations; private final BiPredicate&lt;AgenticScope, Integer&gt; exitCondition; private int invocationCounter = 0; private Map&lt;String, AgentActivator&gt; agentActivators; public P2PPlanner(int maxAgentsInvocations, BiPredicate&lt;AgenticScope, Integer&gt; exitCondition) { this(null, maxAgentsInvocations, exitCondition); } @Override public void init(InitPlanningContext initPlanningContext) { this.agentActivators = initPlanningContext.subagents().stream().collect(toMap(AgentInstance::agentId, AgentActivator::new)); } @Override public Action nextAction(PlanningContext planningContext) { if (terminated(planningContext.agenticScope())) { return done(); } AgentActivator lastExecutedAgent = agentActivators.get(planningContext.previousAgentInvocation().agentId()); lastExecutedAgent.finishExecution(); agentActivators.values().forEach(a -&gt; a.onStateChanged(lastExecutedAgent.agent.outputKey())); return nextCallAction(planningContext.agenticScope()); } private Action nextCallAction(AgenticScope agenticScope) { AgentInstance[] agentsToCall = agentActivators.values().stream() .filter(agentActivator -&gt; agentActivator.canActivate(agenticScope)) .peek(AgentActivator::startExecution) .map(AgentActivator::agent) .toArray(AgentInstance[]::new); if (agentsToCall.length == 0 &amp;&amp; agentActivators.values().stream().noneMatch(AgentActivator::isExecuting)) { // 没有可以激活的智能体，并且没有任何智能体仍在运行：智能体范围已达到稳定状态 return done(); } invocationCounter += agentsToCall.length; return call(agentsToCall); } private boolean terminated(AgenticScope agenticScope) { return invocationCounter &gt; maxAgentsInvocations || exitCondition.test(agenticScope, invocationCounter); }}</code></pre>
+
+<p>这里 P2PPlanner 跟踪到目前为止已执行的智能体调用次数，并为每个子智能体使用 AgentActivator 来根据 AgenticScope 的当前状态确定是否可以调用它。nextAction 方法检查是否已满足退出条件或是否已达到最大调用次数，如果没有，它将根据当前状态标识所有可以激活的智能体，将其标记为已启动，并返回一个调用它们的操作。当无法激活任何智能体且没有任何智能体仍在运行时，智能体范围已达到稳定状态，规划器通过返回 done 操作来终止循环。</p>
+
+<p>为了给出其工作原理的实际示例，让我们尝试构建一个点对点智能体系统，该系统可以执行科学研究并针对给定主题制定新的假设，以便该服务的 API 可能类似于：</p>
+
+<pre><code>public interface ResearchAgent { @Agent(&quot;Conduct research on a given topic&quot;) String research(@V(&quot;topic&quot;) String topic);}</code></pre>
+
+<p>为此，可以定义以下 5 个智能体：</p>
+
+<pre><code>public interface LiteratureAgent { @SystemMessage(&quot;Search for scientific literature on the given topic and return a summary of the findings.&quot;) @UserMessage(&quot;&quot;&quot; You are a scientific literature search agent. Your task is to find relevant scientific papers on the topic provided by the user and summarize them. Use the provided tool to search for scientific papers and return a summary of your findings. The topic is: {{topic}} &quot;&quot;&quot;) @Agent(&quot;Search for scientific literature on a given topic&quot;) String searchLiterature(@V(&quot;topic&quot;) String topic);}public interface HypothesisAgent { @SystemMessage(&quot;Based on the research findings, formulate a clear and concise hypothesis related to the given topic.&quot;) @UserMessage(&quot;&quot;&quot; You are a hypothesis formulation agent. Your task is to formulate a clear and concise hypothesis based on the research findings provided by the user. The topic is: {{topic}} The research findings are: {{researchFindings}} &quot;&quot;&quot;) @Agent(&quot;Formulate hypothesis around a give topic based on research findings&quot;) String makeHypothesis(@V(&quot;topic&quot;) String topic, @V(&quot;researchFindings&quot;) String researchFindings);}public interface CriticAgent { @SystemMessage(&quot;Critically evaluate the given hypothesis related to the specified topic. Provide constructive feedback and suggest improvements if necessary.&quot;) @UserMessage(&quot;&quot;&quot; You are a critical evaluation agent. Your task is to critically evaluate the hypothesis provided by the user in relation to the specified topic. Provide constructive feedback and suggest improvements if necessary. If you need to, you can also perform additional research to validate or confute the hypothesis using the provided tool. The topic is: {{topic}} The hypothesis is: {{hypothesis}} &quot;&quot;&quot;) @Agent(&quot;Critically evaluate a hypothesis related to a given topic&quot;) String criticHypothesis(@V(&quot;topic&quot;) String topic, @V(&quot;hypothesis&quot;) String hypothesis);}public interface ValidationAgent { @SystemMessage(&quot;Validate the provided hypothesis on the given topic based on the critique provided.&quot;) @UserMessage(&quot;&quot;&quot; You are a validation agent. Your task is to validate the hypothesis provided by the user in relation to the specified topic based on the critique provided. Validate the provided hypothesis, either confirming it or reformulating a different hypothesis based on the critique. The topic is: {{topic}} The hypothesis is: {{hypothesis}} The critique is: {{critique}} &quot;&quot;&quot;) @Agent(&quot;Validate a hypothesis based on a given topic and critique&quot;) String validateHypothesis(@V(&quot;topic&quot;) String topic, @V(&quot;hypothesis&quot;) String hypothesis, @V(&quot;critique&quot;) String critique);}public interface ScorerAgent { @SystemMessage(&quot;Score the provided hypothesis on the given topic based on the critique provided.&quot;) @UserMessage(&quot;&quot;&quot; You are a scoring agent. Your task is to score the hypothesis provided by the user in relation to the specified topic based on the critique provided. Score the provided hypothesis on a scale from 0.0 to 1.0, where 0.0 means the hypothesis is completely invalid and 1.0 means the hypothesis is fully valid. The topic is: {{topic}} The hypothesis is: {{hypothesis}} The critique is: {{critique}} &quot;&quot;&quot;) @Agent(&quot;Score a hypothesis based on a given topic and critique&quot;) double scoreHypothesis(@V(&quot;topic&quot;) String topic, @V(&quot;hypothesis&quot;) String hypothesis, @V(&quot;critique&quot;) String critique);}</code></pre>
+
+<p>这些智能体都将配备能够对科学文献执行研究的工具（例如从 arXiv 下载学术论文），然后将其添加到 P2P 智能体系统中：</p>
+
+<pre><code>ArxivCrawler arxivCrawler = new ArxivCrawler();LiteratureAgent literatureAgent = AgenticServices.agentBuilder(LiteratureAgent.class) .chatModel(baseModel()) .tools(arxivCrawler) .outputKey(&quot;researchFindings&quot;) .build();HypothesisAgent hypothesisAgent = AgenticServices.agentBuilder(HypothesisAgent.class) .chatModel(baseModel()) .tools(arxivCrawler) .outputKey(&quot;hypothesis&quot;) .build();CriticAgent criticAgent = AgenticServices.agentBuilder(CriticAgent.class) .chatModel(baseModel()) .tools(arxivCrawler) .outputKey(&quot;critique&quot;) .build();ValidationAgent validationAgent = AgenticServices.agentBuilder(ValidationAgent.class) .chatModel(baseModel()) .tools(arxivCrawler) .outputKey(&quot;hypothesis&quot;) .build();ScorerAgent scorerAgent = AgenticServices.agentBuilder(ScorerAgent.class) .chatModel(baseModel()) .tools(arxivCrawler) .outputKey(&quot;score&quot;) .build();ResearchAgent researcher = AgenticServices.plannerBuilder(ResearchAgent.class) .subAgents(literatureAgent, hypothesisAgent, criticAgent, validationAgent, scorerAgent) .outputKey(&quot;hypothesis&quot;) .planner(() -&gt; new P2PPlanner(10, agenticScope -&gt; { if (!agenticScope.hasState(&quot;score&quot;)) { return false; } double score = agenticScope.readState(&quot;score&quot;, 0.0); System.out.println(&quot;Current hypothesis score: &quot; + score); return score &gt;= 0.85; })) .build();String hypothesis = researcher.research(&quot;black holes&quot;);</code></pre>
+
+<p>使用此配置，researcher p2p 协调器将接收研究主题。此时，唯一可以调用的智能体是 literatureAgent，因为它是唯一在 AgenticScope 中具有其所有必需输入（在本例中为 topic）的智能体。此智能体的调用会产生 researchFindings 变量，该变量将添加到 AgenticScope 状态，此新变量将触发 HypothesisAgent 的调用。然后它会产生一个假设，该假设又会触发 criticAgent。最后，ValidationAgent 同时接收假设和评论作为输入，并生成一个新假设，该假设最终会再次重新触发其他代理。同时，ScorerAgent 为假设打分，当该分数大于或等于 0.85 时，或者当已执行最多 10 次智能体调用时，该过程将终止。下图概述了此执行中涉及的所有智能体和变量。</p>
+
+<p>例如，此示例的典型运行可能因为 ScorerAgent 产生的分数高于预定阈值而终止：</p>
+
+<pre><code>Current hypothesis score: 0.95</code></pre>
+
+<p>最终输出可能类似于：</p>
+
+<pre><code>Based on the provided references, here are some key points about stochastic gravitational wave backgrounds (SGWBs) from primordial black holes (PBHs):1. **Detection Rates and Sources:** - The detection rate of gravity waves emitted during parabolic encounters of stellar black holes in globular clusters was estimated by Kocsis et al. [85]. - Gravitational wave bursts from PBH hyperbolic encounters were discussed by García-Bellido and Nesseris [93].2. **Energy Emission:** - The energy spectrum of gravitational waves from hyperbolic encounters was studied by De Vittori, Jetzer, and Klein [88]. - Gravitational wave energy emission and detection rates for PBH hyperbolic encounters were analyzed by García-Bellido and Nesseris [90].3. **Template Banks:** - Template banks for gravitational waveforms from coalescing binary black holes (including non-spinning binaries) were developed by Ajith et al. [92].4. **Constraints on PBH:** - Constraints on primordial black holes were reviewed by Carr, Kohri, Sendouda, and Yokoyama [98]. - Universal gravitational wave signatures of cosmological solitons were discussed by Lozanov, Sasaki, and Takhistov [100].5. **Induced SGWBs:** - Doubly peaked induced stochastic gravitational wave backgrounds were tested for baryogenesis from primordial black holes by Bhaumik et al. [101]. - Distinct signatures of spinning PBH domination and evaporation, including doubly peaked gravitational waves, dark relics, and CMB complementarity, were explored by Bhaumik et al. [101].6. **Future Detectors:** - Future detectors like Taiji, LISA, DECIGO, Big Bang Observer, Cosmic Explorer, Einstein Telescope, and KAGRA are expected to contribute significantly to the detection of SGWBs from PBHs.7. **Pulsar Timing Arrays:** - Pulsar timing arrays have been used to search for an isotropic stochastic gravitational wave background [73-75].8. **Template Banks and Simulations:** - Template banks like those developed by Ajith et al. are crucial for matching observed signals with theoretical predictions.</code></pre>
+
+<h3>黑板智能体模式</h3>
+
+<p>P2P 模式并行激活所有就绪的智能体，将它们视为同等的对等体。但是，在某些情况下，集中式调度程序应决定下一个要触发的单个智能体，并在多个智能体可以做出贡献时应用冲突解决。这就是黑板模式：智能体是将部分结果发布到 AgenticScope（黑板）的知识源，集中式规划器在每个步骤之后检查黑板以激活最合适的智能体。</p>
+
+<p>与 P2P 一样，当智能体的所有参数都在范围中时，它们会以隐式方式激活。关键的区别在于每个步骤仅触发一个智能体，当多个智能体就绪时，ConflictResolutionStrategy 决定哪个优先。如果未提供策略，则 subAgents 方法中的声明顺序将用作默认的决胜规则。</p>
+
+<p>BlackboardPlanner 在满足目标谓词或无法触发任何智能体（静止状态）时成功终止；如果在满足目标之前达到最大调用次数，则抛出 IllegalStateException。默认情况下，目标谓词检查规划器的 outputKey 是否存在于范围内 — 这是最常见的终止条件：</p>
+
+<pre><code>public class BlackboardPlanner implements Planner { private final Predicate&lt;AgenticScope&gt; goalPredicate; private final ConflictResolutionStrategy conflictResolutionStrategy; private final int maxInvocations; @Override public Action nextAction(PlanningContext planningContext) { // 在每个智能体完成后：// 1. 检查目标谓词 → 如果满足则返回 done()// 2. 查找其输入可用的所有智能体// 3. 通过冲突解决（或声明顺序）选择最佳的智能体// 4. 返回 call(selectedAgent) — 每个步骤始终恰好一个智能体 }}</code></pre>
+
+<p>ConflictResolutionStrategy 是一个函数式接口，它接收当前范围和所有准备触发的候选智能体，并返回应激活的智能体。</p>
+
+<pre><code>@FunctionalInterfacepublic interface ConflictResolutionStrategy { AgentInstance resolve(AgenticScope scope, List&lt;AgentInstance&gt; candidates);}</code></pre>
+
+<p>该接口附带一些方便的工厂方法，以及一个用于将多个策略链接在一起的 or 组合器。例如，declarationOrder() 仅选择第一个候选者，保留 subAgents 方法中使用的顺序，而 agentOfType 选择与给定类型匹配的候选者 — 可选地由 AgenticScope 上的条件保护，并在条件不满足或不存在该类型的候选者时返回 null。or 组合器链接两个策略：如果第一个返回 null，则尝试第二个。它们一起使你可以构建像 agentOfType(X.class, condition).or(declarationOrder()) 这样的管道，读作“当条件成立时优先选择 X 类型的智能体，否则回退到声明顺序”。</p>
+
+<p>作为实际示例，请考虑一个医学诊断系统，其中专家智能体将发现发布到黑板，并且仅在积累了足够的证据后才生成诊断。智能体的触发顺序不是预先确定的，而是取决于可用数据：</p>
+
+<pre><code>SymptomExtractor symptomExtractor = AgenticServices.agentBuilder(SymptomExtractor.class) .chatModel(baseModel()).build();LabResultAnalyzer labAnalyzer = AgenticServices.agentBuilder(LabResultAnalyzer.class) .chatModel(baseModel()).build();DrugInteractionChecker drugInteraction = AgenticServices.agentBuilder(DrugInteractionChecker.class) .chatModel(baseModel()).build();DiagnosisAgent diagnosis = AgenticServices.agentBuilder(DiagnosisAgent.class) .chatModel(baseModel()).build();MedicalDiagnostics diagnostics = AgenticServices.plannerBuilder(MedicalDiagnostics.class) .subAgents(symptomExtractor, labAnalyzer, drugInteraction, diagnosis) .planner(BlackboardPlanner::new) .outputKey(&quot;diagnosis&quot;) .build();String result = diagnostics.diagnose(patientInput, labResults, medications);</code></pre>
+
+<p>SymptomExtractor 首先触发，因为其唯一输入（patientInput）从一开始就可用。一旦提取了症状，LabResultAnalyzer 和 DrugInteractionChecker 都可能符合条件 — 但每个步骤仅触发一个。最后，当症状和 labAnalysis 都在黑板上时，DiagnosisAgent 触发。系统终止的原因是默认目标谓词检测到 &quot;diagnosis&quot;（规划器的 outputKey）现在存在于范围中。当终止条件更复杂时，可以向 BlackboardPlanner 构造函数提供自定义目标谓词。</p>
+
+<p>当临床上下文对智能体排序很重要时，ConflictResolutionStrategy 可以检查范围状态以做出明智的决策。例如，如果患者的症状提到药物或副作用，则应优先于实验室分析进行药物相互作用分析。</p>
+
+<pre><code>MedicalDiagnostics diagnostics = AgenticServices.plannerBuilder(MedicalDiagnostics.class) .subAgents(symptomExtractor, labAnalyzer, drugInteraction, diagnosis) .planner(() -&gt; new BlackboardPlanner( agentOfType(DrugInteractionChecker.class, scope -&gt; { String symptoms = scope.readState(&quot;symptoms&quot;, &quot;&quot;); return symptoms.toLowerCase().contains(&quot;medication&quot;) || symptoms.toLowerCase().contains(&quot;drug&quot;); }) .or(declarationOrder()))) .outputKey(&quot;diagnosis&quot;) .build();</code></pre>
+
+<p>为了丰富此示例，HumanInTheLoop 智能体也可以直接作为知识源参与黑板。inputKey 方法声明人类审阅者所依赖的范围键，以便黑板仅在该数据可用时激活它。其 outputKey 设置为 &quot;symptoms&quot; — 当审阅者拒绝诊断时，返回值将使用附加信息覆盖症状，从而自然地重新触发依赖于症状的所有智能体：</p>
+
+<pre><code>HumanInTheLoop humanReview = AgenticServices.humanInTheLoopBuilder() .description(&quot;Review the diagnosis and decide whether to approve or request additional analysis&quot;) .outputKey(&quot;symptoms&quot;) .inputKey(String.class, &quot;diagnosis&quot;) .responseProvider(scope -&gt; { String diagnosis = scope.readState(&quot;diagnosis&quot;, &quot;&quot;); String symptoms = scope.readState(&quot;symptoms&quot;, &quot;&quot;); if (!isAcceptable(diagnosis)) { return symptoms + &quot;. Patient also reports blurred vision.&quot;; } scope.writeState(&quot;approvedDiagnosis&quot;, diagnosis); return symptoms; }) .build();MedicalDiagnostics diagnostics = AgenticServices.plannerBuilder(MedicalDiagnostics.class) .subAgents(symptomExtractor, labAnalyzer, drugInteraction, diagnosisAgent, humanReview) .planner(() -&gt; new BlackboardPlanner( scope -&gt; scope.hasState(&quot;approvedDiagnosis&quot;), agentOfType(DrugInteractionChecker.class, scope -&gt; { String symptoms = scope.readState(&quot;symptoms&quot;, &quot;&quot;); return symptoms.toLowerCase().contains(&quot;medication&quot;) || symptoms.toLowerCase().contains(&quot;drug&quot;); }) .or(declarationOrder()))) .outputKey(&quot;approvedDiagnosis&quot;) .build();</code></pre>
+
+<p>inputKey(String.class, &quot;diagnosis&quot;) 告诉黑板审阅者仅应在 &quot;diagnosis&quot; 出现在范围中时才激活。当审阅者拒绝时，返回值（增强的症状）将通过 HITL 的 outputKey 写入 &quot;symptoms&quot; 键。然后黑板的正常 onStateChanged(&quot;symptoms&quot;) 机制重新激活依赖于症状的智能体（例如 DrugInteractionChecker 和 DiagnosisAgent），从而为下一次审阅生成修订后的诊断。请注意，在此第二个实现中，通过 BlackboardPlanner 实现的 MedicalDiagnostics 的 outputKey 已从 &quot;diagnosis&quot; 更改为 &quot;approvedDiagnosis&quot;，以便让 HumanInTheLoop 有机会参与智能体系统的执行。这样，当审阅者批准时，它会将 &quot;approvedDiagnosis&quot; 写入 AgenticScope，从而满足目标谓词。</p>
+
+<h3>投票智能体模式</h3>
+
+<p>到目前为止讨论的智能体模式都协调执行不同操作的智能体 — 它们拆分工作、按顺序排列任务或路由决策。但是，在某些情况下，你希望多个智能体独立解决同一问题，然后聚合它们的答案以生成更稳健的结果。这就是投票（或理事会）模式：并行运行所有子智能体处理同一输入，将它们的输出收集为投票，然后通过可插拔的聚合策略对它们进行协调。</p>
+
+<p>此模式对于分类、内容审核、风险评估以及跨不同方法的共识比单个智能体的判断更可靠的任何决策特别有用。通过让具有不同提示词、模型或视角的智能体分析同一输入，你可以降低单个智能体的偏见或错误传播到最终结果的可能性。</p>
+
+<p>VotingPlanner 并行分派所有子智能体，等待所有子智能体完成，然后使用 VotingStrategy 聚合它们的输出：</p>
+
+<pre><code>public class VotingPlanner implements Planner { private final VotingStrategy strategy; private List&lt;AgentInstance&gt; subagents; private int completedCount; private final List&lt;Object&gt; votes = new ArrayList&lt;&gt;(); public VotingPlanner() { this(VotingStrategy.majority()); } public VotingPlanner(VotingStrategy strategy) { this.strategy = strategy; } @Override public void init(InitPlanningContext initPlanningContext) { this.subagents = initPlanningContext.subagents(); } @Override public Action firstAction(PlanningContext planningContext) { if (subagents.isEmpty()) { return done(); } return call(subagents); } @Override public Action nextAction(PlanningContext planningContext) { votes.add(planningContext.previousAgentInvocation().output()); completedCount++; if (completedCount &lt; subagents.size()) { return noOp(); } return done(strategy.aggregate(votes)); } @Override public AgenticSystemTopology topology() { return AgenticSystemTopology.STAR; }}</code></pre>
+
+<p>firstAction 方法立即分派所有子智能体。由于拓扑是 STAR，框架将并行执行它们，并在每次智能体完成时调用一次 nextAction。每次调用都会将已完成的智能体的输出收集为投票。当所有智能体都投票后，规划器通过 VotingStrategy 聚合结果并发出完成信号。</p>
+
+<p>VotingStrategy 是一个具有单个方法和三个内置静态工厂方法的函数式接口：</p>
+
+<pre><code>@FunctionalInterfacepublic interface VotingStrategy { Object aggregate(Collection&lt;Object&gt; votes); static VotingStrategy majority() { ... } // 最常见的值获胜 static VotingStrategy average() { ... } // 数值的平均值 static VotingStrategy highest() { ... } // 按自然顺序取最大值}</code></pre>
+
+<ul><li>majority() 通过相等性对投票进行分组并返回最常见的值 — 非常适合智能体返回类别标签的分类任务。</li><li>average() 计算数值投票的算术平均值 — 用于智能体返回置信度值或评级的评分任务。</li><li>highest() 按自然顺序选择最大值 — 适用于希望获得最乐观或最高置信度评估的情况。</li></ul>
+
+<p>用户还可以通过 lambda 表达式提供自定义策略，例如实现加权投票、基于置信度的过滤或法定人数规则。</p>
+
+<p>为了给出其工作原理的实际示例，让我们构建一个基于投票的情感分类器，该分类器使用三个具有不同提示词的独立智能体来对客户反馈进行分类。每个智能体被指示仅返回一个单词：POSITIVE、NEGATIVE 或 NEUTRAL。</p>
+
+<pre><code>public interface SentimentClassifier1 { @UserMessage(&quot;&quot;&quot; Classify the sentiment of the following text. Reply with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL. The text is: &quot;{{text}}&quot; &quot;&quot;&quot;) @Agent(&quot;Classify the sentiment of a given text&quot;) String classify(@V(&quot;text&quot;) String text);}public interface SentimentClassifier2 { @UserMessage(&quot;&quot;&quot; You are a sentiment analysis expert. Analyze the emotional tone of the following text and classify it. Reply with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL. The text is: &quot;{{text}}&quot; &quot;&quot;&quot;) @Agent(&quot;Analyze the emotional tone of a given text&quot;) String classify(@V(&quot;text&quot;) String text);}public interface SentimentClassifier3 { @UserMessage(&quot;&quot;&quot; You are a customer feedback analyst. Determine whether the following feedback is positive, negative, or neutral. Reply with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL. The text is: &quot;{{text}}&quot; &quot;&quot;&quot;) @Agent(&quot;Determine the sentiment of customer feedback&quot;) String classify(@V(&quot;text&quot;) String text);}</code></pre>
+
+<p>每个分类器都从略有不同的角度处理同一任务：一个是通用的，一个是专家分析师，一个是专门处理客户反馈的。然后可以将这三个智能体组合到基于投票的智能体系统中：</p>
+
+<pre><code>SentimentClassifier1 c1 = AgenticServices.agentBuilder(SentimentClassifier1.class) .chatModel(baseModel()) .outputKey(&quot;vote1&quot;) .build();SentimentClassifier2 c2 = AgenticServices.agentBuilder(SentimentClassifier2.class) .chatModel(baseModel()) .outputKey(&quot;vote2&quot;) .build();SentimentClassifier3 c3 = AgenticServices.agentBuilder(SentimentClassifier3.class) .chatModel(baseModel()) .outputKey(&quot;vote3&quot;) .build();SentimentVoter voter = AgenticServices.plannerBuilder(SentimentVoter.class) .subAgents(c1, c2, c3) .outputKey(&quot;classification&quot;) .planner(VotingPlanner::new) .build();ResultWithAgenticScope&lt;String&gt; result = voter.classify( &quot;I absolutely love this product! It exceeded all my expectations.&quot;);</code></pre>
+
+<p>使用此配置，三个分类器在相同的文本上并行调用。每个分类器将其分类写入其自己的输出键（vote1、vote2、vote3），VotingPlanner 收集所有三个结果。由于默认构造函数使用 VotingStrategy.majority()，因此最常见的分类获胜。对于上面明显的肯定文本，所有三个智能体可能会返回 POSITIVE，从而产生一致的结果。但即使在一个智能体不同意的不确定情况下，多数票也可以确保获得稳健的最终分类。</p>
+
+<p>要使用其他聚合策略，只需将其传递给 VotingPlanner 构造函数：</p>
+
+<pre><code>.planner(() -&gt; new VotingPlanner(VotingStrategy.average()))</code></pre>
+
+<p>或提供完全自定义的策略：</p>
+
+<pre><code>.planner(() -&gt; new VotingPlanner(votes -&gt; votes.stream() .map(Object::toString) .map(String::toUpperCase) .collect(Collectors.groupingBy(Function.identity(), Collectors.counting())) .entrySet().stream() .max(Map.Entry.comparingByValue()) .map(Map.Entry::getKey) .orElse(null)))</code></pre>
+
+<p>此自定义策略在计数之前将所有投票标准化为大写，从而处理智能体之间的微小格式差异（例如 &quot;Positive&quot; 与 &quot;POSITIVE&quot;）。</p>
+
+<h3>辩论智能体模式</h3>
+
+<p>到目前为止讨论的模式要么立即分派智能体（投票），要么根据数据可用性激活它们（黑板、P2P），要么将它们按顺序排列以达到目标（GOAP）。它们都不支持对抗性优化 — 即智能体相互查看推理并迭代地修改其立场的过程。辩论模式填补了这一空白：智能体并行生成独立的答案，然后进入批评回合，在这些回合中它们可以阅读完整的辩论历史并完善其论点。轮次一直持续到智能体收敛于同一答案或达到最大轮数，此时评审智能体将作出最终裁决。</p>
+
+<p>此模式对于事实检查、风险评估、代码审查以及任何暴露智能体于竞争论点可提高输出质量的领域特别有用。通过强制智能体面对并回应彼此的推理，辩论模式可以捕获任何单个智能体可能遗漏的问题，并通过对抗性审查过滤掉误报。</p>
+
+<p>此模式通过 DebatePlanner 实现，该 DebatePlanner 将其子智能体划分为辩论者（除最后一个之外的所有）和评审（最后注册的子智能体）。该规划器配置了两个参数：maxRounds（默认 3）和 ConvergenceStrategy（默认 unanimous()）。</p>
+
+<p>在初始化期间，规划器验证至少已注册三个子智能体（两个辩论者和一个评审），并相应地拆分列表。第一个动作在 AgenticScope 中植入一个空的 debateContext 键 — 这是必需的，因为辩论者智能体通过 @V(DEBATE_CONTEXT_KEY) 引用此键，没有它，第一轮将失败并出现 MissingArgumentException。然后它并行分派所有辩论者。</p>
+
+<p>随着每个辩论者的完成，将调用 nextAction（在框架的锁下序列化）。规划器将每个输出记录在以智能体名称为键的映射中，并返回 noOp()，直到所有辩论者都完成。一旦收集到所有响应，它将检查两个条件：ConvergenceStrategy 是否报告收敛，以及当前轮是否已达到 maxRounds。在任何一种情况下，规划器都会进入评审阶段 — 它将辩论上下文格式化为 AgentName: &quot;response&quot; 条目（每行一个），将其写入范围，并分派评审智能体。当评审完成时，规划器返回 done()，并将评审的输出作为最终结果。如果既未达到收敛也未达到轮次限制，则规划器将当前辩论上下文写入范围，增加轮次计数器，并重新分派所有辩论者进行另一轮批评，在该轮中他们可以查看并响应彼此先前的论点。</p>
+
+<p>ConvergenceStrategy 是一个具有单个方法 hasConverged(Collection&lt;Object&gt; positions) 的函数式接口。提供了两个内置策略：unanimous() 检查所有位置之间的精确相等性（适用于像 APPROVE/REJECT 这样的基于标签的决策），而 unanimousLastWord() 从每个位置提取最后一个单词，将其标准化为大写，并检查所有智能体是否以相同的裁决结尾。对于更细微的收敛逻辑（例如语义相似度或基于阈值的协议），用户可以提供自定义策略作为 lambda。</p>
+
+<p>要查看此模式的实际应用，让我们构建一个辩论小组，其中三个伦理辩论者从不同的哲学观点进行论证，而评审则将其论点综合成最终裁决：</p>
+
+<pre><code>public interface UtilitarianDebater { @UserMessage(&quot;&quot;&quot; You are a utilitarian ethics debater. \ Consider the following question and argue from a utilitarian perspective, maximizing overall well-being. If previous debate context is provided, consider the other debaters&#x27; arguments and refine your position. Keep your response to 2-3 sentences. End with a one-word verdict: AGREE or DISAGREE. Question: {{question}} Previous debate context: {{debateContext}} &quot;&quot;&quot;) @Agent(value = &quot;Argues from a utilitarian ethics perspective&quot;, name = &quot;Utilitarian&quot;) String debate(@V(&quot;question&quot;) String question, @V(DEBATE_CONTEXT_KEY) String debateContext);}public interface DeontologicalDebater { @UserMessage(&quot;&quot;&quot; You are a deontological ethics debater. \ Consider the following question and argue based on moral rules, duties, and rights. If previous debate context is provided, consider the other debaters&#x27; arguments and refine your position. Keep your response to 2-3 sentences. End with a one-word verdict: AGREE or DISAGREE. Question: {{question}} Previous debate context: {{debateContext}} &quot;&quot;&quot;) @Agent(value = &quot;Argues from a deontological ethics perspective&quot;, name = &quot;Deontologist&quot;) String debate(@V(&quot;question&quot;) String question, @V(DEBATE_CONTEXT_KEY) String debateContext);}public interface PragmatistDebater { @UserMessage(&quot;&quot;&quot; You are a pragmatist debater. \ Consider the following question and argue based on practical consequences and real-world outcomes. If previous debate context is provided, consider the other debaters&#x27; arguments and refine your position. Keep your response to 2-3 sentences. End with a one-word verdict: AGREE or DISAGREE. Question: {{question}} Previous debate context: {{debateContext}} &quot;&quot;&quot;) @Agent(value = &quot;Argues from a pragmatist perspective&quot;, name = &quot;Pragmatist&quot;) String debate(@V(&quot;question&quot;) String question, @V(DEBATE_CONTEXT_KEY) String debateContext);}public interface EthicsJudge { @UserMessage(&quot;&quot;&quot; You are an impartial ethics judge. \ Review the debate context where multiple debaters have argued about a question from different perspectives. Synthesize their arguments and provide a balanced, well-reasoned final verdict in 3-4 sentences. Debate context: {{debateContext}} &quot;&quot;&quot;) @Agent(value = &quot;Renders a final verdict by synthesizing debate arguments&quot;, name = &quot;Judge&quot;) String judge(@V(&quot;debateContext&quot;) String debateContext);}</code></pre>
+
+<p>每个辩论者都需要一个问题（原始输入，保持不变）和一个 debateContext（动态更新每轮的辩论历史）。@V(DEBATE_CONTEXT_KEY) 引用 DebatePlanner 中的公共常量，每个 @Agent 上的显式 name 控制智能体在辩论上下文中的标记方式。评审仅接收 debateContext，因为原始问题嵌入在辩论交流中。请注意，每个辩论者必须具有不同的 outputKey，以防止它们相互覆盖。</p>
+
+<p>顶层规划器接口和连接如下所示：</p>
+
+<pre><code>public interface EthicsPanel { @Agent String debate(@V(&quot;question&quot;) String question);}UtilitarianDebater d1 = AgenticServices.agentBuilder(UtilitarianDebater.class) .chatModel(baseModel()) .outputKey(&quot;utilitarian&quot;) .build();DeontologicalDebater d2 = AgenticServices.agentBuilder(DeontologicalDebater.class) .chatModel(baseModel()) .outputKey(&quot;deontological&quot;) .build();PragmatistDebater d3 = AgenticServices.agentBuilder(PragmatistDebater.class) .chatModel(baseModel()) .outputKey(&quot;pragmatist&quot;) .build();EthicsJudge judge = AgenticServices.agentBuilder(EthicsJudge.class) .chatModel(baseModel()) .outputKey(&quot;verdict&quot;) .build();EthicsPanel panel = AgenticServices.plannerBuilder(EthicsPanel.class) .subAgents(d1, d2, d3, judge) .outputKey(&quot;verdict&quot;) .planner(() -&gt; new DebatePlanner(3)) .build();String result = panel.debate( &quot;Is it ethical to use AI-generated art in commercial products without crediting the AI tool?&quot;);</code></pre>
+
+<p>辩论者首先列出，评审始终是最后一个子智能体。在第 1 轮中，所有三个辩论者都产生独立的立场。在第 2 轮中，每个辩论者都会看到其他人的论点，并且可以完善、争议或扩展其立场。无论辩论者是否收敛或是否达到最大轮数，评审始终会根据完整的辩论上下文给出最终裁决。</p>
+
+<p>要自定义收敛检查或轮数：</p>
+
+<pre><code>.planner(() -&gt; new DebatePlanner(5)) // 允许最多 5 轮</code></pre>
+
+<pre><code>.planner(() -&gt; new DebatePlanner(positions -&gt; positions.stream().allMatch(p -&gt; p.toString().contains(&quot;AGREE&quot;)))) // 自定义收敛</code></pre>
+
+<h3>信念-愿望-意图（BDI）智能体模式</h3>
+
+<p>信念-愿望-意图（BDI）模式对经典的 AI 概念进行了建模，即一个智能体维护明确的目标，评估当前哪些目标是可实现的，并在环境变化时主动地在它们之间进行切换。实现此模式的规划器维护三个结构 — 信念（来自 AgenticScope 的当前世界状态）、愿望（一组优先级目标）和意图（当前正在执行的承诺计划）。在每个步骤中，规划器检查是否可以实现更高优先级的愿望，如果是，则放弃当前意图并重新考虑。这使得 BDI 自然适用于必须平衡多个相互竞争的目标且优先级可能随时变化的动态环境。</p>
+
+<p>Desire 定义为一个记录，结合了名称、优先级等级、可实现性谓词、满足谓词和构成追求该愿望意图的有序智能体类型列表：</p>
+
+<pre><code>public record Desire(String name, int priority, Predicate&lt;AgenticScope&gt; achievable, Predicate&lt;AgenticScope&gt; satisfied, List&lt;Class&lt;?&gt;&gt; agentTypes) { public static Desire of(String name, int priority, Predicate&lt;AgenticScope&gt; achievable, Predicate&lt;AgenticScope&gt; satisfied, Class&lt;?&gt;... agentTypes) { return new Desire(name, priority, achievable, satisfied, List.of(agentTypes)); } public static Desire of(String name, int priority, String achievableStateKey, String satisfiedStateKey, Class&lt;?&gt;... agentTypes) { return new Desire(name, priority, scope -&gt; scope.hasState(achievableStateKey), scope -&gt; scope.hasState(satisfiedStateKey), List.of(agentTypes)); }}</code></pre>
+
+<p>实现此模式的 BDIPlanner 采用 Desire 实例列表并实现审议循环。在初始化期间，它通过其类型映射了各已注册的子智能体，以便愿望可以按类引用智能体。当执行开始时，规划器会过滤所有愿望以查找当前可实现且尚未满足的愿望，选择优先级最高的（在相等优先级中，列表中先声明的那个获胜），并提交由该愿望定义的有序智能体序列定义的意图。在每个后续步骤中，规划器运行三个检查：首先，满意测试当前愿望现在是否已满足，则规划器会重新考虑以选择下一个愿望；其次，抢占验证由于信念变化（写入 AgenticScope 的新值）是否可以实现严格更高优先级的愿望，则当前意图被挂起，较高优先级的意图接管；第三，可行性检查当前愿望是否仍然可实现且尚未满足，规划器继续在意图序列中的下一个智能体。当被抢占的愿望稍后被重新选择时，它会从上次中断的地方恢复，而不是重新启动，因此先前已完成的智能体不会重新调用。</p>
+
+<p>当所有愿望都已满足或没有任何可实现时，执行将成功终止。规划器在两种行为不正确的场景下抛出 IllegalStateException：如果某个愿望的整个意图已完成但愿望仍未满足（智能体未写入满足谓词所期望的键），或者如果已达到可配置的最大调用次数，但仍有未满足的愿望挂起。</p>
+
+<p>在崩溃恢复时，规划器会从头开始重新考虑：已满足的愿望将被跳过，但所选愿望的意图会从其第一个智能体重新启动。在崩溃之前已完成的智能体将再次运行，因此意图智能体应该是幂等的。</p>
+
+<p>为了说明此模式，请考虑一个具有五个 AI 智能体和一个非 AI 智能体的自动交易系统。MarketRecommendationAgent 返回 MarketRecommendation 枚举，并且仅当推荐为 SELL 或 STRONG_SELL 时才触发对冲。HedgingStrategyDefaulter 是一个非 AI 智能体，可确保 hedgingStrategy 始终存在于范围内（在对冲被跳过时默认为 &quot;None&quot;），以便 RebalancingAgent 始终可以将其作为输入接收：</p>
+
+<pre><code>public enum MarketRecommendation { STRONG_BUY, BUY, HOLD, SELL, STRONG_SELL}public interface MarketAnalysisAgent { @UserMessage(&quot;Analyze the market data and portfolio. Market: {{marketData}} Portfolio: {{portfolio}}&quot;) @Agent(value = &quot;Analyze market conditions&quot;, outputKey = &quot;marketAnalysis&quot;) String analyzeMarket(@V(&quot;marketData&quot;) String marketData, @V(&quot;portfolio&quot;) String portfolio);}public interface MarketRecommendationAgent { @UserMessage(&quot;Based on the market analysis, provide a trading recommendation. Market analysis: {{marketAnalysis}}&quot;) @Agent(value = &quot;Provide a trading recommendation&quot;, outputKey = &quot;recommendation&quot;) MarketRecommendation recommend(@V(&quot;marketAnalysis&quot;) String marketAnalysis);}public static class HedgingStrategyDefaulter { @Agent(outputKey = &quot;hedgingStrategy&quot;) public String defaultHedging(AgenticScope scope) { return scope.hasState(&quot;hedgingStrategy&quot;) ? (String) scope.readState(&quot;hedgingStrategy&quot;) : &quot;None&quot;; }}public interface RebalancingAgent { @UserMessage(&quot;Suggest rebalancing based on: {{marketAnalysis}} Hedging strategy: {{hedgingStrategy}} Portfolio: {{portfolio}}&quot;) @Agent(value = &quot;Rebalance portfolio&quot;, outputKey = &quot;rebalancingPlan&quot;) String rebalance(@V(&quot;marketAnalysis&quot;) String marketAnalysis, @V(&quot;hedgingStrategy&quot;) String hedgingStrategy, @V(&quot;portfolio&quot;) String portfolio);}public interface HedgingAgent { @UserMessage(&quot;Recommend hedging strategies based on: {{marketAnalysis}}&quot;) @Agent(value = &quot;Hedge against risks&quot;, outputKey = &quot;hedgingStrategy&quot;) String hedge(@V(&quot;marketAnalysis&quot;) String marketAnalysis);}public interface LiquidityAgent { @UserMessage(&quot;Assess liquidity for portfolio: {{portfolio}}&quot;) @Agent(value = &quot;Maintain liquidity&quot;, outputKey = &quot;liquidityAssessment&quot;) String assessLiquidity(@V(&quot;portfolio&quot;) String portfolio);}</code></pre>
+
+<p>这些智能体被连接到一个基于 BDI 的交易系统中，该系统具有四个不同优先级的愿望。请注意 &quot;hedge risks&quot; 愿望如何使用基于谓词的可实现性检查来检查 recommendation 值，并且 &quot;rebalance portfolio&quot; 愿望在 RebalancingAgent 之前包含 HedgingStrategyDefaulter，以确保 hedgingStrategy 范围值存在：</p>
+
+<pre><code>TradingSystem tradingSystem = AgenticServices.plannerBuilder(TradingSystem.class) .subAgents(marketAnalysis, recommendation, new HedgingStrategyDefaulter(), rebalancing, hedging, liquidity) .planner(() -&gt; new BDIPlanner(List.of( Desire.of(&quot;analyze market&quot;, 1, &quot;marketData&quot;, &quot;recommendation&quot;, MarketAnalysisAgent.class, MarketRecommendationAgent.class), Desire.of(&quot;hedge risks&quot;, 2, scope -&gt; scope.hasState(&quot;recommendation&quot;) &amp;&amp; Set.of(MarketRecommendation.SELL, MarketRecommendation.STRONG_SELL) .contains(scope.readState(&quot;recommendation&quot;)), scope -&gt; scope.hasState(&quot;hedgingStrategy&quot;), HedgingAgent.class), Desire.of(&quot;rebalance portfolio&quot;, 1, &quot;recommendation&quot;, &quot;rebalancingPlan&quot;, HedgingStrategyDefaulter.class, RebalancingAgent.class), Desire.of(&quot;maintain liquidity&quot;, 1, &quot;portfolio&quot;, &quot;liquidityAssessment&quot;, LiquidityAgent.class) ))) .build();</code></pre>
+
+<p>当使用市场数据和投资组合状态调用时，规划器的审议循环工作如下：最初 &quot;analyze market&quot; 和 &quot;maintain liquidity&quot; 愿望是可实现的。一旦 MarketAnalysisAgent 和 MarketRecommendationAgent 完成，推荐将确定下一步。如果推荐是 SELL 或 STRONG_SELL，则 &quot;hedge risks&quot; 愿望（优先级 2）变为可实现并抢占任何较低优先级的工作，从而导致规划器调用 HedgingAgent。在对冲完成后，规划器会重新考虑：&quot;rebalance portfolio&quot; 愿望运行 HedgingStrategyDefaulter（它保留现有的对冲策略），然后运行 RebalancingAgent，后者接收对冲策略作为输入。如果推荐不是 SELL 或 STRONG_SELL，则完全跳过对冲，而 HedgingStrategyDefaulter 将写入 &quot;None&quot;，以便 RebalancingAgent 仍然可以继续进行。这种反应式的、由条件驱动的切换就是 BDI 的本质 — 系统根据变化的信念调整其行为，而不是遵循严格的计划。</p>
+
+<h3>决策路由器智能体模式</h3>
+
+<p>note决策路由器基于实验性的 DecisionModel API，可能会在未来的版本中更改。</p>
+
+<p>决策路由器由 langchain4j-agentic-patterns 模块提供，并且还需要决策模型集成，例如 langchain4j-typesafe。</p>
+
+<p>前面讨论的条件工作流分两步将请求路由到合适的专家：基于 LLM 的 CategoryRouter 智能体将类别写入 AgenticScope，然后条件智能体针对该类别评估每个专家的一个谓词。这是可行的，但是每个路由决策都要花费一次完整的 LLM 调用，并且必须解析其文本响应，这要求将枚举和谓词与专家保持同步，并且不能说明 LLM 对其选择有多确定。</p>
+
+<p>决策模型更适合此类任务：它不是生成文本，而是回答有关输入的类型化问题，返回每个可能答案的概率。决策路由器模式使用一个来直接在其子智能体中进行选择：每个子智能体都是单个选择题的一个选项，由其名称和描述描述，决策模型返回最可能的一个以及每个子智能体的概率。或者，使用激活阈值，路由器会询问是否应由每个子智能体处理该请求，并并行调用所有达到该阈值的子智能体，这在请求跨多个域时非常有用。</p>
+
+<p>实现此模式的 DecisionRouterPlanner 是使用 DecisionModel 和可选的严格介于 0 和 1 之间的激活阈值创建的。初始化时，规划器将其每个子智能体转换为单个 ChoiceQuestion 的选项，“哪个智能体最适合处理此请求？”，使用子智能体的名称作为选项名称，并使用其描述作为该选项适用时的描述。使用激活阈值时，它将为每个子智能体创建一个 YesNoQuestion，例如“应该由智能体 &#x27;medical&#x27;（一位医疗专家，回答有关健康、伤害和治疗的问题）处理此请求吗？”，所有这些问题都在同一请求中提出。这意味着子智能体的描述就是决策模型为路由请求而读取的内容，因此应清楚说明每个子智能体旨在处理哪些请求。问题的输入由路由器智能体本身的参数组成，从 AgenticScope 中读取，因此路由器必须通过类型化智能体接口定义，并且其子智能体必须具有不同的名称。</p>
+
+<p>调用路由器时，规划器在一次调用中向决策模型询问这些问题，然后从答案中选择要激活的子智能体。在内部，其 firstAction 方法大致执行以下操作：</p>
+
+<pre><code>DecisionResponse response = decide(planningContext.agenticScope());activated = activationThreshold == null ? List.of(response.choice(QUESTION_NAME).value()) : routes.keySet().stream() .filter(name -&gt; response.yesNo(name).probability() &gt;= activationThreshold) .toList();</code></pre>
+
+<p>没有激活阈值时，仅调用最可能的子智能体，并且 nextAction 方法将其输出作为路由器的结果返回。使用激活阈值时，将并行调用所有 &quot;yes&quot; 概率至少为该阈值的子智能体，并且 nextAction 方法将收集它们的输出，以便路由器的结果是一个从每个调用的子智能体名称到其输出的映射，当没有子智能体达到阈值时该映射为空。</p>
+
+<p>规划器还将保存已激活的子智能体的名称以及已完成的子智能体的输出作为其执行状态。这样，当智能体系统在挂起后恢复时（例如由于某个已激活的子智能体正在等待人工干预，或者在崩溃后），路由器不会再次询问决策模型：它仅调用尚未运行的已激活子智能体，并且其结果仍包含中断之前收集的输出。</p>
+
+<p>为了给出一个实际的示例，让我们重新实现条件工作流部分中的专家路由器。专家是相同的，只不过它们的描述现在说明了它们处理哪些请求：</p>
+
+<pre><code>public interface MedicalExpert { @UserMessage(&quot;&quot;&quot; You are a medical expert. Analyze the following user request under a medical point of view and provide the best possible answer. The user request is {{request}}. &quot;&quot;&quot;) @Agent(description = &quot;A medical expert, answering questions about health, injuries and treatments&quot;, outputKey = &quot;medicalResponse&quot;) String medical(@V(&quot;request&quot;) String request);}</code></pre>
+
+<p>以及类似的 LegalExpert（“一位法律专家，回答有关法律、权利、合同和诉讼的问题”）和 TechnicalExpert（“一位技术专家，回答有关计算机、软件和设备的问题”）智能体。不再需要 CategoryRouter 智能体和 RequestCategory 枚举：ExpertRouterAgent 接口直接由 DecisionRouterPlanner 实现，并使用类似 TypeSafe 的决策模型进行配置：</p>
+
+<pre><code>DecisionModel decisionModel = TypeSafeDecisionModel.builder() .apiKey(System.getenv(&quot;TYPESAFE_API_KEY&quot;)) .modelName(&quot;jev-1.13.0&quot;) .build();ExpertRouterAgent expertRouterAgent = AgenticServices.plannerBuilder(ExpertRouterAgent.class) .subAgents(medicalExpert, legalExpert, technicalExpert) .outputKey(&quot;response&quot;) .planner(() -&gt; new DecisionRouterPlanner(decisionModel)) .build();String response = expertRouterAgent.ask(&quot;I broke my leg, what should I do?&quot;);</code></pre>
+
+<p>这里决策模型接收输入 {&quot;request&quot;: &quot;I broke my leg, what should I do?&quot;} 以及问题 &quot;Which agent is best suited to handle this request?&quot;，其选项为 medical、legal 和 technical，并选择 medical，因此仅调用 MedicalExpert 并返回其答案。</p>
+
+<p>但是，某些请求属于多个域。要调用所有达到给定阈值的专家，请将阈值传递给规划器并让路由器返回一个映射，从每个调用的专家的名称到其答案：</p>
+
+<pre><code>public interface MultiExpertRouterAgent { @Agent Map&lt;String, String&gt; ask(@V(&quot;request&quot;) String request);}MultiExpertRouterAgent multiExpertRouterAgent = AgenticServices.plannerBuilder(MultiExpertRouterAgent.class) .subAgents(medicalExpert, legalExpert, technicalExpert) .outputKey(&quot;responses&quot;) .planner(() -&gt; { return new DecisionRouterPlanner(decisionModel, 0.5); }) .build();Map&lt;String, String&gt; responses = multiExpertRouterAgent.ask( &quot;I broke my leg in a car accident caused by another driver: &quot; + &quot;how should I take care of my leg, and can I sue the driver for damages?&quot;);</code></pre>
+
+<p>对于此请求，预计 MedicalExpert 和 LegalExpert 都会达到阈值，因此它们将被并行调用，并且返回的映射在 medical 和 legal 键下包含它们的两个答案。当没有专家达到阈值时（例如请求巧克力蛋糕食谱的请求），将不调用任何专家，并且返回的映射为空。</p>
+
+<p>请注意，每个子智能体都有其自己的概率，独立于其他子智能体：多个子智能体可以达到较高的阈值，并且添加一个子智能体不会更改现有子智能体的概率。出于同样的原因，具有非常广泛描述的子智能体（例如回答任何类型问题的通用助手）倾向于对大多数请求被激活，因此对于阈值，最好精确描述每个子智能体，并将空结果视为没有相关子智能体的情况。同样，不同模型的概率校准方式不同，因此应根据你自己的请求来调整阈值，并在更改决策模型或其版本时再次进行调整。</p>
+
+<p>与任何其他智能体模式一样，决策路由器可以是更复杂的智能体系统中的一个步骤。例如，已激活专家的答案可以通过 ResponseSynthesizer 智能体合并为单个答案，该智能体在路由器之后按顺序调用：</p>
+
+<pre><code>public interface ResponseSynthesizer { @UserMessage(&quot;&quot;&quot; Merge the answers that different experts gave to the same user request into a single answer. The user request is: {{request}} The answers of the experts, keyed by expert, are: {{responses}} &quot;&quot;&quot;) @Agent(description = &quot;Merges the answers of several experts into one&quot;, outputKey = &quot;answer&quot;) String synthesize(@V(&quot;request&quot;) String request, @V(&quot;responses&quot;) Map&lt;String, String&gt; responses);}public interface ExpertPipeline { @Agent String process(@V(&quot;request&quot;) String request);}ResponseSynthesizer responseSynthesizer = AgenticServices.agentBuilder(ResponseSynthesizer.class) .chatModel(BASE_MODEL) .build();ExpertPipeline pipeline = AgenticServices.sequenceBuilder(ExpertPipeline.class) .subAgents(multiExpertRouterAgent, responseSynthesizer) .outputKey(&quot;answer&quot;) .build();</code></pre>
+
+<p>也可以使用声明式 API 定义同一路由器，方法是通过使用 @PlannerSupplier 注解的静态方法提供规划器：</p>
+
+<pre><code>public interface DeclarativeExpertRouter { @PlannerAgent( outputKey = &quot;response&quot;, subAgents = {MedicalExpert.class, LegalExpert.class, TechnicalExpert.class}) String ask(@V(&quot;request&quot;) String request); @PlannerSupplier static Planner planner() { return new DecisionRouterPlanner(TypeSafeDecisionModel.builder() .apiKey(System.getenv(&quot;TYPESAFE_API_KEY&quot;)) .modelName(&quot;jev-1.13.0&quot;) .build()); }}</code></pre>
+
+<p>其中专家通过 @ChatModelSupplier 提供其聊天模型，如声明式 API 部分所述。</p>
+
+<p>最后，请记住，路由器智能体的参数将按原样发送给决策模型，因此它们可以是字符串、数字、布尔值或它们的映射和列表：任何其他类型的参数都将被决策模型拒绝，并返回一条说明支持哪些类型的错误。另请注意，路由决策遵循用户的输入，因此它不是授权边界：必须在某些条件下使用的子智能体（例如由授权用户使用）必须强制执行其自己的访问检查。</p>
+
+<h2>非 AI 智能体</h2>
+
+<p>到目前为止讨论的所有智能体都是 AI 智能体，这意味着它们基于 LLM 并且可以被调用以执行需要自然语言理解和生成的任务。但是，langchain4j-agentic 模块还支持非 AI 智能体，它们可用于执行不需要自然语言处理的任务，例如调用 REST API 或执行命令。这些非 AI 智能体实际上更类似于工具，但在这种情况下，将它们建模为智能体更为方便，这样它们可以与 AI 智能体相同的方式使用，并与它们混合以组成更强大、更完整的智能体系统。</p>
+
+<p>例如，监督者示例中使用的 ExchangeAgent 可能不恰当地被建模为 AI 智能体，可以更好地将其定义为仅调用 REST API 以执行货币兑换的非 AI 智能体。</p>
+
+<pre><code>public class ExchangeOperator { @Agent(value = &quot;A money exchanger that converts a given amount of money from the original to the target currency&quot;, outputKey = &quot;exchange&quot;) public Double exchange(@V(&quot;originalCurrency&quot;) String originalCurrency, @V(&quot;amount&quot;) Double amount, @V(&quot;targetCurrency&quot;) String targetCurrency) { // 调用 REST API 以执行货币兑换 }}</code></pre>
+
+<p>以便可以与提供给监督者的其他子智能体以相同的方式使用。</p>
+
+<pre><code>WithdrawAgent withdrawAgent = AgenticServices .agentBuilder(WithdrawAgent.class) .chatModel(BASE_MODEL) .tools(bankTool) .build();CreditAgent creditAgent = AgenticServices .agentBuilder(CreditAgent.class) .chatModel(BASE_MODEL) .tools(bankTool) .build();SupervisorAgent bankSupervisor = AgenticServices .supervisorBuilder() .chatModel(PLANNER_MODEL) .subAgents(withdrawAgent, creditAgent, new ExchangeOperator()) .build();</code></pre>
+
+<p>本质上，langchain4j-agentic 中的智能体可以是具有一个且只有一个使用 @Agent 注解的方法的任何 Java 类。</p>
+
+<p>当定义专用类不切实际时（例如，因为智能体的逻辑仅在运行时可用），也可以以编程方式创建同一非 AI 智能体。AgenticServices 的 nonAiAgentBuilder 工厂方法采用计算智能体结果的 AgenticScope 的函数，并允许配置名称、描述、类型化输入键和输出键，否则将通过 @Agent 注解和方法的参数定义这些内容。这样，可以将上面的 ExchangeOperator 等效定义为：</p>
+
+<pre><code>AgenticScopeFunction&lt;Double&gt; exchangeOperator = AgenticServices .nonAiAgentBuilder(agenticScope -&gt; exchange( agenticScope.readState(&quot;originalCurrency&quot;, &quot;&quot;), agenticScope.readState(&quot;amount&quot;, 0.0), agenticScope.readState(&quot;targetCurrency&quot;, &quot;&quot;))) .name(&quot;exchange&quot;) .description(&quot;A money exchanger that converts a given amount of money from the original to the target currency&quot;) .inputKeys(String.class, &quot;originalCurrency&quot;, Double.class, &quot;amount&quot;, String.class, &quot;targetCurrency&quot;) .outputKey(&quot;exchange&quot;) .build();</code></pre>
+
+<p>然后将其传递给监督者，以代替新的 ExchangeOperator() 实例。在调用该函数之前，已声明的输入将从 AgenticScope 中读取并转换为它们声明的类型，因此例如监督者生成为整数或字符串的金额可以安全地读取为 Double，而缺少的输入将使调用失败并出现 MissingArgumentException。构建器还允许将 TypedKey 设置为输出键、设置智能体结果的 outputType（默认为 Object，因为在运行时该函数的泛型类型不可用）、是否必须异步执行智能体，以及用于其调用的 AgentListener。如果未提供名称，则智能体将命名为 accept，以包装该函数的 AgenticScopeFunction 的方法命名。</p>
+
+<p>最后，非 AI 智能体还可用于读取 AgenticScope 的状态或对其执行较小的操作，因此 AgenticServices 提供了一个 agentAction 工厂方法，用于从 Consumer&lt;AgenticServices&gt; 创建一个简单的智能体。例如，假设有一个评分智能体生成分数作为 String 值，而后续的审阅者智能体需要将该分数作为 double 使用。在这种情况下，这两个智能体将不兼容，但可以使用 agentAction 将第一个智能体的输出调整为第二个智能体所需的格式，重写 AgenticScope 的 score 状态，如下所示：</p>
+
+<pre><code>UntypedAgent editor = AgenticServices.sequenceBuilder() .subAgents( scorer, AgenticServices.agentAction(agenticScope -&gt; agenticScope.writeState(&quot;score&quot;, Double.parseDouble(agenticScope.readState(&quot;score&quot;, &quot;0.0&quot;)))), reviewer) .build();</code></pre>
+
+<h3>Human-in-the-loop</h3>
+
+<p>构建智能体系统时的另一个常见需求是让人参与其中（human-in-the-loop），允许系统在继续执行某些操作之前向用户询问缺失的信息或批准。这种 human-in-the-loop 功能也可以视为一种特殊的非 AI 智能体，因此可以这样实现。</p>
+
+<pre><code>public record HumanInTheLoop(Function&lt;AgenticScope, ?&gt; responseProvider) { @Agent(&quot;An agent that asks the user for missing information&quot;) public Object askUser(AgenticScope scope) { return responseProvider.apply(scope); }}</code></pre>
+
+<p>这个相当简单但也非常通用的实现基于使用单个函数，该函数将当前 AgenticScope 作为输入，从中可以提取上下文以询问适当的问题，并返回应提供给用户的响应。</p>
+
+<p>langchain4j-agentic 模块开箱即用地提供的 HumanInTheLoop 智能体允许你将此函数与智能体描述以及用户响应将写入的输出变量一起定义。</p>
+
+<p>例如，定义了如下 AstrologyAgent：</p>
+
+<pre><code>public interface AstrologyAgent { @SystemMessage(&quot;&quot;&quot; You are an astrologist that generates horoscopes based on the user&#x27;s name and zodiac sign. &quot;&quot;&quot;) @UserMessage(&quot;&quot;&quot; Generate the horoscope for {{name}} who is a {{sign}}. &quot;&quot;&quot;) @Agent(&quot;An astrologist that generates horoscopes based on the user&#x27;s name and zodiac sign.&quot;) String horoscope(@V(&quot;name&quot;) String name, @V(&quot;sign&quot;) String sign);}</code></pre>
+
+<p>可以创建一个顺序工作流，该工作流同时使用此 AI 智能体和 HumanInTheLoop 智能体，以在生成星座运势之前向用户询问其星座符号，将其问题发送到控制台标准输出并从标准输入读取用户的响应，如下所示：</p>
+
+<pre><code>HumanInTheLoop humanInTheLoop = AgenticServices.humanInTheLoopBuilder() .description(&quot;An agent that asks the zodiac sign of the user&quot;) .outputKey(&quot;sign&quot;) .responseProvider(scope -&gt; { System.out.println(&quot;Hi &quot; + scope.readState(&quot;name&quot;) + &quot;, what is your sign?&quot;); System.out.print(&quot;&gt; &quot;); try { BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)); return reader.readLine(); } catch (IOException e) { throw new RuntimeException(&quot;Failed to read input&quot;, e); } }) .build();AstrologyAgent astrologyAgent = AgenticServices.agentBuilder(AstrologyAgent.class) .chatModel(baseModel()) .outputKey(&quot;horoscope&quot;) .build();UntypedAgent horoscopeAgent = AgenticServices.sequenceBuilder() .subAgents(humanInTheLoop, astrologyAgent) .outputKey(&quot;horoscope&quot;) .build();</code></pre>
+
+<p>这样，如果用户使用类似以下的请求调用 horoscopeAgent：</p>
+
+<pre><code>horoscopeAgent.invoke(Map.of(&quot;name&quot;, &quot;Mario&quot;));</code></pre>
+
+<p>序列将首先调用 HumanInTheLoop 智能体以向用户询问缺失的星座符号，产生以下输出：</p>
+
+<pre><code>Hi Mario, what is your sign?&gt;</code></pre>
+
+<p>等待用户提供答案，然后该答案将用于调用 AstrologyAgent 并生成星座运势。</p>
+
+<p>由于用户可能需要一些时间才能提供答案，因此可以将 HumanInTheLoop 智能体配置为异步智能体（实际上建议这样做）。这样，不需要用户输入的智能体可以在智能体系统等待用户提供答案时继续执行。</p>
+
+<h2>记忆与上下文工程</h2>
+
+<p>到目前为止讨论的所有智能体都是无状态的，这意味着它们不维护任何上下文或先前交互的记忆。但是，与任何其他 AI 服务一样，可以为智能体提供 ChatMemory，从而允许它们在多次调用之间维护上下文。</p>
+
+<p>要为前面的 MedicalExpert 提供记忆，只需在其签名中添加一个使用 @MemoryId 注解的字段即可。</p>
+
+<pre><code>public interface MedicalExpertWithMemory { @UserMessage(&quot;&quot;&quot; You are a medical expert. Analyze the following user request under a medical point of view and provide the best possible answer. The user request is {{request}}. &quot;&quot;&quot;) @Agent(&quot;A medical expert&quot;) String medical(@MemoryId String memoryId, @V(&quot;request&quot;) String request);}</code></pre>
+
+<p>并在构建智能体时设置 memory provider：</p>
+
+<pre><code>MedicalExpertWithMemory medicalExpert = AgenticServices .agentBuilder(MedicalExpertWithMemory.class) .chatModel(BASE_MODEL) .chatMemoryProvider(memoryId -&gt; MessageWindowChatMemory.withMaxMessages(10)) .outputKey(&quot;response&quot;) .build();</code></pre>
+
+<p>通常这对于单独使用的单个智能体已经足够了，但对于参与智能体系统的智能体可能会有所限制。假设技术和法律专家也已提供记忆，并且 ExpertRouterAgent 也已重新定义为具有记忆：</p>
+
+<pre><code>public interface ExpertRouterAgentWithMemory { @Agent String ask(@MemoryId String memoryId, @V(&quot;request&quot;) String request);}</code></pre>
+
+<p>对该智能体进行以下两次调用的序列：</p>
+
+<pre><code>String response1 = expertRouterAgent.ask(&quot;1&quot;, &quot;I broke my leg, what should I do?&quot;);String legalResponse1 = expertRouterAgent.ask(&quot;1&quot;, &quot;Should I sue my neighbor who caused this damage?&quot;);</code></pre>
+
+<p>不会产生预期的结果，因为第二个问题将被路由到法律专家，而该法律专家现在是首次被调用，并且没有先前问题的记忆。</p>
+
+<p>为了解决此问题，有必要向法律专家提供上下文以及在其调用之前发生的情况，这也是自动存储在 AgenticScope 中的信息可以派上用场的另一种用例。</p>
+
+<p>特别是，AgenticScope 跟踪所有智能体的调用序列，并且可以生成将这些调用连接在单个对话中的上下文。该上下文可以按原样使用，或者如果需要，可以将其汇总为较短的版本，例如定义 ContextSummarizer 智能体。</p>
+
+<pre><code>public interface ContextSummarizer { @UserMessage(&quot;&quot;&quot; Create a very short summary, 2 sentences at most, of the following conversation between an AI agent and a user. The user conversation is: &#x27;{{it}}&#x27;. &quot;&quot;&quot;) String summarize(String conversation);}</code></pre>
+
+<p>使用此智能体，可以重新定义法律专家并为其提供先前对话的上下文摘要，以便它在回答新问题时可以考虑到先前的交互。</p>
+
+<pre><code>LegalExpertWithMemory legalExpert = AgenticServices .agentBuilder(LegalExpertWithMemory.class) .chatModel(BASE_MODEL) .chatMemoryProvider(memoryId -&gt; MessageWindowChatMemory.withMaxMessages(10)) .context(agenticScope -&gt; contextSummarizer.summarize(agenticScope.contextAsConversation())) .outputKey(&quot;response&quot;) .build();</code></pre>
+
+<p>更一般而言，提供给智能体的上下文可以是 AgenticScope 状态的任何函数。使用此设置，当被询问邻居是否应对其造成的损害提起诉讼时，法律专家将能够考虑与医疗专家的先前对话，并提供更明智的答案。</p>
+
+<p>在内部，智能体框架通过自动重写发送给法律专家的用户消息来为其提供其他上下文，以便它包含先前对话的汇总上下文，因此在这种情况下实际的用户消息将类似于：</p>
+
+<pre><code>&quot;Considering this context \&quot;The user asked about what to do after breaking their leg, and the AI provided medical advice on immediate actions like immobilizing the leg, applying ice, and seeking medical attention.\&quot;You are a legal expert.Analyze the following user request under a legal point of view and provide the best possible answer.The user request is Should I sue my neighbor who caused this damage?.&quot;</code></pre>
+
+<p>此处讨论的汇总上下文作为智能体可能的上下文生成的示例具有普遍实用性，因此可以使用 summarizedContext 方法以更方便的方式在智能体上定义它，例如：</p>
+
+<pre><code>LegalExpertWithMemory legalExpert = AgenticServices .agentBuilder(LegalExpertWithMemory.class) .chatModel(BASE_MODEL) .chatMemoryProvider(memoryId -&gt; MessageWindowChatMemory.withMaxMessages(10)) .summarizedContext(&quot;medical&quot;, &quot;technical&quot;) .outputKey(&quot;response&quot;) .build();</code></pre>
+
+<p>通过这样做，它在内部使用前面讨论的 ContextSummarizer 智能体，并使用定义它的智能体的同一聊天模型来执行它。也可以向此方法添加一个 varargs，其中包含应汇总其上下文的智能体的名称，以便仅对这些智能体进行汇总，而不是对智能体系统中使用的所有智能体进行汇总。</p>
+
+<h3>AgenticScope 注册表和持久化</h3>
+
+<p>AgenticScope 是一种临时数据结构，在智能体系统执行期间创建和使用。每个智能体系统每个用户只有一个 AgenticScope。对于无状态执行（不使用记忆时），AgenticScope 将在执行结束时自动丢弃，并且其状态不会持久保存在任何位置。</p>
+
+<p>相反，当智能体系统使用记忆时，AgenticScope 将保存在内部注册表中。在这种情况下，AgenticScope 将无限期保留在注册表中，以允许用户以有状态和对话的方式与智能体系统进行交互。因此，当不再需要具有特定 ID 的 AgenticScope 时，必须将其从注册表中显式驱逐。为此，智能体系统的根智能体需要实现 AgenticScopeAccess 接口，以便可以对其调用 evictAgenticScope 方法，并传入要从注册表中删除的 AgenticScope 的 ID。</p>
+
+<pre><code>agent.evictAgenticScope(memoryId);</code></pre>
+
+<p>AgenticScope 及其注册表都是纯内存中的数据结构。对于简单的智能体系统，这通常已经足够了，但是在某些情况下，将 AgenticScope 状态持久化到更持久的存储（例如数据库或文件系统）非常有用。为了实现这一点，langchain4j-agentic 模块提供了一个 SPI，用于插入作为 AgenticScopeStore 接口实现的自定义持久化层。可以以编程方式设置此持久化层：</p>
+
+<pre><code>AgenticScopePersister.setStore(new MyAgenticScopeStore());</code></pre>
+
+<p>或者使用标准的 Java Service Provider 接口，创建一个名为 META-INF/services/dev.langchain4j.agentic.scope.AgenticScopeStore 的文件，其中包含实现 AgenticScopeStore 接口的类的完全限定名称。</p>
+
+<h3>AgenticScope JSON 序列化</h3>
+
+<p>LangChain4j 通过 AgenticScopeSerializer 类为 AgenticScope 提供了内置的 JSON 序列化。出于安全原因，反序列化使用允许列表策略，该策略限制可以从 JSON 反序列化的类。默认情况下，允许使用标准 JDK 类型（java.util.<em>、java.math.</em>、基本类型的包装类、枚举）和内部 LangChain4j 类型（AgentMessage、AgentInvocation）。</p>
+
+<p>如果你的智能体将自定义域对象存储在 AgenticScope 状态中，则必须在反序列化发生之前注册它们。你可以注册单个类：</p>
+
+<pre><code>AgenticScopeSerializer.allowDeserializationType(LoanApplication.class);</code></pre>
+
+<p>或整个包前缀：</p>
+
+<pre><code>AgenticScopeSerializer.allowDeserializationPackagePrefix(&quot;com.acme.myapp.&quot;);</code></pre>
+
+<p>尝试反序列化未注册的类型将抛出 UnserializableAgenticScopeException，其消息命名被拒绝的类并建议如何注册它。</p>
+
+<h3>AgenticScope 和智能体系统的可恢复性</h3>
+
+<p>当配置了 AgenticScopeStore 时，langchain4j-agentic 模块提供了内置的可恢复性支持，该支持允许智能体系统在崩溃或进程重启后从中断处恢复执行。这对于包含人工干预步骤的长期运行的智能体系统尤其有价值，因为进程可能有意停止并在以后重新启动。</p>
+
+<p>可恢复性基于协同工作的两个机制：每步检查点和规划器执行状态持久化。</p>
+
+<p>在每次智能体调用之后，当前的 AgenticScope 将自动检查点存储到配置的存储。这意味着由智能体写入（通过 writeState）的所有中间状态都将被持久保存。此外，执行循环保存规划器的内部位置（例如，在序列中已到达的智能体），以便在恢复时工作流从正确的步骤恢复，而不是从头开始重新启动。</p>
+
+<p>Planner 接口的实现可以通过以下两个方法选择性地参与此机制：</p>
+
+<pre><code>// 返回规划器的当前内部状态以进行持久化default Map&lt;String, Object&gt; executionState() { return Map.of(); }// 从先前保存的映射恢复内部状态default void restoreExecutionState(Map&lt;String, Object&gt; state) { }</code></pre>
+
+<p>例如，有状态规划器（例如顺序和循环规划器）实现这些方法以保存和恢复其游标位置和迭代计数器。无状态规划器（例如 ParallelPlanner 或 ConditionalPlanner）使用默认的无操作实现。自定义 Planner 实现也可以重写这些方法以参与可恢复性。执行循环还会跟踪其自己的内部状态（例如在并行块中已完成的智能体）以及规划器状态，以便在恢复时仅重新分派尚未完成的智能体。</p>
+
+<p>为了给出其工作原理的实际示例，请考虑一个订单处理工作流，在该工作流中，大订单必须先由人工审阅，然后才能履行。该工作流具有三个步骤：验证订单、等待人工批准以及发货订单。</p>
+
+<pre><code>public interface OrderWorkflow extends AgenticScopeAccess { @Agent String processOrder(@MemoryId String orderId, @V(&quot;order&quot;) String orderDetails);}</code></pre>
+
+<p>@MemoryId 注解至关重要 — 它激活持久范围，这是可恢复性所必需的。构建由三个智能体组成的工作流：</p>
+
+<pre><code>// 步骤 1：验证订单并将结果写入共享状态AgenticScopeAction validateOrder = AgenticServices.agentAction(scope -&gt; { String order = scope.readState(&quot;order&quot;, &quot;&quot;); scope.writeState(&quot;validated_order&quot;, &quot;VALIDATED: &quot; + order);});// 步骤 2：使用 SuspendedResponse 暂停以等待人工批准HumanInTheLoop approvalGate = AgenticServices.humanInTheLoopBuilder() .description(&quot;Wait for manager approval on large orders&quot;) .outputKey(&quot;approval&quot;) .responseProvider(scope -&gt; new SuspendedResponse&lt;&gt;(&quot;manager-approval&quot;)) .build();// 步骤 3：根据批准决定最终确定AgenticScopeAction shipOrder = AgenticServices.agentAction(scope -&gt; { String validated = scope.readState(&quot;validated_order&quot;, &quot;&quot;); String approval = scope.readState(&quot;approval&quot;, &quot;&quot;); scope.writeState(&quot;result&quot;, &quot;Order &quot; + validated + &quot; — &quot; + approval);});OrderWorkflow workflow = AgenticServices.sequenceBuilder(OrderWorkflow.class) .subAgents(validateOrder, approvalGate, shipOrder) .outputKey(&quot;result&quot;) .build();</code></pre>
+
+<p>当此工作流运行时，它会验证订单，然后到达 HumanInTheLoop 步骤。因为响应提供程序返回 SuspendedResponse，所以智能体系统通过抛出 AgenticSystemSuspendedException 来暂停其执行，而不是阻塞调用线程。完整范围（包括已验证的订单数据、规划器的游标位置（步骤 2 完成）和 SuspendedResponse）将检查点存储到存储（如果已配置），并抛出 AgenticSystemSuspendedException 以释放线程：</p>
+
+<pre><code>try { String result = workflow.processOrder(&quot;order-12345&quot;, &quot;1000 widgets&quot;); // 工作流正常完成} catch (AgenticSystemSuspendedException e) { // 工作流挂起 — 等待人工输入 AgenticScope scope = e.scope(); Set&lt;String&gt; pendingIds = scope.pendingResponseIds(); // → [&quot;manager-approval&quot;] // 将 scope/pendingIds 存储到你的 UI / REST API 中以呈现给人工}</code></pre>
+
+<p>作为 SuspendedResponse 的替代，人工干预可以返回 PendingResponse 类的实例，以阻塞调用线程直到从另一个线程调用 complete()。本质上：</p>
+
+<p>| 响应类型 | 行为 | | SuspendedResponse | 暂停智能体系统：检查点存储范围，抛出 AgenticSystemSuspendedException，并释放调用线程。通过完成响应并重新调用智能体方法来恢复系统。 | | PendingResponse | 在底层 CompletableFuture 上阻塞调用线程，直到从另一个线程调用 complete()。不抛出异常 — 智能体系统原地等待。 |</p>
+
+<p>用户可以在创建响应的位置（responseProvider lambda 或 @HumanInTheLoop 静态方法中）进行选择：</p>
+
+<pre><code>// 挂起：智能体系统检查点存储并抛出 AgenticSystemSuspendedException。responseProvider(scope -&gt; new SuspendedResponse&lt;&gt;(&quot;approval-id&quot;))// 阻塞：调用线程等待，直到从另一个线程调用 complete()。responseProvider(scope -&gt; new PendingResponse&lt;&gt;(&quot;approval-id&quot;))</code></pre>
+
+<p>建议对长时间运行的交互（数小时/数天）使用 <code>SuspendedResponse</code>，因为在这些情况下崩溃恢复非常重要；而对短暂的就地等待使用 <code>PendingResponse</code>，在这些情况下后台线程将很快提供答案。</p>
+
+<p>如果方法的返回类型是 ResultWithAgenticScope，则挂起时不会抛出异常；相反，结果具有 suspended() == true 且 result() == null。然后你可以完成挂起的响应并在单次调用中恢复执行：</p>
+
+<pre><code>ResultWithAgenticScope&lt;String&gt; result = workflow.processOrder(&quot;order-12345&quot;, &quot;1000 widgets&quot;);if (result.suspended()) { result = result.completePendingResponse(&quot;APPROVED by manager&quot;); // result.result() → &quot;Order VALIDATED: 1000 widgets — APPROVED by manager&quot;}</code></pre>
+
+<p>这自然适用于具有多个顺序 HITL 关卡的多步骤工作流 — 每个 completePendingResponse 调用都返回一个新的 ResultWithAgenticScope，该 ResultWithAgenticScope 本身也可能会被挂起：</p>
+
+<pre><code>ResultWithAgenticScope&lt;String&gt; result = workflow.processOrder(&quot;order-12345&quot;, &quot;1000 widgets&quot;);result = result.completePendingResponse(&quot;Manager OK&quot;); // 恢复，在法律关卡挂起result = result.completePendingResponse(&quot;Legal OK&quot;); // 恢复，完成// result.result() → 最终输出</code></pre>
+
+<p>ResultWithAgenticScope 是处理挂起的推荐方法，因为它避免将异常用于控制流。</p>
+
+<p>相反，如果方法返回纯类型（例如 String）而不是 ResultWithAgenticScope，则系统在挂起时将抛出 AgenticSystemSuspendedException。在这种情况下，或者当你需要直接通过范围恢复时（例如在崩溃/重启之后），你可以在 AgenticScope 上完成响应并重新调用智能体方法：</p>
+
+<pre><code>AgenticScope scope = workflow.getAgenticScope(&quot;order-12345&quot;);// 完成单个延迟响应（当恰好有一个时）scope.completePendingResponse(&quot;APPROVED by manager&quot;);// 或者通过显式 ID 完成（当有多个挂起响应时非常有用）scope.completePendingResponse(&quot;manager-approval&quot;, &quot;APPROVED by manager&quot;);// 然后重新调用 — 规划器从检查点恢复String result = workflow.processOrder(&quot;order-12345&quot;, &quot;1000 widgets&quot;);</code></pre>
+
+<p>请注意，completePendingResponse 既会完成内存中的 future（解除对任何等待线程的阻塞），又会用解析后的值替换状态映射条目（因此它可以存活于序列化之后）。如果未恰好有一个延迟响应，则单参数重载将抛出 IllegalStateException。</p>
+
+<h2>智能体注册表</h2>
+
+<p>langchain4j-agentic 模块为 AgentsRegistry 提供了一个 SPI（Service Provider Interface），允许外部提供者注册可通过名称发现并连接到任何智能体模式的智能体。这对于将由外部系统（例如远程 A2A 协议智能体）提供的智能体集成到本地定义的智能体工作流中特别有用。</p>
+
+<p>AgentsRegistry 接口定义了两种用于发现智能体的方法：</p>
+
+<pre><code>public interface AgentsRegistry { Map&lt;String, AgentInstance&gt; allAgents(); AgentInstance getAgent(String name); static AgentsRegistry get() { ... }}</code></pre>
+
+<ul><li>allAgents() 返回以其名称为键的所有已注册智能体的映射。</li><li>getAgent(String name) 返回具有给定名称的智能体，如果找不到则抛出 RuntimeException。</li></ul>
+
+<p>静态的 get() 方法使用 Java 的 ServiceLoader 来发现注册表实现。支持多个提供者，并将其自动合并到单个复合注册表中；提供者之间的重复智能体名称会在发现时导致异常。如果未找到提供者，则返回一个空注册表，该注册表在任何查找时都会抛出异常。</p>
+
+<p>要提供注册表实现，请创建一个实现 AgentsRegistry 接口的类，并通过标准的 Java SPI 机制注册它，方法是创建一个文件 META-INF/services/dev.langchain4j.agentic.planner.AgentsRegistry，其中包含你的实现类的完全限定名称。</p>
+
+<pre><code>public class MyAgentsRegistry implements AgentsRegistry { private final Map&lt;String, AgentInstance&gt; agents; public MyAgentsRegistry() { AgentInstance audienceEditor = (AgentInstance) AgenticServices .agentBuilder(AudienceEditor.class) .chatModel(myModel()) .outputKey(&quot;story&quot;) .build(); AgentInstance styleEditor = (AgentInstance) AgenticServices .agentBuilder(StyleEditor.class) .chatModel(myModel()) .outputKey(&quot;story&quot;) .build(); this.agents = Map.of( &quot;audienceEditor&quot;, audienceEditor, &quot;styleEditor&quot;, styleEditor); } @Override public Map&lt;String, AgentInstance&gt; allAgents() { return agents; } @Override public AgentInstance getAgent(String name) { AgentInstance agent = agents.get(name); if (agent == null) { throw new RuntimeException(&quot;No agent found with name: &quot; + name); } return agent; }}</code></pre>
+
+<p>注册表返回的智能体是标准的 AgentInstance 对象，通常使用 AgenticServices.agentBuilder() 构建，因此它们准备用作任何智能体模式中的子智能体。</p>
+
+<p>一旦通过 SPI 提供了注册表，就可以加载智能体并将它们与本地定义的智能体混合在任何智能体模式中：</p>
+
+<pre><code>AgentsRegistry registry = AgentsRegistry.get();CreativeWriter creativeWriter = AgenticServices .agentBuilder(CreativeWriter.class) .chatModel(BASE_MODEL) .outputKey(&quot;story&quot;) .build();AgentInstance audienceEditor = registry.getAgent(&quot;audienceEditor&quot;);AgentInstance styleEditor = registry.getAgent(&quot;styleEditor&quot;);UntypedAgent novelCreator = AgenticServices.sequenceBuilder() .subAgents(creativeWriter, audienceEditor, styleEditor) .outputKey(&quot;story&quot;) .build();String story = (String) novelCreator.invoke(Map.of( &quot;topic&quot;, &quot;dragons and wizards&quot;, &quot;style&quot;, &quot;fantasy&quot;, &quot;audience&quot;, &quot;young adults&quot;));</code></pre>
+
+<p>这里 CreativeWriter 是在本地构建的，而 AudienceEditor 和 StyleEditor 是通过名称从注册表加载的，并用作子智能体与本地定义的智能体一起使用。</p>
+
+<p>@RegistryAgent 注解允许在声明式 API 中从注册表加载智能体。要使用它，请使用一个简单的接口和带 @RegistryAgent 注解的方法定义，指定注册表中智能体的名称。</p>
+
+<pre><code>public interface AudienceEditorFromRegistry { @RegistryAgent(&quot;audienceEditor&quot;) String editStory(@V(&quot;story&quot;) String story, @V(&quot;audience&quot;) String audience);}public interface StyleEditorFromRegistry { @RegistryAgent(&quot;styleEditor&quot;) String editStory(@V(&quot;story&quot;) String story, @V(&quot;style&quot;) String style);}</code></pre>
+
+<p>然后可以将这些接口用作完全声明式智能体系统定义中的子智能体：</p>
+
+<pre><code>public interface DeclarativeStoryCreator { @SequenceAgent(outputKey = &quot;story&quot;, subAgents = {CreativeWriter.class, AudienceEditorFromRegistry.class, StyleEditorFromRegistry.class}) String write(@V(&quot;topic&quot;) String topic, @V(&quot;style&quot;) String style, @V(&quot;audience&quot;) String audience); @ChatModelSupplier static ChatModel chatModel() { return BASE_MODEL; }}</code></pre>
+
+<p>并像通常一样使用 AgenticServices.createAgenticSystem() 实例化：</p>
+
+<pre><code>DeclarativeStoryCreator storyCreator = AgenticServices.createAgenticSystem(DeclarativeStoryCreator.class);String story = storyCreator.write(&quot;dragons and wizards&quot;, &quot;fantasy&quot;, &quot;young adults&quot;);</code></pre>
+
+<p>当声明式系统遇到 @RegistryAgent 注解时，它会自动从注册表中按名称加载相应的智能体并将其连接到的智能体系统中。这允许在同一声明式工作流中混合本地定义的智能体（例如具有其 @ChatModelSupplier 的 CreativeWriter）和注册表提供的智能体。</p>
+
+<h2>A2A 集成</h2>
+
+<p>附加的 langchain4j-agentic-a2a 模块提供了与 A2A 协议的无缝集成，允许构建可以使用远程 A2A 服务器智能体并最终将它们与其他本地定义的智能体混合在一起的智能体系统。</p>
+
+<p>例如，如果第一个示例中使用的 CreativeWriter 智能体是在远程 A2A 服务器上定义的，则可以创建一个 A2ACreativeWriter 智能体，该智能体可以与本地智能体以相同的方式使用，但调用的是远程智能体。</p>
+
+<pre><code>UntypedAgent creativeWriter = AgenticServices .a2aBuilder(A2A_SERVER_URL) .inputKeys(&quot;topic&quot;) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>智能体功能的描述是从 A2A 服务器提供的 agent card 自动检索的。但是，此卡不提供输入参数的名称，因此必须使用 inputKeys 方法显式指定它们。</p>
+
+<p>或者，可以为 A2A 智能体定义一个本地接口，例如：</p>
+
+<pre><code>public interface A2ACreativeWriter { @Agent String generateStory(@V(&quot;topic&quot;) String topic);}</code></pre>
+
+<p>以便以更类型安全的方式使用它，并且输入名称自动从方法参数派生。</p>
+
+<pre><code>A2ACreativeWriter creativeWriter = AgenticServices .a2aBuilder(A2A_SERVER_URL, A2ACreativeWriter.class) .outputKey(&quot;story&quot;) .build();</code></pre>
+
+<p>然后可以以与本地智能体相同的方式使用此智能体，并在定义工作流或将其用作其他智能体的子智能体时将它们混合在一起。</p>
+
+<p>远程 A2A 智能体必须返回 Task 类型。</p>
+
+<h3>与 A2A 服务器的多轮对话</h3>
+
+<p>A2A 协议通过消息包络上的 contextId 和 taskId 字段支持多轮对话。contextId 将相关任务分组到一个对话中，而 taskId 引用该对话中的特定任务。如果省略，A2A 服务器将生成新值；如果提供了 taskId，则服务器将继续该现有任务，而不是创建新任务。</p>
+
+<p>要将这些字段传递到传出消息包络上，请使用 @A2AContextId 和 @A2ATaskId 注解方法参数。这些参数不作为消息内容发送 — 而是设置在消息包络上。</p>
+
+<pre><code>public interface ChatAgent { @A2AClientAgent(a2aServerUrl = &quot;http://localhost:8080&quot;, outputKey = &quot;response&quot;) String chat(@V(&quot;question&quot;) String question, @A2AContextId @V(&quot;contextId&quot;) String contextId, @A2ATaskId @V(&quot;taskId&quot;) String taskId);}</code></pre>
+
+<p>当为 contextId 或 taskId 传递 null 时，该字段将从包络中省略，服务器将创建新值。</p>
+
+<p>当 @A2AContextId 参数还具有可识别的名称（可能通过 @V 注解配置）时，来自响应的服务器分配的值将自动以该名称写回到 AgenticScope 中。这支持多轮流程，其中第一次调用捕获上下文，随后的调用继续同一对话：服务器保留上下文并为每次调用在其中创建一个新任务。</p>
+
+<p>taskId 遵循不同的规则：仅当远程任务在调用返回时仍处于打开状态时，才将其写回到 AgenticScope，否则将清除该范围条目。调用通常在其任务达到终止状态后返回，并且 A2A 服务器拒绝发送给此类任务的任何进一步消息，因此在通常情况下不会传播任何内容，并且下一次调用将启动新任务。唯一的例外是提前停止使用流的流式客户端监听器：远程任务继续运行，并且其标识符会保留在范围中，以便仍然可以对其进行轮询、取消或继续。</p>
+
+<p>在该情况之外，taskId 将取自调用参数：传递 null（或省略参数）以让服务器创建新任务，或传递现有任务的标识符以继续该任务。</p>
+
+<p>如果方法返回 ResultWithAgenticScope，则可以直接访问上下文：</p>
+
+<pre><code>public interface ChatAgent { @A2AClientAgent(a2aServerUrl = &quot;http://localhost:8080&quot;, outputKey = &quot;response&quot;) ResultWithAgenticScope&lt;String&gt; chat( @V(&quot;question&quot;) String question, @A2AContextId @V(&quot;contextId&quot;) String contextId, @A2ATaskId @V(&quot;taskId&quot;) String taskId);}// 第一轮 — 服务器生成 contextId 和 taskIdResultWithAgenticScope&lt;String&gt; first = chatAgent.chat(&quot;hello&quot;, null, null);String contextId = (String) first.agenticScope().readState(&quot;contextId&quot;);// 第二轮 — 重用服务器生成的上下文以继续对话，// 同时让服务器为此调用创建一个新任务ResultWithAgenticScope&lt;String&gt; second = chatAgent.chat(&quot;follow-up&quot;, contextId, null);</code></pre>
+
+<p>这样，当 A2A智能体在智能体系统中使用时，contextId 会通过共享的 AgenticScope 自动传播。这意味着对同一服务器的两个 A2A 调用序列自然形成多轮对话：</p>
+
+<pre><code>public interface EchoSubAgent { @A2AClientAgent(a2aServerUrl = &quot;http://localhost:8080&quot;, outputKey = &quot;response&quot;) String echo(@V(&quot;question&quot;) String question, @A2AContextId @V(&quot;contextId&quot;) String contextId, @A2ATaskId @V(&quot;taskId&quot;) String taskId);}public interface MultiTurnWorkflow extends AgenticScopeAccess { @Agent ResultWithAgenticScope&lt;String&gt; converse(@V(&quot;question&quot;) String question);}EchoSubAgent firstTurn = AgenticServices .a2aBuilder(&quot;http://localhost:8080&quot;, EchoSubAgent.class) .outputKey(&quot;firstResponse&quot;).build();EchoSubAgent secondTurn = AgenticServices .a2aBuilder(&quot;http://localhost:8080&quot;, EchoSubAgent.class) .outputKey(&quot;secondResponse&quot;).build();MultiTurnWorkflow workflow = AgenticServices.sequenceBuilder(MultiTurnWorkflow.class) .subAgents(firstTurn, secondTurn) .outputKey(&quot;secondResponse&quot;).build();ResultWithAgenticScope&lt;String&gt; result = workflow.converse(&quot;hello&quot;);</code></pre>
+
+<p>在此序列中，第一个智能体在 contextId/taskId 为 null 时发送消息（它们在范围内为 null）。服务器创建新上下文和新任务，然后将 contextId 写入范围。当第二个智能体运行时，它从范围中读取现已填充的 contextId 并将其发送到消息包络，从而继续对话。由于第一个智能体完成的任务无法接受更多消息，因此 taskId 在范围内保持未设置状态，并且服务器在同一上下文中创建一个新任务。</p>
+<pre><code>
+### 多租户 A2A 智能体
+
+在多租户 A2A 部署中，消息必须限定到特定租户，以便服务器可以应用正确的路由、隔离和策略。langchain4j-agentic-a2a 模块支持三种配置租户的方式，具体取决于租户是固定的、动态的还是从服务器 URL 自动派生的。
+
+#### 从 agent card URL 自动检测
+
+当未配置租户时，客户端将自动从 agent card URL 中提取它。多租户 A2A 服务器通常遵循约定 /.well-known/{tenant}/agent-card.json。如果 agent card URL 匹配此模式，则提取的租户将以静默方式应用于每条传出消息 — 无需任何配置。
+
+#### 通过 @A2AClientAgent 注解的静态租户
+
+当租户在构建时已知并且对于每次调用都相同时，请在 @A2AClientAgent 注解上直接设置 tenant 属性：
+</code></pre>
+<p>public interface MyA2AAgent { @A2AClientAgent(a2aServerUrl = &quot;http://localhost:8080&quot;, tenant = &quot;acme&quot;, outputKey = &quot;response&quot;) String chat(@V(&quot;question&quot;) String question);}</p>
+<pre><code>
+租户在 MessageSendParams 上设置，由此智能体发送的每条消息 — 不需要方法参数。它不作为消息内容中的 TextPart 包含。在注解中设置 tenant 优先于从 agent card URL 自动检测。
+
+以编程方式构建时，将租户作为第二个参数传递给 a2aBuilder：
+</code></pre>
+<p>UntypedAgent agent = AgenticServices .a2aBuilder(&quot;http://localhost:8080&quot;, &quot;acme&quot;) .inputKeys(&quot;question&quot;) .outputKey(&quot;response&quot;) .build();// 或使用类型化接口：MyA2AAgent agent = AgenticServices .a2aBuilder(&quot;http://localhost:8080&quot;, &quot;acme&quot;, MyA2AAgent.class) .outputKey(&quot;response&quot;) .build();</p>
+<pre><code>
+#### 通过 @A2ATenantId 的动态租户
+
+当租户因调用而异时，请使用 @A2ATenantId 注解方法参数。参数值在传出的 MessageSendParams 上设置为租户字段 — 它不作为消息内容中的 TextPart 包含。
+</code></pre>
+<p>public interface MyA2AAgent { @A2AClientAgent(a2aServerUrl = &quot;http://localhost:8080&quot;, outputKey = &quot;response&quot;) String chat(@V(&quot;question&quot;) String question, @A2AContextId String contextId, @A2ATenantId String tenant);}</p>
+<pre><code>
+当为 tenant 传递 null 或空字符串时，该字段将从 MessageSendParams 中省略，服务器将应用其默认租户解析。
+
+@A2ATenantId 可以与 @A2AContextId 和 @A2ATaskId 自由组合：
+</code></pre>
+<p>public interface MultiTenantChatAgent { @A2AClientAgent(a2aServerUrl = &quot;http://localhost:8080&quot;, outputKey = &quot;response&quot;) String chat(@V(&quot;question&quot;) String question, @A2AContextId @V(&quot;contextId&quot;) String contextId, @A2ATaskId @V(&quot;taskId&quot;) String taskId, @A2ATenantId String tenant);}</p>
+<pre><code>
+与 @A2AContextId 和 @A2ATaskId 不同，tenant 值永远不会被写回到 AgenticScope — 调用者负责在每次调用时提供它。
+
+#### 摘要：租户解析顺序
+
+| 方法 | 使用场景 |
+| 从 agent card URL 自动检测 | 服务器 URL 遵循 /.well-known/{tenant}/agent-card.json 且租户是常量 |
+| 在 @A2AClientAgent（或 a2aBuilder(url, tenant, ...)）上的 tenant | 租户是固定的且在构建时已知 |
+| @A2ATenantId 方法参数 | 租户因调用而异 |
+
+### Human-in-the-loop A2A 智能体
+
+A2A 服务器可以在 input-required 或 auth-required 状态下暂停任务。当这种情况发生在智能体系统内时，A2A 客户端会将 SuspendedResponse 存储在 AgenticScope 中，检查点存储工作流，并释放调用线程。中断包含继续同一远程任务所需的任务和上下文 ID。
+
+调用者可以将这些详细信息发布到外部系统，例如 Kafka 主题：
+</code></pre>
+<p>try { workflow.invoke(&quot;request-123&quot;, &quot;Book the trip&quot;);} catch (AgenticSystemSuspendedException e) { AgenticScope scope = e.scope(); String responseId = scope.pendingResponseIds().iterator().next(); A2ATaskInterruptedException interruption = A2ATaskInterruptedException.from(scope, responseId); inputRequests.publish(new InputRequest( scope.memoryId(), responseId, interruption.taskId(), interruption.contextId(), interruption.reason()));}</p>
+<pre><code>
+当人工响应稍后到达时，完成挂起的响应并再次调用工作流。规划器从其检查点恢复，A2A 客户端使用存储的 contextId 和 taskId 发送响应，而不是启动新任务：
+</code></pre>
+<p>void onInputResponse(InputResponse response) { AgenticScope scope = workflow.getAgenticScope(response.memoryId()); scope.completePendingResponse(response.responseId(), response.text()); workflow.invoke(response.memoryId(), &quot;Book the trip&quot;);}</p>
+<pre><code>
+completePendingResponse(...) 在挂起的范围中记录人工的答案，但本身不会重新启动工作流。下一个调用使用与原始请求相同的 memory ID 和原始参数，调用相同的 workflow.invoke(...) 方法。memory ID 恢复已保存的规划器检查点；当执行到达 A2A 客户端时，它会使用存储的 contextId 和 taskId 发送已完成的响应，从而继续现有的远程任务。
+
+如果在智能体系统之外调用 A2A 客户端，则没有要挂起的范围。在这种情况下，它直接抛出 A2ATaskInterruptedException，以便调用者可以手动处理中断。
+
+### 自定义 A2A 客户端
+
+默认情况下，A2A 智能体使用 JSONRPC 传输和默认配置。clientCustomizer 方法公开底层的 a2a-java SDK ClientBuilder，允许你配置不同的传输、设置自定义 HTTP 客户端、添加拦截器或更改任何其他客户端设置。
+
+以编程方式构建 A2A 智能体时，将 Consumer&lt;ClientBuilder&gt; 传递给 clientCustomizer：
+</code></pre>
+<p>UntypedAgent creativeWriter = AgenticServices .a2aBuilder(A2A_SERVER_URL) .clientCustomizer((ClientBuilder cb) -&gt; cb.withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder())) .inputKeys(&quot;topic&quot;) .outputKey(&quot;story&quot;) .build();</p>
+<pre><code>
+当提供自定义程序时，它将完全替换默认的传输设置，从而可以完全控制 Client 的构造方式。
+
+对于声明式智能体，请使用 @A2AClientCustomizer 注解静态方法。该方法必须采用单个 ClientBuilder 参数并返回 void：
+</code></pre>
+<p>public interface DeclarativeA2AWithCustomizer { @A2AClientAgent(a2aServerUrl = &quot;http://localhost:8080&quot;, outputKey = &quot;story&quot;) String generateStory(@V(&quot;topic&quot;) String topic); @A2AClientCustomizer static void customizer(ClientBuilder cb) { cb.withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder()); }}</p>
+<pre><code>
+### 流式 A2A 客户端监听器
+
+使用流式调用远程 A2A 智能体时，可以使用 A2AStreamingClientListener 来观察从远程智能体接收的事件并控制客户端何时停止使用流。
+
+当你只需要对特定事件做出反应而不必等待远程任务完成时，这非常有用。例如，你可以在远程智能体请求其他输入时停止监听，并立即将消息返回给调用者。
+</code></pre>
+<p>UntypedAgent creativeWriter = AgenticServices.a2aBuilder(A2A_SERVER_URL) .inputKeys(&quot;topic&quot;) .outputKey(&quot;story&quot;) .streamingClientListener((TaskUpdateEvent event) -&gt; { UpdateEvent updateEvent = event.getUpdateEvent(); if (updateEvent instanceof TaskStatusUpdateEvent taskStatusUpdateEvent &amp;&amp; taskStatusUpdateEvent.status().state() == TaskState.TASK_STATE_WORKING) { return A2AStreamingClientListenerResult.stopWithResponse( &quot;stop when status update to TASK_STATE_WORKING, and return this message to the caller&quot;); } return A2AStreamingClientListenerResult.continueStreaming(); }) .build();</p>
+<pre><code>
+监听器针对从远程 A2A 智能体接收的每个事件被调用。返回 continueStreaming() 以继续使用事件，返回 stopWithResponse(response) 以停止使用流并将指定的响应返回给调用者，或返回 stopWithCurrentArtifacts() 以停止使用流并返回到目前为止接收到的 artifacts，使用默认的 A2A 客户端 artifact 转换到文本提取逻辑。
+
+停止客户端流不会取消远程 A2A 任务。远程任务可能会异步继续执行。因为该任务在调用返回时仍处于打开状态，所以其标识符将以 @A2ATaskId 参数的名称写回到 AgenticScope 中（如果智能体声明了的话），以便调用者可以对其进行轮询、取消或继续。这是 taskId 通过范围传播的唯一情况，如 A2A 服务器的多轮对话部分所述。
+
+### 动态配置 A2A 服务器 URL
+
+默认情况下，@A2AClientAgent 注解要求 A2A 服务器 URL 作为编译时字符串字面量通过 a2aServerUrl 属性提供。对于 URL 不同的环境（例如开发、预生产、生产），可以使用 @A2AServerUrlSupplier 注解的静态方法在构建时动态提供 URL：
+</code></pre>
+<p>public interface DeclarativeA2AWithUrlSupplier { @A2AClientAgent(outputKey = &quot;story&quot;) String generateStory(@V(&quot;topic&quot;) String topic); @A2AServerUrlSupplier static String serverUrl() { return System.getenv(&quot;A2A_SERVER_URL&quot;); }}</p>
+<pre><code>
+提供者方法必须是静态的，不带任何参数，并返回 String。它在构造智能体时调用一次 — URL 在调用之间不会更改。注解中的 a2aServerUrl 或 @A2AServerUrlSupplier 方法必须恰好提供一个；同时指定两者（或两者都不指定）是一个错误。
+
+此模式与 @McpClientSupplier 如何为 @McpClientAgent 声明式智能体提供 MCP 客户端的方式一致。
+
+## 基于 MCP 的工具智能体
+
+附加的 langchain4j-agentic-mcp 模块允许将单个 MCP 工具包装为智能体系统中的非 AI 智能体。与使用 LLM 的常规智能体不同，MCP 工具智能体只是直接执行 MCP 工具并返回其结果。这使得可以在更大的智能体系统中将 MCP 工具与其他智能体组合，而无需让 LLM 参与工具执行本身。
+
+要创建 MCP 工具智能体，请使用 McpAgent.builder() 提供 McpClient 实例。构建器查询 MCP 服务器以获取工具规范（名称、描述、输入 schema），并创建一个将该工具调用转发的智能体。
+
+例如，如果 MCP 服务器公开了 generate_story 工具，则可以将其包装为 untyped 智能体：
+</code></pre>
+<p>McpClient mcpClient = new DefaultMcpClient.Builder() .transport(myMcpTransport) .build();UntypedAgent storyGenerator = McpAgent.builder(mcpClient) .toolName(&quot;generate_story&quot;) .inputKeys(&quot;topic&quot;) .outputKey(&quot;story&quot;) .build();String story = (String) storyGenerator.invoke(Map.of(&quot;topic&quot;, &quot;dragons and wizards&quot;));</p>
+<pre><code>
+toolName 指定当 MCP 服务器公开多个工具时要绑定哪个工具。如果服务器仅公开一个工具，则可以省略 toolName，并将自动选择唯一可用的工具。inputKeys 指定工具输入参数的名称；对于 untyped 智能体，如果没有显式提供这些名称，则它们也会从工具的 JSON schema 自动派生。
+
+与其他智能体一样，MCP 工具智能体也可以使用类型化接口创建：
+</code></pre>
+<p>public interface StoryGenerator { @Agent String generateStory(@V(&quot;topic&quot;) String topic);}StoryGenerator storyGenerator = McpAgent.builder(mcpClient, StoryGenerator.class) .toolName(&quot;generate_story&quot;) .outputKey(&quot;story&quot;) .build();String story = storyGenerator.generateStory(&quot;dragons and wizards&quot;);</p>
+<pre><code>
+在这种情况下，输入参数名称从方法参数（或其 @V 注解）派生，返回类型确定如何解析工具的文本结果。
+
+最后，还可以使用 @McpClientAgent 注解以声明方式定义 MCP 工具智能体。@McpClientSupplier 注解标记提供 McpClient 实例的静态方法。
+</code></pre>
+<p>public interface DeclarativeMcpStoryGenerator { @McpClientAgent(toolName = &quot;generate_story&quot;, outputKey = &quot;story&quot;, description = &quot;Generates a story based on the given topic&quot;) String generateStory(@V(&quot;topic&quot;) String topic); @McpClientSupplier static McpClient mcpClient() { McpTransport transport = new StreamableHttpMcpTransport.Builder() .url(&quot;http://localhost:8081/mcp&quot;) .build(); return new DefaultMcpClient.Builder() .transport(transport) .build(); }}</p>
+<div class="prev-next">
+  <a href="ai-services.html"><div class="label">← 上一篇</div><div>AI Services</div></a>
+  <a href="tools.html"><div class="label">下一篇 →</div><div>工具（函数调用）</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,175 @@
+noteModel routing（模型路由）是实验性功能，可能在后续版本中发生变化。
+
+不同的请求需要不同的模型：问候或简短的事实性问题可以由一个小型、快速且廉价的模型回答，
+而编写代码或进行详细分析则需要更大的模型。通过 model routing，每条请求都会被发送到
+最适合它的模型，而无需修改应用的其他部分。
+
+RoutingChatModel 是一个 ChatModel，它会将每条请求发送给若干 chat model（即 routes）
+中的一个，具体由 ChatModelRouter 决定。由于它本身就是一个 ChatModel，因此可以用在
+凡是使用 chat model 的地方：AI Services、Agent、RAG 等等。
+
+```
+ChatModel chatModel = RoutingChatModel.builder()
+  .route("simple", "Greetings, small talk and short factual questions", smallModel)
+  .route("complex", "Writing or debugging code, multi-step reasoning, detailed analysis", largeModel)
+  .router(new DecisionModelChatModelRouter(decisionModel))
+  .defaultRoute("complex")
+  .build();
+
+Assistant assistant = AiServices.create(Assistant.class, chatModel);
+```
+
+smallModel 和 largeModel 可以是任意的 ChatModel，decisionModel 可以是任意的 DecisionModel，
+例如 TypeSafeDecisionModel（参见 Decision Models）。下方给出了不需要模型的 router 示例。
+
+对于流式场景，请使用 RoutingStreamingChatModel 配合 StreamingChatModels；其工作方式相同。
+
+## Routers
+
+一个 ChatModelRouter 返回一个 ChatModelRoutingResult：使用
+ChatModelRoutingResult.route(name) 来选择某个 route，或者使用
+ChatModelRoutingResult.defaultRoute() 来选择默认 route。
+默认 route 是必需的，以便总是有一个模型可以接收请求，例如当一个会调用模型的 router
+无法确定或失败时。
+
+### Decision model router
+
+DecisionModelChatModelRouter 会使用一个 decision model 来选择一个其描述最贴合请求的
+route。它会发送对话中的最近 3 条消息（maxMessages），
+以便诸如“yes, go ahead”这类简短的后续语句也能被理解。只发送并计数用户消息和 AI 的文本回复：
+系统消息、工具调用和工具结果会被略去。非文本的 content（例如图片）会用一个标记
+（例如 [attached image]）来表示，这样在描述中提到了图片的 route 就可以被选中。
+Decision models 通常比 chat models 更快也更便宜，因此与 chat model 调用相比，
+路由几乎不会增加额外的延迟或成本。请精心描述每个 route；
+没有描述的 route 会以自己的名字作为描述。
+
+当请求没有用户消息，或当所选 route 的概率低于 minProbability 时，它会选择默认 route，
+后者适合把 decision model 无法确定的请求转给更大的模型。minProbability 要求 decision model
+必须返回概率，否则调用会失败。当 decision model 失败时，会使用默认 route 并记录一条警告；
+设置 fallbackStrategy(FAIL) 可以让请求直接失败。
+
+```
+ChatModelRouter router = DecisionModelChatModelRouter.builder()
+  .decisionModel(decisionModel)
+  .minProbability(0.7)
+  .build();
+```
+
+一个服务于涉及多个不相关主题的请求的 route 可以拥有多个描述：
+
+```
+ChatModel chatModel = RoutingChatModel.builder()
+  .route("simple", "Greetings, small talk and short factual questions", smallModel)
+  .route("complex", List.of("Writing or debugging code", "Legal contract analysis", "Tax planning"), largeModel)
+  .router(new DecisionModelChatModelRouter(decisionModel))
+  .defaultRoute("simple")
+  .build();
+```
+
+Decision model 会将每条描述视为一个独立选项，一个 route 的概率就是其所有描述的概率之和。
+相比于把多个主题罗列在一段描述中，这样做可以让决策更有信心，
+在使用较小的 decision model 时尤其如此。当 decision model 无法确定时，它会将概率
+均匀分配到所有选项上，因此描述更多的 route 会分到更多概率：请保持各 route 的描述数量
+均衡，除非该 route 本就应该在不确定的情况下胜出。
+
+### 自定义 routers
+
+router 也可以是一条简单的规则：
+
+```
+ChatModel chatModel = RoutingChatModel.builder()
+  .route("simple", smallModel)
+  .route("complex", largeModel)
+  .router(request -> ChatModelRoutingResult.route(
+    request.chatRequest().messages().size() > 20 ? "complex" : "simple"))
+  .defaultRoute("simple")
+  .build();
+```
+
+router 会接收 ChatRequest、调用的选项以及可以处理它的 routes
+（ChatModelRoute：名称与描述）。
+router 也可以在 routing chat model 被创建时通过实现 validate(...) 来检查这些 routes。
+
+### 异步调用
+
+chat(...) 以及带有 StreamingChatResponseHandler 的流式调用会在调用线程上调用
+route(...)，这会在选择 route 期间阻塞：对于 DecisionModelChatModelRouter，
+会一直阻塞直到 decision model 给出答案。不要在事件循环线程上调用它们
+（例如在 Vert.x 或 Quarkus reactive 端点中）。
+非阻塞方法 chatAsync(...) 以及向 Publisher 的流式
+（StreamingChatModel.chat(ChatRequest)）则会改为调用 routeAsync(...)，
+因此路由绝不会阻塞。routeAsync(...) 默认未被实现，因此以 lambda 形式编写的 router
+会让这些调用以 AsyncNotSupportedException 失败。
+要在非阻塞调用中使用这种 router，请实现 routeAsync(...)：
+
+```
+ChatModelRouter router = new ChatModelRouter() {
+  @Override
+  public ChatModelRoutingResult route(ChatModelRoutingRequest request) {
+    return ChatModelRoutingResult.route(
+      request.chatRequest().messages().size() > 20 ? "complex" : "simple");
+  }
+
+  @Override
+  public CompletableFuture<ChatModelRoutingResult> routeAsync(ChatModelRoutingRequest request) {
+    return CompletableFuture.completedFuture(route(request)); // route(...) 不会阻塞
+  }
+};
+```
+
+对于一个会阻塞的 router（例如需要在数据库中查询用户的 router），可以使用
+CompletableFuture.supplyAsync(() -> route(request), executor) 在你选择的执行器上
+运行 route(...)，或者更好的做法是直接使用非阻塞客户端。DecisionModelChatModelRouter
+通过 DecisionModel.decideAsync(...) 实现了 routeAsync(...)。
+
+## 请求是如何被路由的
+
+- 被选中的模型像被直接调用一样处理该请求：它的默认参数和 listeners 都会生效。
+- 这些请求可以被发送给不同提供商的模型，因此应只设置通用的请求参数
+（ChatRequestParameters），而不是特定于提供商的参数。
+- 被选中 route 的名称会加入到本次调用的 listener 属性中
+（位于 RoutingChatModel.ROUTE_ATTRIBUTE），
+以便被选中模型的 listeners 能够报告它，并存储在返回的 AiMessage 的属性中。
+- 工具调用循环中的若干轮保持在同一个模型上：以工具结果结束的请求会使用存储在
+那条请求了这些工具的 AiMessage 中的 route，而不会再向 router 询问。
+只要聊天记忆保留了消息的属性（默认的序列化方式就会保留），这一点也能与持久化聊天记忆一起工作。
+- supportedCapabilities() 返回至少被一个 route 支持的能力。一个需要特定能力的请求
+（例如 JSON schema 响应格式）只会被路由到声明支持该能力的 route：
+router 只看到这些 route，如果默认 route 未声明该能力，则会使用第一个声明了该能力的 route。
+如果没有 route 声明该能力，则所有 route 仍是候选，被选中的模型会像被直接调用时那样
+自行决定接受或拒绝该请求。
+- 如果 router 返回一个未知的 route，请求会以 IllegalStateException 失败。
+- 被选中的模型会在完成路由的线程上被调用：该调用线程，或在非阻塞调用中即
+完成 routeAsync(...) 的线程（例如 decision model 响应的线程）。
+- 当 routing chat models 嵌套时，存储在 AiMessage 中的是最外层 routing chat model 的名称。
+在工具调用循环中，内层 routing chat model 因此找不到自己的 route，于是再次询问其 router，
+而 router 可能选中另一个模型。如果内层 route 的名称与外层 route 相同，
+内层 routing chat model 会使用其同名 route。请为嵌套 routing chat models 的
+route 赋予不同的名称。
+
+## 需要注意的事项
+
+- 所有 route 共享同一个对话：在一个新的用户消息之后，另一条 route 可能会接收到由其他
+route 产生的消息。不同提供商的 route 必须能够读取彼此的消息。
+这在提供商特有的内容上可能会失败，例如：返回的带有签名的 thinking 内容，或者
+另一个提供商不接受其格式的 tool call id。在同一提供商的不同模型之间进行路由可以
+避免这一问题。
+- DecisionModelChatModelRouter 看到的是消息文本，而不是图片或其他附件的内容：
+它只知道它们被附加上了。
+- 在启用了 RAG 的 AI Service 中，DecisionModelChatModelRouter 看到的是已经加入
+检索内容的用户消息，就像 chat model 看到的那样：检索到的文档会参与决策，
+而过长的内容可能超出 decision model 的输入限制，这种情况下会使用默认路由
+并记录一条警告。
+- Prompt 缓存是按模型进行的：一条在 route 之间来回切换的对话无法利用上一个模型的缓存，
+在长对话中这可能抵消掉路由所带来的节省。
+- Routing chat model 自身没有默认请求参数，并且其 provider() 返回 OTHER：
+从 chat model 读取默认请求参数（例如调整 toolChoice）的代码会看到空的参数，
+而不是其 route 的参数。被选中的模型的默认参数仍然会作用于每一次请求。
+- 当 routing chat model 与其所有 route 都是同一种类型的 bean 时，请确保 AI Service 实际
+使用的是 routing chat model，例如在 Spring Boot 中可以使用
+@AiService(wiringMode = EXPLICIT, chatModel = "routingChatModel")。
+- Listener 应配置在 route 模型上，而非 routing chat model 上：被选中模型的 listener
+会观察每一次调用，route 名称在它们的属性中可用
+（RoutingChatModel.ROUTE_ATTRIBUTE），但有一个例外：StreamingChatModel.chat(ChatRequest)
+返回的 Publisher 不接受 options，此时 route 名称只能从响应的属性中获取。
+- Routing 在请求发送之前选定模型；它不会在某个模型失败后将请求重试到另一个模型。

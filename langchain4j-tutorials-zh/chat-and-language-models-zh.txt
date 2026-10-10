@@ -1,0 +1,171 @@
+note本页面介绍的是底层 LLM API。
+有关高级 LLM API，请参阅 AI Services。
+
+note所有受支持的大语言模型（LLM）可在此处找到。
+
+目前大语言模型有两种 API 类型：
+
+- LanguageModels。其 API 非常简单——接收 String 作为输入，返回 String 作为输出。该 API 正在逐渐被 chat API（第二种 API 类型）取代。
+- ChatModels。接收多个 ChatMessage 作为输入，返回单个 AiMessage 作为输出。ChatMessage 通常包含文本，但某些 LLM 还支持其他模态（例如图像、音频等）。此类聊天模型的示例包括 OpenAI 的 gpt-4o-mini 和 Google 的 gemini-1.5-pro。LangChain4j 不再扩展对 LanguageModels 的支持，因此在所有新功能中，我们将使用 ChatModel API。
+
+ChatModel 是在 LangChain4j 中与 LLM 交互的底层 API，提供最大的能力和灵活性。还有一个高级 API（AI Services），我们将在介绍完基础知识后再讲解。
+
+除了 ChatModel 和 LanguageModel，LangChain4j 还支持以下类型的模型：
+
+- EmbeddingModel - 该模型可以将文本转换为 Embedding（嵌入向量）。
+- ImageModel - 该模型可以生成和编辑图像。
+- ModerationModel - 该模型可以检查文本是否包含有害内容。
+- ScoringModel - 该模型可以根据查询对多个文本进行打分（或排序），本质上就是确定每个文本与查询的相关性。这对于 RAG（检索增强生成）非常有用。
+这些内容将在后续介绍。现在，让我们更仔细地看看 ChatModel API。
+
+```
+public interface ChatModel { String chat(String userMessage); ...}
+```
+
+如您所见，这里有一个简单的 chat 方法，接收 String 作为输入，返回 String 作为输出，与 LanguageModel 类似。这只是一个便捷方法，以便您可以快速轻松地进行试验，而无需将 String 包装为 UserMessage。
+
+以下是其他 chat API 方法：
+
+```
+ ... ChatResponse chat(ChatMessage... messages); ChatResponse chat(List<ChatMessage> messages); ...
+```
+
+这些版本的 chat 方法接收一个或多个 ChatMessage 作为输入。ChatMessage 是一个基础接口，表示聊天消息。下一节将提供有关聊天消息的更多详细信息。
+
+如果您希望自定义请求（例如指定模型名称、温度、工具、JSON 模式等），可以使用 chat(ChatRequest) 方法：
+
+```
+ ... ChatResponse chat(ChatRequest chatRequest); ...
+```
+
+```
+ChatRequest chatRequest = ChatRequest.builder() .messages(...) .modelName(...) .temperature(...) .topP(...) .topK(...) .frequencyPenalty(...) .presencePenalty(...) .maxOutputTokens(...) .stopSequences(...) .toolSpecifications(...) .toolChoice(...) .responseFormat(...) .parameters(...) // 您还可以一次设置通用或特定于提供商的参数 .build();ChatResponse chatResponse = chatModel.chat(chatRequest);
+```
+
+### ChatMessage 的类型
+
+目前有五种类型的聊天消息，每种对应消息的一个"来源"：
+
+- UserMessage：来自用户的消息。用户可以是您应用程序的最终用户（人类），也可以是您应用程序本身。它可以包含：
+
+contents()：消息内容。根据 LLM 支持的模态，它可以仅包含单个文本（String），也可以包含其他模态。
+name()：用户的名称。并非所有模型提供商都支持该字段。
+attributes()：附加属性：这些属性不会发送给模型，但会存储在 ChatMemory 中。
+- AiMessage：由 AI 生成的消息，作为对所发送消息的响应。它可以包含：
+
+text()：文本内容
+thinking()：思考/推理内容
+toolExecutionRequests()：执行工具的请求。我们将在另一部分探讨工具。
+attributes()：附加属性，通常特定于提供商。
+- ToolExecutionResultMessage：这是 ToolExecutionRequest 的结果。
+- SystemMessage：来自系统的消息。通常，作为开发者，您应该定义此消息的内容。一般来说，您应该在此处编写关于 LLM 在此对话中的角色、如何表现、以什么风格回答等方面的指令。LLM 经过训练，会比对待其他类型的消息更关注 SystemMessage，因此请谨慎使用，最好不要让最终用户自由访问以定义或向 SystemMessage 注入输入。通常，它位于对话的开头。它可以包含：
+
+text()：消息文本。
+attributes()：附加属性：这些属性不会发送给模型，但会存储在 ChatMemory 中。
+- CustomMessage：这是一个可以包含任意属性的自定义消息。此消息类型只能由支持它的 ChatModel 实现使用（目前仅 Ollama）。现在我们已经了解了所有类型的 ChatMessage，接下来看看如何在对话中组合它们。
+
+在最简单的场景中，我们可以将单个 UserMessage 实例提供给 chat 方法。这类似于 chat 方法的第一个版本，该版本以 String 作为输入。这里的主要区别在于它现在返回的不是 String，而是 ChatResponse。除了 AiMessage 之外，ChatResponse 还包含 ChatResponseMetadata。ChatResponseMetadata 包含 TokenUsage，其中包含有关输入包含多少个 token（您提供给 generate 方法的所有 ChatMessage）、作为输出生成了多少个 token（在 AiMessage 中）以及总数（输入 + 输出）的统计信息。您需要此信息来计算对 LLM 的特定调用的成本。然后，ChatResponseMetadata 还包含 FinishReason，它是一个枚举，包含生成停止的各种原因。通常情况下，如果 LLM 自行决定停止生成，则为 FinishReason.STOP。
+
+根据内容不同，有多种创建 UserMessage 的方式。最简单的是 new UserMessage("Hi") 或 UserMessage.from("Hi")。
+
+### 多个 ChatMessage
+
+那么，为什么需要提供多个 ChatMessage 作为输入，而不仅仅是一个呢？这是因为 LLM 本身是无状态的，这意味着它们不维护对话状态。因此，如果您希望支持多轮对话，您需要负责管理对话的状态。
+
+假设您要构建一个聊天机器人。想象用户和聊天机器人（AI）之间的简单多轮对话：
+
+- 用户：你好，我叫 Klaus
+- AI：嗨 Klaus，我能帮你什么？
+- 用户：我叫什么名字？
+- AI：Klaus
+这是与 ChatModel 的交互方式：
+
+```
+UserMessage firstUserMessage = UserMessage.from("Hello, my name is Klaus");AiMessage firstAiMessage = model.chat(firstUserMessage).aiMessage(); // 嗨 Klaus，我能帮你什么？UserMessage secondUserMessage = UserMessage.from("What is my name?");AiMessage secondAiMessage = model.chat(firstUserMessage, firstAiMessage, secondUserMessage).aiMessage(); // Klaus
+```
+
+如您所见，在 chat 方法的第二次调用中，我们不仅提供了单个 secondUserMessage，还提供了对话中之前的所有消息。
+
+手动维护和管理这些消息很麻烦。因此，存在 ChatMemory 的概念，我们将在下一节中探讨。
+
+### 多模态
+
+UserMessage 不仅可以包含文本，还可以包含其他类型的内容。UserMessage 包含一个 List<Content> contents。Content 是一个接口，具有以下实现：
+
+- TextContent（文本内容）
+- ImageContent（图像内容）
+- AudioContent（音频内容）
+- VideoContent（视频内容）
+- PdfFileContent（PDF 文件内容）
+您可以在此处的对比表中查看哪些 LLM 提供商支持哪些模态。
+
+以下示例展示了如何同时向 LLM 发送文本和图像：
+
+```
+UserMessage userMessage = UserMessage.from( TextContent.from("Describe the following image"), ImageContent.from("https://example.com/cat.jpg"));ChatResponse response = model.chat(userMessage);
+```
+
+#### 文本内容
+
+TextContent 是最简单的 Content 形式，表示纯文本并包装单个 String。UserMessage.from(TextContent.from("Hello!")) 等同于 UserMessage.from("Hello!")。
+
+可以在 UserMessage 内提供一个或多个 TextContent：
+
+```
+UserMessage userMessage = UserMessage.from( TextContent.from("Hello!"), TextContent.from("How are you?"));
+```
+
+#### 图像内容
+
+根据 LLM 提供商不同，ImageContent 可以从远程图像的 URL 创建（参见上面的示例），也可以从 Base64 编码的二进制数据创建：
+
+```
+byte[] imageBytes = readBytes("/home/me/cat.jpg");String base64Data = Base64.getEncoder().encodeToString(imageBytes);ImageContent imageContent = ImageContent.from(base64Data, "image/jpg");UserMessage userMessage = UserMessage.from(imageContent);
+```
+
+还可以指定 DetailLevel 枚举（具有 LOW/HIGH/AUTO 选项）来控制模型如何处理图像。有关更多详细信息，请参见此处。
+
+#### 音频内容
+
+AudioContent 与 ImageContent 类似，但表示音频内容。
+
+#### 视频内容
+
+VideoContent 与 ImageContent 类似，但表示视频内容。
+
+#### PDF 文件内容
+
+PdfFileContent 与 ImageContent 类似，但表示 PDF 文件的二进制内容。
+
+### 非阻塞调用
+
+note实验性。API 带有 @Experimental 注解，可能会在未来的版本中更改。
+
+ChatModel 也可以在不阻塞调用线程的情况下给出回答：
+
+```
+CompletableFuture<ChatResponse> future = model.chatAsync(chatRequest);
+```
+
+与 chat(...) 一样存在相同的便捷重载，例如
+CompletableFuture<String> chatAsync(String userMessage)。
+
+取消 future 将释放调用者，并尽最大努力中止正在进行的 HTTP 调用。该 future 在模型的传输线程上完成，因此附加的延续若没有显式 Executor，将在传输线程上运行——请保持其非阻塞，或者使用 thenApplyAsync(fn, executor)。
+
+尚未实现非阻塞路径的提供商会以 AsyncNotSupportedException 的形式在返回的 future 中明显失败，而不会悄无声息地阻塞线程。
+
+有关完整说明（包括流式响应和 AI Services），请参阅 Non-blocking and Reactive。
+
+### Kotlin 扩展
+
+warning对 Kotlin 用户的破坏性变更。ChatModel 现在声明了一个 Java 成员 chatAsync(ChatRequest): CompletableFuture<ChatResponse>。在 Kotlin 中，同签名的成员优先于扩展函数，因此之前解析为 suspend 扩展（返回 ChatResponse）的单参数裸调用，现在解析为成员（返回 CompletableFuture<ChatResponse>）：
+
+```
+// 之前 - 解析为 suspend 扩展，返回 ChatResponse：val response: ChatResponse = model.chatAsync(request)// 之后 - 单参数裸调用解析为 Java 成员（一个 CompletableFuture）：val future: CompletableFuture<ChatResponse> = model.chatAsync(request)// 迁移 - 等待 future...val response: ChatResponse = model.chatAsync(request).await()// ...或者提供 coroutineContext，这仍然会选择 suspend 扩展：val response: ChatResponse = model.chatAsync(request, Dispatchers.IO)
+```
+
+ChatModel 的 Kotlin 扩展提供了利用 Kotlin 协程处理聊天模型异步交互的方法。chatAsync 方法允许对 ChatRequest 或 ChatRequest.Builder 配置进行非阻塞处理，并返回带有模型回复的 ChatResponse。类似地，generateAsync 处理来自聊天消息响应的异步生成。这些扩展简化了在 Kotlin 应用程序中高效构建聊天请求和处理对话的过程。请注意，这些方法被标记为实验性的，可能会随时间演变。
+
+ChatModel.chatAsync(request: ChatRequest)：专为 Kotlin 协程设计，这个异步扩展函数使用 Dispatchers.IO 在协程作用域内包装同步的 chat 方法。这实现了非阻塞操作，对于保持应用程序响应能力至关重要。它之所以命名为 chatAsync，是为了与现有的同步 chat 避免冲突。其函数签名为：suspend fun ChatModel.chatAsync(request: ChatRequest): ChatResponse。suspend 关键字将其指定为协程函数。
+
+ChatModel.chat(block: ChatRequestBuilder.() -> Unit)：此 chat 变体通过使用 Kotlin 的类型安全构建器 DSL 提供了更简化的方式。它简化了 ChatRequest 对象的构建，同时在内部使用 chatAsync 进行异步执行。此版本通过协程同时提供了简洁性和非阻塞行为。

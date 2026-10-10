@@ -1,0 +1,81 @@
+手动维护和管理 ChatMessage 很麻烦。因此，LangChain4j 提供了 ChatMemory 抽象以及多个开箱即用的实现。
+
+ChatMemory 既可以作为独立的底层组件使用，也可以作为高级组件（如 AI Services）的一部分使用。
+
+ChatMemory 充当 ChatMessage 的容器（由 List 支持），具有以下附加功能：
+
+- 淘汰策略（Eviction policy）
+- 持久化（Persistence）
+- 对 SystemMessage 的特殊处理
+- 对工具消息的特殊处理
+
+## 内存与历史记录
+
+请注意，"内存"（memory）和"历史记录"（history）是相似但不同的概念。
+
+- 历史记录保留用户和 AI 之间的所有消息不变。历史记录是用户在 UI 中看到的内容。它代表了实际所说的内容。
+- 内存保留一些信息，这些信息会被提供给 LLM，使其表现得好像"记住"了对话。内存与历史记录大不相同。根据所使用的内存算法，它可以通过多种方式修改历史记录：淘汰某些消息、汇总多条消息、汇总单独的消息、删除消息中不重要的细节、向消息注入额外信息（例如用于 RAG）或指令（例如用于结构化输出），等等。LangChain4j 目前只提供"内存"，不提供"历史记录"。如果您需要保留完整的历史记录，请手动处理。
+
+## 淘汰策略
+
+淘汰策略在以下几个原因中是必要的：
+
+- 适应 LLM 的上下文窗口。LLM 一次可以处理的 token 数量有上限。某些时候，对话可能超过此限制。在这种情况下，应该淘汰某些消息。通常淘汰最旧的消息，但如果需要，可以实现更复杂的算法。
+- 控制成本。每个 token 都有成本，因此每次调用 LLM 都会变得更加昂贵。淘汰不必要的消息可以降低成本。
+- 控制延迟。发送给 LLM 的 token 越多，处理它们所需的时间就越长。
+目前，LangChain4j 提供 2 种开箱即用的实现：
+
+- 较简单的一种是 MessageWindowChatMemory，它作为滑动窗口运行，保留最近的 N 条消息，并淘汰那些不再适合的旧消息。然而，由于每条消息可能包含不同数量的 token，MessageWindowChatMemory 主要用于快速原型设计。
+- 更复杂的一种选择是 TokenWindowChatMemory，它同样作为滑动窗口运行，但重点是保留最近的 N 个 token，根据需要淘汰旧消息。消息是不可分割的。如果一条消息不适合，则会被完全淘汰。TokenWindowChatMemory 需要一个 TokenCountEstimator 来统计每个 ChatMessage 中的 token 数。
+
+## 持久化
+
+默认情况下，ChatMemory 实现将 ChatMessage 存储在内存中。
+
+如果需要持久化，可以实现自定义的 ChatMemoryStore，以将 ChatMessage 存储在您选择的任何持久化存储中：
+
+```
+class PersistentChatMemoryStore implements ChatMemoryStore { @Override public List<ChatMessage> getMessages(Object memoryId) { // TODO: 实现按内存 ID 从持久化存储中获取所有消息。 // ChatMessageDeserializer.messageFromJson(String) 和 // ChatMessageDeserializer.messagesFromJson(String) 辅助方法可用于 // 方便地从 JSON 反序列化聊天消息。 } @Override public void updateMessages(Object memoryId, List<ChatMessage> messages) { // TODO: 实现按内存 ID 更新持久化存储中的所有消息。 // ChatMessageSerializer.messageToJson(ChatMessage) 和 // ChatMessageSerializer.messagesToJson(List<ChatMessage>) 辅助方法可用于 // 方便地将聊天消息序列化为 JSON。 } @Override public void deleteMessages(Object memoryId) { // TODO: 实现按内存 ID 从持久化存储中删除所有消息。 } }ChatMemory chatMemory = MessageWindowChatMemory.builder() .id("12345") .maxMessages(10) .chatMemoryStore(new PersistentChatMemoryStore()) .build();
+```
+
+每次向 ChatMemory 添加新的 ChatMessage 时，都会调用 updateMessages() 方法。这通常在与 LLM 的每次交互中发生两次：一次是在添加新的 UserMessage 时，另一次是在添加新的 AiMessage 时。updateMessages() 方法应该更新与给定内存 ID 关联的所有消息。ChatMessage 可以单独存储（例如每条消息一个记录/行/对象），也可以一起存储（例如整个 ChatMemory 一个记录/行/对象）。
+
+note请注意，从 ChatMemory 淘汰的消息也将从 ChatMemoryStore 中淘汰。当消息被淘汰时，将使用不包含被淘汰消息的消息列表调用 updateMessages() 方法。
+
+当 ChatMemory 的用户请求所有消息时，会调用 getMessages() 方法。这通常在与 LLM 的每次交互中发生一次。Object memoryId 参数的值对应于创建 ChatMemory 时指定的 id。它可用于区分多个用户和/或对话。getMessages() 方法应返回与给定内存 ID 关联的所有消息。
+
+每当调用 ChatMemory.clear() 时，都会调用 deleteMessages() 方法。如果您不使用此功能，可以将该方法留空。
+
+## 对 SystemMessage 的特殊处理
+
+SystemMessage 是一种特殊类型的消息，因此其处理方式与其他消息类型不同：
+
+- 一旦添加，SystemMessage 将始终保留。
+- 同时只能保留一个 SystemMessage。
+- 如果添加了具有相同内容的新 SystemMessage，则会被忽略。
+- 如果添加了具有不同内容的新 SystemMessage，则会替换前一个。
+默认情况下，新的 SystemMessage 将添加到消息列表的末尾。您可以在创建 ChatMemory 时通过设置 alwaysKeepSystemMessageFirst 属性来更改此行为。
+
+## 对工具消息的特殊处理
+
+如果包含 ToolExecutionRequests 的 AiMessage 被淘汰，则以下孤立的 ToolExecutionResultMessage 也会被自动淘汰，以避免某些 LLM 提供商（例如 OpenAI）禁止在请求中发送孤立 ToolExecutionResultMessage 而产生的问题。
+
+note执行 I/O 操作的 ChatMemory 或 ChatMemoryStore 可以实现异步版本（addAsync/messagesAsync/setAsync、getMessagesAsync/updateMessagesAsync/deleteMessagesAsync），以便在 AI Service 以非阻塞模式使用时不会阻塞线程。请参阅 Non-blocking and Reactive。
+
+## 示例
+
+- 使用 AiServices：
+
+聊天内存
+每个用户使用单独的聊天内存
+持久化聊天内存
+每个用户使用持久化聊天内存
+- 使用遗留 Chains
+
+ConversationalChain 与聊天内存
+ConversationalRetrievalChain 与聊天内存
+所有支持的聊天内存存储可在此处找到。
+
+## 相关教程
+
+- 由 Siva 提供：使用 LangChain4j ChatMemory 进行生成式 AI 对话

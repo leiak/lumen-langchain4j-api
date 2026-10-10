@@ -1,0 +1,26 @@
+LangChain4j 自带一个内部 JSON 序列化器（默认为 Jackson），供“工具”和“结构化输出”功能使用。
+
+如果你只想让 LangChain4j 使用 Jackson 3 而不是 Jackson 2，
+则无需进行下面任何额外配置 —— 只需添加一个依赖即可完成切换。详见使用 Jackson 3。
+
+默认的序列化器在大多数场景下都能正常工作。然而在某些环境中，默认的 Jackson 序列化器可能会因其他依赖而产生错误。
+例如 Jetbrains/IntelliJ 插件的开发者就曾遇到过这种情况。
+
+如果你需要提供自定义的 JSON 序列化器（又称 JSON Codec），可以按照以下步骤进行：
+
+- 在你的项目中创建一个 dev.langchain4j.spi.json.JsonCodecFactory 的实现类
+  在本示例中，假设你的工厂类名为：example.MyJsonCodecFactory
+
+你可以参考 dev.langchain4j.internal.JacksonJsonCodec 这一 LangChain4j 内部使用的默认 codec，并根据需要进行调整。
+
+- 添加 SPI provider 配置文件
+  在你的 resources 目录（例如 src/main/resources）下添加一个 META-INF/services 文件夹，并创建名为 dev.langchain4j.spi.json.JsonCodecFactory 的文件。
+  该文件的内容必须是你工厂实现类的全限定域名（FQDN），在本示例中应为：
+
+```
+example.MyJsonCodecFactory
+```
+
+## 需要注意的一点
+
+dev.langchain4j.spi.json.JsonCodecFactory 在 LangChain4j 中被标记为内部使用 —— 该方法只应在确实需要自定义 JSON Codec 的环境中使用。

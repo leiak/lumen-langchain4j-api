@@ -1,0 +1,3 @@
+Quarkus provides a superb extension for LangChain4j.
+
+You can find all the necessary documentation here.

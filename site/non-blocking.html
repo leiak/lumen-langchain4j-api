@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>非阻塞与响应式 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html" class="active">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 非阻塞与响应式</nav>
+<h1>非阻塞与响应式</h1>
+<p>note异步和响应式支持是实验性的。此页面上的异步和响应式 API 带有 @Experimental 注解； 在未来的版本中，API 和行为可能仍会发生变化。同步和 TokenStream API 不受影响。</p>
+
+<p>默认情况下，调用 AI Service 会阻塞调用线程整个交互过程：LLM 调用、工具 执行、聊天记忆访问和安全护栏（guardrails）都在方法返回之前发生。这很简单，并且对大多数应用程序来说效果很好。</p>
+
+<p>如果你正在构建响应式技术栈（Quarkus/Mutiny、Vert.x、Spring WebFlux），或者你需要单个线程驱动多个并发交互， LangChain4j 可以运行相同的交互而不阻塞。你可以通过在 AI Service 方法上声明不同的返回类型来选择模式 —— 接口的其他部分不需要改变。</p>
+
+<h2>四种模式</h2>
+
+<p>| 返回类型 | 性质 | | String、POJO、Result&lt;T&gt; 等 | 同步，阻塞调用线程 | | TokenStream | 通过回调进行流式处理 | | CompletableFuture&lt;T&gt;、CompletionStage&lt;T&gt; | 单次响应，非阻塞 | | Flow.Publisher&lt;AiServiceStreamingEvent&gt;、Flow.Publisher&lt;String&gt; | 事件流，非阻塞 |</p>
+
+<pre><code>interface Assistant { // 同步 String chat(String message); // 单次响应，不阻塞调用者 CompletableFuture&lt;String&gt; chatAsync(String message); // 答案，逐个 token 流式传输 Flow.Publisher&lt;String&gt; chatStreaming(String message); // 交互期间发生的所有事件，作为事件流 Flow.Publisher&lt;AiServiceStreamingEvent&gt; chatEvents(String message);}</code></pre>
+
+<h2>获取单次非阻塞响应</h2>
+
+<pre><code>CompletableFuture&lt;String&gt; future = assistant.chatAsync(&quot;Tell me a joke&quot;);future.thenAccept(System.out::println);</code></pre>
+
+<p>取消 future（future.cancel(true)）会释放调用者，停止进一步的 LLM 轮次，并尽最大努力中止正在进行的 HTTP 调用。</p>
+
+<p>noteFuture 是在模型自己的线程上完成的 —— 对于 HTTP 模型，是读取响应的传输 I/O worker。 因此，没有使用显式 executor 附加的延续（thenApply、thenAccept 等）会运行在该线程上， 在该线程上进行阻塞会降低每个进行中调用的吞吐量。请保持延续为非阻塞，或传入你自己的 Executor：future.thenApplyAsync(fn, executor)。</p>
+
+<h2>流式传输答案</h2>
+
+<p>返回 Flow.Publisher&lt;String&gt; 的方法会逐块流式传输答案文本：</p>
+
+<pre><code>Flow.Publisher&lt;String&gt; publisher = assistant.chatStreaming(&quot;Tell me a joke&quot;);</code></pre>
+
+<p>发布者是冷的（cold）：在订阅之前什么也不会发生，每次订阅都会启动一个新的交互。</p>
+
+<h2>流式传输所有发生的事件</h2>
+
+<p>Flow.Publisher&lt;AiServiceStreamingEvent&gt; 暴露整个交互过程，而不仅仅是答案文本 —— 与基于回调的 TokenStream 提供的信息相同：</p>
+
+<p>| 事件 | 含义 | | PartialResponseEvent | 答案的一个片段 | | PartialThinkingEvent | 模型推理的一个片段 | | PartialToolCallEvent、CompleteToolCallEvent | 工具调用正在组装，然后完成 | | BeforeToolExecutionEvent、AfterToolExecutionEvent | 工具即将运行，以及其结果 | | IntermediateResponseEvent | 关闭一轮工具调用的响应 | | RetrievedContentsEvent | 由 RAG 检索到的内容 | | ToolCompensatedEvent | 一个已完成的工具在交互被取消或失败后被补偿 | | RawEvent | LangChain4j 不映射的特定于提供商的事件 | | FinalResponseEvent | 最终答案 |</p>
+
+<pre><code>assistant.chatEvents(&quot;What is the weather in Munich?&quot;).subscribe(new Flow.Subscriber&lt;&gt;() { @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); } @Override public void onNext(AiServiceStreamingEvent event) { // 事件类型嵌套在 AiServiceStreamingEvent 中： // import dev.langchain4j.service.AiServiceStreamingEvent.PartialResponseEvent; if (event instanceof PartialResponseEvent partial) { System.out.print(partial.partialResponse().text()); } } @Override public void onError(Throwable error) { } @Override public void onComplete() { }});</code></pre>
+
+<p>随着时间的推移可能会添加新的事件类型，因此请优雅地处理无法识别的事件 —— 不要编写没有 default 分支的详尽类型 switch。</p>
+
+<p>note不要在 onNext 中阻塞。事件由产生它们的线程传送：token 级别事件来自模型的传输 I/O worker， 工具执行事件来自完成工具调用的线程。将每个事件的繁重工作卸载到你自己的 Executor。 事件通过有界缓冲区中继，因此落后太多的订阅者将以 IllegalStateException 终止，而不是无限制地缓冲； 大小默认为 16384 个事件，可通过 AiServices.builder(...).streamingBufferSize(int) 进行配置。</p>
+
+<h2>第三方响应式类型</h2>
+
+<p>AI Service 方法返回 JDK 类型 —— CompletableFuture 和 Flow.Publisher，因此 API 不会将你绑定到任何特定的响应式编程库。</p>
+
+<p>Reactor 类型通过 langchain4j-reactor 模块支持 —— Mono&lt;T&gt; 用于单次响应模式，Flux&lt;AiServiceStreamingEvent&gt; 用于响应式模式。 添加依赖即可；适配器通过 ServiceLoader 自动注册。</p>
+
+<pre><code>interface Assistant { Mono&lt;String&gt; answer(String userMessage); Flux&lt;AiServiceStreamingEvent&gt; events(String userMessage);}</code></pre>
+
+<p>noteMutiny 的 Uni/Multi 尚未支持。扩展点是存在的 —— CompletableFutureAdapter 和 PublisherAdapter SPI，通过 ServiceLoader 发现 —— 但尚未为其提供适配器，因此目前声明这样的返回类型会失败。 请使用 CompletableFuture 或 Flow.Publisher 并在调用站点进行适配。</p>
+
+<p>Flux&lt;String&gt; 由 langchain4j-reactor 中基于较旧的 TokenStream 的适配器提供服务 —— 参见 AI Services。它早于此功能，不属于本文档中描述的非阻塞路径， 并且可与每个提供商一起使用。</p>
+
+<h2>必须非阻塞的部分</h2>
+
+<p>非阻塞必须在每一层都成立：任何地方的阻塞步骤都会使整个调用再次阻塞。 每一层都既有阻塞方法，也有异步对应方法：</p>
+
+<p>| 层 | 阻塞 | 非阻塞对应方法 | | Chat model | chat(ChatRequest) | chatAsync(ChatRequest)，以及 StreamingChatModel 上返回 Publisher 的 chat(ChatRequest) | | Embedding model | embed(...) | embedAsync(...) | | Scoring model | scoreAll(...) | scoreAsync(...) | | Chat memory | add、messages、set | addAsync、messagesAsync、setAsync | | Chat memory store | getMessages、updateMessages、deleteMessages | getMessagesAsync、updateMessagesAsync、deleteMessagesAsync | | Guardrails | validate(...) | validateAsync(...) | | Tools | ToolExecutor.execute(...) | ToolExecutor.executeAsync(...) | | RAG | RetrievalAugmentor.augment(...)、retrievers、routers、aggregators、query transformers | augmentAsync(...)、retrieveAsync(...)、routeAsync(...)、aggregateAsync(...)、transformAsync(...) | | Embedding store | search(...) | searchAsync(...) | | Web search | search(...) | searchAsync(...) | | MCP | McpClient.executeTool(...) | executeToolAsync(...) | | Guardrail execution | ChatExecutor.execute(...) | ChatExecutor.executeAsync(...) | | HTTP client | execute(...) | executeAsync(...)、stream(...) |</p>
+
+<p>尚未实现对应方法的组件会大声失败，而不是默默地阻塞：返回的 future 或 publisher 会失败并抛出 AsyncNotSupportedException，指出组件和缺失的方法。 AsyncNotSupportedException 是 UnsupportedFeatureException，因此一个 catch 子句涵盖两种&quot;不支持&quot;的 情况，并且永远不会重试。</p>
+
+<h2>无法避免的阻塞代码</h2>
+
+<p>工具是常见的情况：调用数据库或阻塞 HTTP API 的工具无法变为非阻塞。此类 工具会被卸载，因此它们永远不会阻塞模型自己的线程。</p>
+
+<p>note在 Java 21 及更高版本上，卸载 executor 会创建虚拟线程，因此阻塞工具会暂停虚拟线程， 该虚拟线程会从其载体上卸载，而不是占用它。LangChain4j 目标是 Java 17，而在 Java 17-20 上，相同的 executor 是一个无界平台线程池 —— 在负载下资源情况截然不同。如果这对您很重要，请提供你自己的有界 Executor（见下文）。</p>
+
+<p>这适用于 @Tool 注解的方法。未重写 executeAsync 的手写 ToolExecutor 会像任何其他未选择的组件一样，大声抛出 AsyncNotSupportedException。</p>
+
+<p>在异步和响应式模式下，工具默认并发运行。要逐个运行它们，请传递一个 单线程 executor：</p>
+
+<pre><code>AiServices.builder(Assistant.class) .chatModel(model) .tools(new MyTools()) .executeToolsConcurrently(Executors.newSingleThreadExecutor()) .build();</code></pre>
+
+<p>对于 RAG，默认情况下，未实现 retrieveAsync 的检索器会失败，而不是默默地阻塞。 改为使用 DefaultRetrievalAugmentor 或 EmbeddingStoreContentRetriever 上的 offloadBlocking(true) 选择卸载。</p>
+
+<h2>与同步模式不同的默认值</h2>
+
+<p>异步和响应式模式不仅仅是相同交互在另一个线程上的运行 —— 一些默认值是 有意为之的不同。如果你要迁移现有方法，请检查这些默认值。</p>
+
+<p>| | 同步 / TokenStream | CompletableFuture / Flow.Publisher | | 多个工具调用 | 顺序执行 | 并发执行 | | 工具执行错误 | 发送回 LLM | 使调用失败，除非异常实现 ToolErrorVisibleToLlm | | 工具参数解析错误 | 使调用失败 | 发送回 LLM | | @Moderate | 支持 | 在创建 AI Service 时被拒绝 |</p>
+
+<h3>工具错误</h3>
+
+<p>这两种工具错误默认值是有意反转的。将执行失败发送给 LLM 会隐藏你工具中的 bug， 并让模型围绕它编造答案，因此异步模式会使调用失败， 除非异常本身说明可以告诉 LLM 什么 （参见 ToolErrorVisibleToLlm）。另一方面，格式错误的参数字符串是模型产生的内容， 通常在被告知时可以修复，因此它会被发送回而不是使调用失败。</p>
+
+<p>两者仍然可配置，显式配置的处理器由每种模式使用：</p>
+
+<pre><code>AiServices.builder(Assistant.class) .chatModel(model) .tools(new MyTools()) .toolExecutionErrorHandler(myExecutionErrorHandler) .toolArgumentsErrorHandler(myArgumentsErrorHandler) .build();</code></pre>
+
+<p>有关这些处理器可以做什么，请参见 错误处理。</p>
+
+<h3>工具并发性</h3>
+
+<p>因为在这些模式下工具始终在 Executor 上运行，所以一个 LLM 响应中的多个工具调用会同时运行。 如果你的工具不能安全地并发运行，请传递单线程 executor： executeToolsConcurrently(Executors.newSingleThreadExecutor())。</p>
+
+<h3>事件顺序</h3>
+
+<p>在响应式路径上，工具在发出 CompleteToolCallEvent 后立即开始运行，因此它与该轮的其余部分重叠。 因此一轮的 BeforeToolExecutionEvent / AfterToolExecutionEvent 可能会在该轮的 IntermediateResponseEvent 之前到达。将 IntermediateResponseEvent 视为每轮的标记，而不是一轮中所有工具事件都先于它的屏障。 基于回调的 TokenStream 始终首先报告中间响应。</p>
+
+<h2>控制 executor 和传播上下文</h2>
+
+<p>LangChain4j 在所有调用者线程之外运行工作 —— 并发工具调用、卸载的检索、重试退避 —— 都从一个可插拔的扩展点 ExecutorProvider SPI 获取 executor：</p>
+
+<pre><code>public interface ExecutorProvider { Executor executor(); default CapturedContext captureContext() { return CapturedContext.NONE; }}</code></pre>
+
+<p>通过 ServiceLoader 注册一个，或以编程方式注册用于测试和非 DI 应用程序：</p>
+
+<pre><code>ExecutorProvider.set(() -&gt; myExecutor);</code></pre>
+
+<p>如果没有，LangChain4j 在 Java 21 或更高版本上使用一个虚拟线程每任务 executor， 在 Java 17-20 上使用一个无界平台线程池。</p>
+
+<p>note单个调用会跨越多个线程，因此环境 ThreadLocal 状态 —— MDC 日志上下文、跟踪 span、安全上下文 —— 不会像在完全同步模式下那样自动传播。要使其跟随工作， 请实现 captureContext()。LangChain4j 在每次调用时调用它一次，在调用 AI Service 方法的线程上， 并使用捕获的上下文运行调用卸载到 executor 的每个任务（工具、阻塞 RAG 阶段、审核）。 通过 ExecutorProvider.set(() -&gt; myExecutor) 注册的 lambda 无法做到这一点，因此请注册一个类，例如使用 Micrometer 上下文传播：</p>
+
+<pre><code>import dev.langchain4j.spi.CapturedContext;import dev.langchain4j.spi.ExecutorProvider;import io.micrometer.context.ContextSnapshotFactory;import java.util.concurrent.Executor;public class ContextPropagatingExecutorProvider implements ExecutorProvider { private static final ContextSnapshotFactory CONTEXT_SNAPSHOT_FACTORY = ContextSnapshotFactory.builder().build(); @Override public Executor executor() { return null; // 保留内置默认值 } @Override public CapturedContext captureContext() { return CONTEXT_SNAPSHOT_FACTORY.captureAll()::wrap; }}</code></pre>
+
+<pre><code>ExecutorProvider.set(new ContextPropagatingExecutorProvider());</code></pre>
+
+<p>对于 OpenTelemetry，captureContext() 是 return Context.current()::wrap;。对于 MicroProfile Context Propagation：</p>
+
+<pre><code>private static final ThreadContext THREAD_CONTEXT = ThreadContext.builder().build();@Overridepublic CapturedContext captureContext() { Executor callerContext = THREAD_CONTEXT.currentContextExecutor(); return task -&gt; () -&gt; callerContext.execute(task);}</code></pre>
+
+<p>captureContext() 在每次调用时都会被调用，因此它必须便宜。它返回的 CapturedContext 可能会包装 同时运行的多个任务，并且每个包装的任务必须在完成时恢复其运行线程的先前上下文： 任务在池化线程上运行，因此留下的上下文会泄漏到不相关的任务中。 上面的示例遵循这些规则。</p>
+
+<p>需要注意的一些事项：</p>
+
+<ul><li>仅上下文传播 executor（ManagedExecutor、TaskDecorator 包装的 executor、Context.taskWrapping(executor) 等）是不够的：它捕获的是提交任务的线程的上下文，而大多数卸载工作是在模型响应之后从传递响应的线程提交的。 它可以与 captureContext() 结合使用：任务随后使用捕获的上下文运行。</li><li>LangChain4j 不卸载的工作 —— 安全护栏、聊天记忆、监听器、流式回调 —— 在 当前线程上运行，不会获得捕获的上下文。</li><li>在 AI Service 调用之外卸载的工作也不会获得它：重试退避、模型集成自行启动的线程 （例如读取流式响应），以及 langchain4j-agentic 的并行和异步代理。 如果在这些地方需要上下文，请将 captureContext() 与上下文传播 executor 结合使用。</li><li>对于返回 Flow.Publisher、Mono 或 Flux 的方法，上下文在方法调用时捕获，而不是在订阅结果时。</li><li>捕获的上下文会保持与调用一样长，因此卸载的工作可能会在启动该调用的请求完成后（例如使用已结束的会话的安全上下文）运行它。</li><li>只有 ExecutorProvider 捕获上下文。在传递给 AI Service 的 executor 上运行的工具 （使用 executeToolsConcurrently(executor)）仍然使用其捕获的上下文运行。</li><li>这适用于使用 AiServices 创建的 AI Service。构建自己的 AI Service 实现的框架自行决定如何传播上下文。 InvocationContext 不受影响 —— 它作为参数显式传递，从不通过线程局部变量传递。</li></ul>
+
+<h2>模型监听器不得阻塞</h2>
+
+<p>ChatModelListener 和 EmbeddingModelListener 回调在模型自己的线程上同步调用， 并且永远不会被卸载。在异步和响应式 API 上，这意味着传输的 I/O worker。 在该处执行阻塞 I/O 的监听器会阻塞该 worker 并降低每个进行中调用的吞吐量 —— 在回调内部将此类工作卸载到你自己的 executor。 参见 可观测性。</p>
+
+<h2>提供商支持</h2>
+
+<p>warning非阻塞模式仅适用于已实现它们的提供商。针对任何其他提供商声明 CompletableFuture 或 Flow.Publisher 返回类型可以编译，然后在运行时失败，并抛出 AsyncNotSupportedException，指出组件和缺失的方法。 没有对阻塞调用的静默回退 —— 这就是重点，但这意味着你可以使用的返回类型取决于你的提供商。</p>
+
+<p>支持是按提供商选择加入的，并且正在逐步推出。目前：</p>
+
+<p>| 提供商 | CompletableFuture（chatAsync） | Flow.Publisher（响应式 chat） | | OpenAI — Chat Completions | ✅ | ✅ | | OpenAI — Responses | ✅ | ✅ | | Anthropic | ✅ | ✅ | | Bedrock | ✅ | ✅ | | 其他所有提供商 | ❌ | ❌ |</p>
+
+<p>除了聊天模型之外：OpenAI 实现了异步嵌入（embedAsync）、Cohere 实现了异步评分（scoreAsync）以及 Tavily 实现了异步网络搜索（searchAsync）。</p>
+
+<p>未选择加入的提供商在同步和 TokenStream API 上不受影响 —— 这些 API 继续正常工作。</p>
+
+<h3>同样的情况也适用于调用中的其他所有内容</h3>
+
+<p>支持该模式的聊天模型是必要但不充分：交互中任何地方的单个阻塞组件都会以同样的方式使调用失败。在实践中，这意味着：</p>
+
+<p>| 组件 | 必须实现的内容 | 捆绑的实现 | | Chat memory | addAsync / messagesAsync / setAsync | MessageWindowChatMemory 和 InMemoryChatMemoryStore 已经实现 | | Guardrails | validateAsync | 无 —— 你编写的 guardrail 必须重写它，即使它不执行 I/O | | Content retriever、query router、aggregator | retrieveAsync、routeAsync、aggregateAsync | 改为使用 offloadBlocking(true) 选择卸载 | | Embedding store | searchAsync | 如上所述，通过检索器的 offloadBlocking(true) | | Custom ToolExecutor | executeAsync | @Tool 注解的方法会为你卸载 | | Chat model router（RoutingChatModel） | routeAsync | DecisionModelChatModelRouter 可以，如果其决策模型支持 decideAsync |</p>
+
+<p>不执行阻塞工作的 guardrail 可以用一行满足契约：</p>
+
+<pre><code>@Overridepublic CompletableFuture&lt;InputGuardrailResult&gt; validateAsync(InputGuardrailRequest request) { return CompletableFuture.completedFuture(validate(request));}</code></pre>
+
+<h3>Spring Boot</h3>
+
+<p>Flux&lt;String&gt; 仍然可与每个提供商一起使用，包括 ❌ 行中的提供商：它由 langchain4j-reactor 中基于 TokenStream 的适配器提供服务，而不是本文档中描述的非阻塞路径。</p>
+
+<p>Mono&lt;T&gt; 和 Flux&lt;AiServiceStreamingEvent&gt; 来自 langchain4j-reactor 模块，并具有与 JDK 类型相同的提供商约束 —— 参见上面的 第三方响应式类型。</p>
+
+<p>使用 OpenAI starter 时，非阻塞模式使用 Spring 的 WebClient 发送，因此它们需要在 classpath 上 （Spring Boot 4 上的 spring-boot-starter-webclient，Spring Boot 3 上的 spring-webflux）。 参见 Spring Boot 集成 了解要添加哪个依赖项以及哪些自定义 适用。</p>
+
+<p>要使环境上下文跟随异步调用，请让 LangChain4j 卸载到你应用程序自己的 executor，而不是其默认的 executor：</p>
+
+<pre><code>langchain4j.executor.use-spring-task-executor=true</code></pre>
+
+<p>然后 LangChain4j 在应用程序的任务 executor 上运行卸载的工作，其线程池遵循 spring.task.execution.*。默认情况下它是关闭的，因为该设置是进程范围的，而不是作用域于一个应用程序 上下文。</p>
+
+<p>从 Spring Boot starter 的 1.23.0-beta33 版本开始，调用者的上下文也会被捕获（参见 上文），以便跟踪 span、MDC 和安全上下文跟随 LangChain4j 卸载的工作：</p>
+
+<ul><li>如果应用程序定义了 TaskDecorator bean（例如 ContextPropagatingTaskDecorator），它们定义了 捕获的内容，就像对于应用程序自己的任务 executor（在 Spring Boot 3 上，仅当恰好有一个时）；</li><li>否则，如果它在 classpath 上，则使用 Micrometer 上下文传播。</li></ul>
+
+<div class="prev-next">
+  <a href="testing-and-evaluation.html"><div class="label">← 上一篇</div><div>测试与评估</div></a>
+  <a href="decision-services.html"><div class="label">下一篇 →</div><div>决策服务</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,575 @@
+到目前为止，我们一直在介绍底层组件，如 ChatModel、ChatMessage、ChatMemory 等。在这个层面上工作非常灵活，给您充分的自由，但它也迫使您编写大量样板代码。由于由 LLM 驱动的应用程序通常不仅需要单个组件，而是需要多个组件协同工作（例如提示词模板、聊天内存、LLM、输出解析器、RAG 组件：嵌入模型和存储），并且通常涉及多次交互，因此将它们全部编排起来变得更加繁琐。
+
+我们希望您专注于业务逻辑，而不是底层实现细节。因此，LangChain4j 中目前有两个高级概念可以帮助解决这个问题：AI Services 和 Chains。
+
+## Chains（遗留）
+
+Chains 的概念源自 Python 的 LangChain（在引入 LCEL 之前）。其思想是为每个常见用例（如聊天机器人、RAG 等）提供一个 Chain。Chains 将多个底层组件组合在一起，并编排它们之间的交互。它们的主要问题是，如果您需要自定义某些内容，它们过于死板。LangChain4j 目前只实现了两个 Chains（ConversationalChain 和 ConversationalRetrievalChain），目前我们不计划增加更多。
+
+## AI Services
+
+我们提出了另一种专为 Java 定制的解决方案，称为 AI Services。其思想是将与 LLM 和其他组件交互的复杂性隐藏在一个简单的 API 后面。
+
+这种方法与 Spring Data JPA 或 Retrofit 非常相似：您以声明方式定义一个具有所需 API 的接口，LangChain4j 提供实现该接口的对象（代理）。您可以将 AI Service 视为应用程序服务层的组件。它提供 AI 服务，故此命名。
+
+AI Services 处理最常见的操作：
+
+- 为 LLM 格式化输入
+- 解析 LLM 的输出
+它们还支持更高级的功能：
+
+- 聊天内存
+- 工具
+- RAG
+AI Services 可用于构建有状态的聊天机器人，以促进来回交互，也可用于自动化每次调用 LLM 都相互独立的过程。
+
+让我们看看最简单的 AI Service。之后，我们将探讨更复杂的示例。
+
+## 最简单的 AI Service
+
+首先，我们定义一个具有单个方法 chat 的接口，该方法以 String 作为输入并返回 String。
+
+```
+interface Assistant { String chat(String userMessage);}
+```
+
+然后，我们创建底层组件。这些组件将在我们的 AI Service 内部使用。在这种情况下，我们只需要 ChatModel：
+
+```
+ChatModel model = OpenAiChatModel.builder() .apiKey(System.getenv("OPENAI_API_KEY")) .modelName(GPT_4_O_MINI) .build();
+```
+
+最后，我们可以使用 AiServices 类创建 AI Service 的实例：
+
+```
+Assistant assistant = AiServices.create(Assistant.class, model);
+```
+
+note在 Quarkus
+和 Spring Boot 应用程序中，
+自动配置会处理创建 Assistant bean。
+这意味着您无需调用 AiServices.create(...)，您可以直接在需要的地方注入/自动装配 Assistant。
+
+现在我们可以使用 Assistant：
+
+```
+String answer = assistant.chat("Hello");System.out.println(answer); // 你好，我能帮你什么？
+```
+
+## 它是如何工作的？
+
+您将接口的 Class 和底层组件一起提供给 AiServices，AiServices 会创建一个实现该接口的代理对象。目前，它使用反射，但我们也在考虑其他替代方案。该代理对象处理输入和输出的所有转换。在这种情况下，输入是单个 String，但我们使用的是以 ChatMessage 作为输入的 ChatModel。因此，AiService 会自动将其转换为 UserMessage 并调用 ChatModel。由于 chat 方法的输出类型是 String，在 ChatModel 返回 AiMessage 之后，它将在从 chat 方法返回之前被转换为 String。
+
+## 在 Quarkus 应用程序中使用 AI Services
+
+LangChain4j Quarkus 扩展
+极大地简化了在 Quarkus 应用程序中使用 AI Services。
+更多信息可在 此处 找到。
+
+## 在 Spring Boot 应用程序中使用 AI Services
+
+LangChain4j Spring Boot starter
+极大地简化了在 Spring Boot 应用程序中使用 AI Services。
+
+## @SystemMessage
+
+现在，让我们看一个更复杂的示例。我们将强制 LLM 使用俚语回答 😉
+
+这通常通过在 SystemMessage 中提供指令来实现。
+
+```
+interface Friend { @SystemMessage("You are a good friend of mine. Answer using slang.") String chat(String userMessage);}Friend friend = AiServices.create(Friend.class, model);String answer = friend.chat("Hello"); // 嘿！最近怎么样？
+```
+
+在这个示例中，我们添加了 @SystemMessage 注解，其中包含我们想要使用的系统提示词模板。它将在后台被转换为 SystemMessage，并与 UserMessage 一起发送给 LLM。
+
+@SystemMessage 也可以从资源加载提示词模板：
+@SystemMessage(fromResource = "my-prompt-template.txt")
+
+@SystemMessage 也可以在 AI Service 接口上声明，在这种情况下，它适用于该 AI Service 暴露的所有方法，包括继承的方法：
+
+```
+@SystemMessage("You are a good friend of mine. Answer using slang.")interface Friend { String chat(String userMessage); String chatAgain(String userMessage);}
+```
+
+在方法上声明的 @SystemMessage 优先于在接口上声明的 @SystemMessage。仅在父接口上声明的 @SystemMessage 不会被子 AI Service 接口继承。
+
+### 系统消息提供者（System Message Provider）
+
+系统消息也可以使用系统消息提供者动态定义：
+
+```
+Friend friend = AiServices.builder(Friend.class) .chatModel(model) .systemMessageProvider(chatMemoryId -> "You are a good friend of mine. Answer using slang.") .build();
+```
+
+如您所见，您可以根据聊天内存 ID（用户或对话）提供不同的系统消息。
+
+### 系统消息转换器（System Message Transformer）
+
+系统消息转换器允许您在每次调用时动态修改系统消息，该修改发生在从 @SystemMessage 或 systemMessageProvider 解析之后，但在 chatRequestTransformer 运行之前。当您需要无论最初如何配置系统消息，都要在其后追加或前置内容时，这非常有用。
+
+```
+Friend friend = AiServices.builder(Friend.class) .chatModel(model) .systemMessageProvider(chatMemoryId -> "You are a good friend of mine. Answer using slang.") .systemMessageTransformer(systemMessage -> systemMessage + " Today's date is " + LocalDate.now() + ".") .build();
+```
+
+如果未配置任何系统消息，则转换器接收 null。
+
+当您还需要访问调用上下文（例如方法名或其参数）时，可以使用接受 InvocationContext 的双参数重载：
+
+```
+Friend friend = AiServices.builder(Friend.class) .chatModel(model) .systemMessageProvider(chatMemoryId -> "You are a good friend of mine. Answer using slang.") .systemMessageTransformer((systemMessage, context) -> systemMessage + " Tenant: " + context.invocationParameters().get("tenant") + ".") .build();
+```
+
+## @UserMessage
+
+现在，假设我们使用的模型不支持系统消息，或者我们只是希望将 UserMessage 用于此目的。
+
+```
+interface Friend { @UserMessage("You are a good friend of mine. Answer using slang. {{it}}") String chat(String userMessage);}Friend friend = AiServices.create(Friend.class, model);String answer = friend.chat("Hello"); // 嘿！有什么新鲜事？
+```
+
+我们已将 @SystemMessage 注解替换为 @UserMessage，并指定了一个包含变量 it 的提示词模板，该变量引用唯一的方法参数。
+
+也可以使用 @V 注解 String userMessage，并为提示词模板变量分配自定义名称：
+
+```
+interface Friend { @UserMessage("You are a good friend of mine. Answer using slang. {{message}}") String chat(@V("message") String userMessage);}
+```
+
+note请注意，在 LangChain4j 与 Quarkus 或 Spring Boot 一起使用时，无需使用 @V。仅当 Java 编译期间未启用 -parameters 选项时，才需要此注解。
+
+@UserMessage 也可以从资源加载提示词模板：
+@UserMessage(fromResource = "my-prompt-template.txt")
+
+## 程序化 ChatRequest 改写
+
+在某些情况下，在将 ChatRequest 发送给 LLM 之前对其进行修改可能很有用。例如，可能需要根据某些外部条件向用户消息追加额外的上下文或修改系统消息。
+
+可以通过使用实现转换的 UnaryOperator<ChatRequest> 配置 AI Service 来实现：
+
+```
+Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .chatRequestTransformer(transformingFunction) // 配置要应用于 ChatRequest 的转换函数 .build();
+```
+
+如果需要访问 ChatMemory 来实现所需的 ChatRequest 转换，也可以使用 BiFunction<ChatRequest, Object, ChatRequest> 配置 chatRequestTransformer 方法，其中传递给此函数的第二个参数是内存 ID。
+
+## ChatRequestParameters
+
+另一种自由度是可以按调用配置参数（例如 temperature、toolsChoice、maximum tokens 等）。例如，您可能希望某些请求更"有创造性"（较高的 temperature），而其他请求更确定性（较低的 temperature）。
+
+为此，您可以创建一个也接受 ChatRequestParameters 类型（或任何特定于提供商的类型，如 OpenAiChatRequestParameters）参数的 AI Service 方法。这告诉 LangChain4j 在每次调用期间接受并合并这些参数。
+
+note请注意，在 ChatRequestParameters 中指定的 toolSpecifications 和 responseFormat 将覆盖由 AI Service 生成的。
+
+使用第二个参数定义您的接口：
+
+```
+interface AssistantWithChatParams { String chat(@UserMessage String userMessage, ChatRequestParameters params);}
+```
+
+构建 AI Service：
+
+```
+AssistantWithChatParams assistant = AiServices.builder(AssistantWithChatParams.class) .chatModel(openAiChatModel) // 或任何模型 .build();
+```
+
+使用任何按调用参数调用它：
+
+```
+ChatRequestParameters customParams = ChatRequestParameters.builder() .temperature(0.85) .build();String answer = assistant.chat("Hi there!", customParams);
+```
+
+作为参数传递给 AI Service 方法的 ChatRequestParameters 也会传递给上一节中讨论的 chatRequestTransformer，因此也可以在必要时在此处访问和修改它。
+
+## 有效的 AI Service 方法示例
+
+以下是一些有效的 AI Service 方法示例。
+
+`UserMessage`
+```
+String chat(String userMessage);String chat(@UserMessage String userMessage);String chat(@UserMessage String userMessage, ChatRequestParameters parameters);String chat(@UserMessage String userMessage, @V("country") String country); // userMessage 包含 "{{country}}" 模板变量String chat(@UserMessage String userMessage, @UserMessage Content content); // content 可以是以下之一：TextContent、ImageContent、AudioContent、VideoContent、PdfFileContentString chat(@UserMessage String userMessage, @UserMessage ImageContent image); // 第二个参数可以是以下之一：TextContent、ImageContent、AudioContent、VideoContent、PdfFileContentString chat(@UserMessage String userMessage, @UserMessage List<Content> contents);String chat(@UserMessage String userMessage, @UserMessage List<ImageContent> images);@UserMessage("What is the capital of Germany?")String chat();@UserMessage("What is the capital of {{it}}?")String chat(String country);@UserMessage("What is the capital of {{country}}?")String chat(@V("country") String country);@UserMessage("What is the {{something}} of {{country}}?")String chat(@V("something") String something, @V("country") String country);@UserMessage("What is the capital of {{country}}?")String chat(String country); // 这仅在 Quarkus 和 Spring Boot 应用程序中有效
+```
+
+`SystemMessage` 和 `UserMessage`
+```
+@SystemMessage("Given a name of a country, answer with a name of it's capital")String chat(String userMessage);@SystemMessage("Given a name of a country, answer with a name of it's capital")String chat(@UserMessage String userMessage);@SystemMessage("Given a name of a country, {{answerInstructions}}")String chat(@V("answerInstructions") String answerInstructions, @UserMessage String userMessage);@SystemMessage("Given a name of a country, answer with a name of it's capital")String chat(@UserMessage String userMessage, @V("country") String country); // userMessage 包含 "{{country}}" 模板变量@SystemMessage("Given a name of a country, {{answerInstructions}}")String chat(@V("answerInstructions") String answerInstructions, @UserMessage String userMessage, @V("country") String country); // userMessage 包含 "{{country}}" 模板变量@SystemMessage("Given a name of a country, answer with a name of it's capital")@UserMessage("Germany")String chat();@SystemMessage("Given a name of a country, {{answerInstructions}}")@UserMessage("Germany")String chat(@V("answerInstructions") String answerInstructions);@SystemMessage("Given a name of a country, answer with a name of it's capital")@UserMessage("{{it}}")String chat(String country);@SystemMessage("Given a name of a country, answer with a name of it's capital")@UserMessage("{{country}}")String chat(@V("country") String country);@SystemMessage("Given a name of a country, {{answerInstructions}}")@UserMessage("{{country}}")String chat(@V("answerInstructions") String answerInstructions, @V("country") String country);
+```
+
+## 多模态
+
+除了文本内容之外，或者替代文本内容，AI Service 方法可以接受一个或多个 Content 或 List<Content> 参数：
+
+```
+String chat(@UserMessage String userMessage, @UserMessage Content content);String chat(@UserMessage String userMessage, @UserMessage ImageContent image);String chat(@UserMessage String userMessage, @UserMessage ImageContent image, @UserMessage AudioContent audio);String chat(@UserMessage String userMessage, @UserMessage List<Content> contents);String chat(@UserMessage String userMessage, @UserMessage List<ImageContent> images);String chat(Content content);String chat(AudioContent content);String chat(List<Content> contents);String chat(List<AudioContent> contents);String chat(@UserMessage Content content1, @UserMessage Content content2);String chat(@UserMessage AudioContent audio, @UserMessage ImageContent image);
+```
+
+AI Service 将按照参数声明的顺序将所有内容放入最终的 UserMessage 中。
+
+请查看 Content API
+以获取有关可用内容类型的更多详细信息。
+
+## 返回类型
+
+AI Service 方法可以返回以下类型之一：
+
+- String - 在这种情况下，LLM 生成的输出不做任何处理/解析直接返回
+- Structured Outputs 支持的任何类型 - 在这种情况下，AI Service 将在返回之前将 LLM 生成的输出解析为所需类型
+- TokenStream - 以生成的方式接收响应
+- CompletableFuture<T> / CompletionStage<T> 或 Flow.Publisher<...> - 无阻塞运行调用线程的情况下运行交互（实验性）
+任何类型都可以额外包装到 Result<T> 中以获取有关 AI Service 调用的额外元数据：
+
+- TokenUsage - AI Service 调用期间使用的 token 总数。如果 AI Service 对 LLM 进行了多次调用（例如，因为执行了工具），则会对所有调用的 token 使用情况进行求和。
+- Sources - 在 RAG 检索期间检索到的内容
+- AI Service 调用期间执行的所有工具（请求和结果）
+- 最终聊天响应的 FinishReason
+- 所有中间 ChatResponse
+- 最终 ChatResponse
+一个示例：
+
+```
+interface Assistant { @UserMessage("Generate an outline for the article on the following topic: {{it}}") Result<List<String>> generateOutlineFor(String topic);}Result<List<String>> result = assistant.generateOutlineFor("Java");List<String> outline = result.content();TokenUsage tokenUsage = result.tokenUsage();List<Content> sources = result.sources();List<ToolExecution> toolExecutions = result.toolExecutions();FinishReason finishReason = result.finishReason();
+```
+
+noteResult<T> 中的 T 是 LLM 生成的内容，因此它必须是 LLM 实际可以生成的类型：String、enum、POJO、这些类型的集合等。LangChain4j 自己的类型，如 ChatResponse、ChatMessage、TextSegment、Embedding 或 TokenUsage，不能用作 T（也不能作为 List<T>/Set<T> 返回类型的元素）：AI Service 在创建时会因 IllegalConfigurationException 而失败。最终 ChatResponse 携带的所有内容在 Result<T> 上本身已经可用，例如：
+
+```
+ChatResponse chatResponse = result.finalResponse();
+```
+
+## 结构化输出
+
+如果您希望从 LLM 接收结构化输出（例如，复杂的 Java 对象，而不是 String 内的非结构化文本），可以将 AI Service 方法的返回类型从 String 更改为其他类型。
+
+note有关结构化输出的更多信息可在 此处 找到。
+
+一些示例：
+
+### boolean 作为返回类型
+
+```
+interface SentimentAnalyzer { @UserMessage("Does {{it}} has a positive sentiment?") boolean isPositive(String text);}SentimentAnalyzer sentimentAnalyzer = AiServices.create(SentimentAnalyzer.class, model);boolean positive = sentimentAnalyzer.isPositive("It's wonderful!");// true
+```
+
+### Enum 作为返回类型
+
+```
+enum Priority { CRITICAL, HIGH, LOW}interface PriorityAnalyzer { @UserMessage("Analyze the priority of the following issue: {{it}}") Priority analyzePriority(String issueDescription);}PriorityAnalyzer priorityAnalyzer = AiServices.create(PriorityAnalyzer.class, model);Priority priority = priorityAnalyzer.analyzePriority("The main payment gateway is down, and customers cannot process transactions.");// CRITICAL
+```
+
+tip对于是/否问题和固定选项之间的选择（如上面的示例），您还可以考虑 Decision Services，它使用决策模型而不是聊天模型：它们可以为每个答案返回概率，并且使用专用的决策模型，通常更快、更便宜。
+
+### POJO 作为返回类型
+
+```
+class Person { @Description("first name of a person") // 您可以添加可选的描述以帮助 LLM 更好地理解 String firstName; String lastName; LocalDate birthDate; Address address;}@Description("an address") // 您可以添加可选的描述以帮助 LLM 更好地理解class Address { String street; Integer streetNumber; String city;}interface PersonExtractor { @UserMessage("Extract information about a person from {{it}}") Person extractPersonFrom(String text);}PersonExtractor personExtractor = AiServices.create(PersonExtractor.class, model);String text = """ In 1968, amidst the fading echoes of Independence Day, a child named John arrived under the calm evening sky. This newborn, bearing the surname Doe, marked the start of a new journey. He was welcomed into the world at 345 Whispering Pines Avenue a quaint street nestled in the heart of Springfield an abode that echoed with the gentle hum of suburban dreams and aspirations. """;Person person = personExtractor.extractPersonFrom(text);System.out.println(person); // Person { firstName = "John", lastName = "Doe", birthDate = 1968-07-04, address = Address { ... } }
+```
+
+## JSON 模式
+
+在提取自定义 POJO 时（实际上是 JSON，然后被解析为 POJO），建议在模型配置中启用"JSON 模式"。这样，LLM 将被迫以有效的 JSON 响应。
+
+note请注意，JSON 模式和工具/函数调用是类似的功能，但具有不同的 API，并且用于不同的目的。
+
+当您始终需要来自 LLM 的结构化格式（有效 JSON）响应时，JSON 模式非常有用。此外，通常不需要状态/内存，因此与 LLM 的每次交互彼此独立。例如，您可能希望从文本中提取信息，例如此文本中提到的人员列表，或者将自由形式的产品评论转换为具有 String productName、Sentiment sentiment、List<String> claimedProblems 等字段的结构化形式。
+
+另一方面，当 LLM 应能够执行某些操作时（例如查询数据库、搜索网页、取消用户的预订等），工具/函数非常有用。在这种情况下，会向 LLM 提供一组工具及其预期的 JSON schema，并由其自主决定是否调用其中任何一个以满足用户请求。
+
+早些时候，函数调用通常用于结构化数据提取，但现在我们有了 JSON 模式功能，它更适合此目的。
+
+以下是如何启用 JSON 模式：
+
+- 对于 OpenAI：
+
+对于支持结构化输出的较新模型（例如 gpt-4o-mini、gpt-4o-2024-08-06）：
+OpenAiChatModel.builder() ... .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) .strictJsonSchema(true) .build();
+有关更多详细信息，请参见 此处。
+对于较旧的模型（例如 gpt-3.5-turbo、gpt-4）：
+OpenAiChatModel.builder() ... .responseFormat("json_object") .build();
+- 对于 Azure OpenAI：
+
+```
+AzureOpenAiChatModel.builder() ... .responseFormat(new ChatCompletionsJsonResponseFormat()) .build();
+```
+
+- 对于 Vertex AI Gemini：
+
+```
+VertexAiGeminiChatModel.builder() ... .responseMimeType("application/json") .build();
+```
+
+或者通过从 Java 类指定显式 schema：
+
+```
+VertexAiGeminiChatModel.builder() ... .responseSchema(SchemaHelper.fromClass(Person.class)) .build();
+```
+
+从 JSON schema：
+
+```
+VertexAiGeminiChatModel.builder() ... .responseSchema(Schema.builder()...build()) .build();
+```
+
+- 对于 Google AI Gemini：
+
+```
+GoogleAiGeminiChatModel.builder() ... .responseFormat(ResponseFormat.JSON) .build();
+```
+
+或者通过从 Java 类指定显式 schema：
+
+```
+GoogleAiGeminiChatModel.builder() ... .responseFormat(ResponseFormat.builder() .type(JSON) .jsonSchema(JsonSchemas.jsonSchemaFrom(Person.class).get()) .build()) .build();
+```
+
+从 JSON schema：
+
+```
+GoogleAiGeminiChatModel.builder() ... .responseFormat(ResponseFormat.builder() .type(JSON) .jsonSchema(JsonSchema.builder()...build()) .build()) .build();
+```
+
+- 对于 Mistral AI：
+
+```
+MistralAiChatModel.builder() ... .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) .strictJsonSchema(true) .build();
+```
+
+- 对于 Ollama：
+
+```
+OllamaChatModel.builder() ... .responseFormat(JSON) .build();
+```
+
+- 对于其他模型提供商：如果底层模型提供商不支持 JSON 模式，则提示工程是您的最佳选择。此外，尝试降低 temperature 以获得更高的确定性。
+更多示例
+
+## 流式响应
+
+当使用 TokenStream 返回类型时，AI Service 可以逐 token 流式传输响应。
+Flow.Publisher 返回类型在不阻塞调用线程的情况下流式传输同一交互 - 请参阅 Non-blocking and Reactive。
+
+```
+interface Assistant { TokenStream chat(String message);}StreamingChatModel model = OpenAiStreamingChatModel.builder() .apiKey(System.getenv("OPENAI_API_KEY")) .modelName(GPT_4_O_MINI) .build();Assistant assistant = AiServices.create(Assistant.class, model);TokenStream tokenStream = assistant.chat("Tell me a joke");CompletableFuture<ChatResponse> futureResponse = new CompletableFuture<>();tokenStream .onPartialResponse((String partialResponse) -> System.out.println(partialResponse)) .onPartialThinking((PartialThinking partialThinking) -> System.out.println(partialThinking)) .onRetrieved((List<Content> contents) -> System.out.println(contents)) .onIntermediateResponse((ChatResponse intermediateResponse) -> System.out.println(intermediateResponse)) // 每次有新的部分工具调用（通常包含工具参数的一个 token）可用时，都会调用此方法 .onPartialToolCall((PartialToolCall partialToolCall) -> System.out.println(partialToolCall)) // 此方法将在执行工具之前立即调用。BeforeToolExecution 包含 ToolExecutionRequest（例如工具名称、工具参数等） .beforeToolExecution((BeforeToolExecution beforeToolExecution) -> System.out.println(beforeToolExecution)) // 此方法将在工具执行之后立即调用。ToolExecution 包含 ToolExecutionRequest 和工具执行结果 .onToolExecuted((ToolExecution toolExecution) -> System.out.println(toolExecution)) // 此方法将针对那些尚未通过上面的类型化回调公开的原始提供商流事件（例如服务端工具生命周期事件）调用。请参阅 Response Streaming 的"Unmapped Raw Events"部分 .onUnmappedRawEvent((Object rawEvent) -> System.out.println(rawEvent)) .onCompleteResponse((ChatResponse response) -> futureResponse.complete(response)) .onError((Throwable error) -> futureResponse.completeExceptionally(error)) .start();futureResponse.join(); // 阻塞主线程，直到流式过程（在另一个线程中运行）完成
+```
+
+### 流式响应取消
+
+如果您希望取消流式传输，可以从以下回调之一进行：
+
+- onPartialResponseWithContext(BiConsumer<PartialResponse, PartialResponseContext>)
+- onPartialThinkingWithContext(BiConsumer<PartialThinking, PartialThinkingContext>)
+例如：
+
+```
+tokenStream .onPartialResponseWithContext((PartialResponse partialResponse, PartialResponseContext context) -> { process(partialResponse); if (shouldCancel()) { context.streamingHandle().cancel(); } }) .onCompleteResponse((ChatResponse response) -> futureResponse.complete(response)) .onError((Throwable error) -> futureResponse.completeExceptionally(error)) .start();
+```
+
+当调用 StreamingHandle.cancel() 时，LangChain4j 将关闭连接并停止流式传输。一旦调用了 StreamingHandle.cancel()，TokenStream 将不会收到任何进一步的回调。
+
+### Flux
+
+您也可以使用 Flux<String> 代替 TokenStream。（Flow.Publisher<String> 为您提供无需额外模块的相同流 - 请参阅 Non-blocking and Reactive。）
+为此，请导入 langchain4j-reactor 模块：
+
+```
+<dependency> <groupId>dev.langchain4j</groupId> <artifactId>langchain4j-reactor</artifactId> <version>1.22.0-beta32</version></dependency>
+```
+
+```
+interface Assistant { Flux<String> chat(String message);}
+```
+
+Flux<String> 由 TokenStream 支持，因此它可以与每个提供商一起使用。同一个模块还包含非阻塞模式的 Reactor 绑定——Mono<T> 和
+Flux<AiServiceStreamingEvent>——它们仅与已实现它们的提供商一起工作。
+
+流式示例
+
+## 聊天内存
+
+AI Service 可以使用聊天内存以"记住"以前的交互：
+
+```
+Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .chatMemory(MessageWindowChatMemory.withMaxMessages(10)) .build();
+```
+
+在此场景下，同一个 ChatMemory 实例将用于 AI Service 的所有调用。但是，如果您有多个用户，这种方法是行不通的，因为每个用户都需要自己的 ChatMemory 实例来维持各自的对话。
+
+此问题的解决方案是使用 ChatMemoryProvider：
+
+```
+interface Assistant { String chat(@MemoryId int memoryId, @UserMessage String message);}Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(10)) .build();String answerToKlaus = assistant.chat(1, "Hello, my name is Klaus");String answerToFrancine = assistant.chat(2, "Hello, my name is Francine");
+```
+
+在此场景下，ChatMemoryProvider 将提供两个不同的 ChatMemory 实例，每个内存 ID 一个。
+
+以这种方式使用 ChatMemory 时，重要的是淘汰不再需要的对话的内存，以避免内存泄漏。要使 AI Service 内部使用的聊天内存可访问，只需定义它的接口继承 ChatMemoryAccess 接口即可。
+
+```
+interface Assistant extends ChatMemoryAccess { String chat(@MemoryId int memoryId, @UserMessage String message);}
+```
+
+这使得既可以访问单个对话的 ChatMemory 实例，也可以在对话终止时将其清除。
+
+```
+String answerToKlaus = assistant.chat(1, "Hello, my name is Klaus");String answerToFrancine = assistant.chat(2, "Hello, my name is Francine");List<ChatMessage> messagesWithKlaus = assistant.getChatMemory(1).messages();boolean chatMemoryWithFrancineEvicted = assistant.evictChatMemory(2);
+```
+
+note请注意，如果 AI Service 方法没有带 @MemoryId 注解的参数，则 ChatMemoryProvider 中的 memoryId 值将默认为字符串 "default"。
+
+note请注意，对于相同的 @MemoryId，AI Service 不应并发调用，因为它可能导致 ChatMemory 损坏。目前，AI Service 没有实现任何机制来防止同一 @MemoryId 的并发调用。
+
+- 使用单个 ChatMemory 的示例
+- 使用每个用户 ChatMemory 的示例
+- 使用单个持久化 ChatMemory 的示例
+- 使用每个用户持久化 ChatMemory 的示例
+
+## 工具（函数调用）
+
+AI Service 可以配置 LLM 可以使用的工具：
+
+```
+class Tools { @Tool int add(int a, int b) { return a + b; } @Tool int multiply(int a, int b) { return a * b; }}Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .tools(new Tools()) .build();String answer = assistant.chat("What is 1+2 and 3*4?");
+```
+
+在此场景下，LLM 将在提供最终答案之前请求执行 add(1, 2) 和 multiply(3, 4) 方法。LangChain4j 将自动执行这些方法。
+
+有关工具的更多详细信息可在 此处 找到。
+
+## RAG（检索增强生成）
+
+AI Service 可以配置 ContentRetriever 以启用朴素 RAG：
+
+```
+EmbeddingStore embeddingStore = ...EmbeddingModel embeddingModel = ...ContentRetriever contentRetriever = new EmbeddingStoreContentRetriever(embeddingStore, embeddingModel);Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .contentRetriever(contentRetriever) .build();
+```
+
+配置 RetrievalAugmentor 提供了更多的灵活性，可实现高级 RAG 功能，例如查询转换、重排序等：
+
+```
+RetrievalAugmentor retrievalAugmentor = DefaultRetrievalAugmentor.builder() .queryTransformer(...) .queryRouter(...) .contentAggregator(...) .contentInjector(...) .executor(...) .build();Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .retrievalAugmentor(retrievalAugmentor) .build();
+```
+
+### 作为工具的 RAG
+
+默认情况下，每次用户查询都会执行内容检索。或者，检索可以被视为类似工具的能力，仅在模型确定需要其他上下文时才调用。使用这种方法，检索仍然是 RAG 管道的一部分，但可以有条件地执行，从而避免对简单查询进行不必要的搜索。
+
+要实现此功能，您可以将 ContentRetriever 封装在一个 @Tool 中，并在 AiServices 中注册它。这允许 LLM 根据工具的描述自主决定是否触发检索。
+
+#### 1. 定义检索工具
+
+创建一个包装 ContentRetriever 的类。@Tool 描述至关重要，因为它告知 LLM 何时调用搜索。
+
+```
+import dev.langchain4j.agent.tool.Tool;import dev.langchain4j.rag.content.retriever.ContentRetriever;import dev.langchain4j.rag.query.Query;import java.util.stream.Collectors;static class SearchTool { private final ContentRetriever contentRetriever; SearchTool(ContentRetriever contentRetriever) { this.contentRetriever = contentRetriever; } @Tool("Search for technical information about LangChain4j and RAG configurations") public String search(String query) { // 此逻辑仅在 LLM 确定需要检索时执行 return contentRetriever.retrieve(new Query(query)).stream() .map(content -> content.textSegment().text()) .collect(Collectors.joining("\n\n")); }}
+```
+
+#### 2. 向 AiServices 注册工具
+
+使用全局的 RetrievalAugmentor，而是将检索逻辑注册为工具。
+
+```
+Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .tools(new SearchTool(contentRetriever)) .build();
+```
+
+#### 3. 预期行为
+
+LLM 根据用户的意图对照工具的描述进行评估，以决定是否执行搜索。
+
+场景 A — 一般对话
+
+- 输入：
+你好，今天怎么样？
+- 行为：
+LLM 直接根据其内部知识进行响应，而无需调用工具。
+场景 B — 技术问题
+
+- 输入：
+如何配置 ContentRetriever？
+- 行为：
+LLM 识别技术意图，调用 search()，并根据检索到的文档生成响应。
+这种方法允许检索作为按需功能（类似于工具）运行，而不是每个查询的必经步骤。
+
+有关 RAG 的更多详细信息可在 此处 找到。
+
+更多 RAG 示例可在 此处 找到。
+
+## 自动内容审核
+
+AI Services 可以自动执行内容审核。当检测到不当内容时，将抛出 ModerationException，其中包含原始的 Moderation 对象。该对象包含有关被标记内容的信息，例如被标记的特定文本。
+
+可以在构建 AI Service 时配置自动审核：
+
+```
+Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .moderationModel(moderationModel) // 配置审核模型 .build();
+```
+
+示例
+
+## 链接多个 AI Services
+
+您的由 LLM 驱动的应用程序的逻辑越复杂，将其分解为更小的部分就越关键，这是软件开发中的常见做法。
+
+例如，将大量指令塞入系统提示词以涵盖所有可能的情况容易出错且效率低下。如果指令过多，LLM 可能会忽略一些。此外，指令的呈现顺序也很重要，这使得该过程更具挑战性。
+
+该原则同样适用于工具、RAG 和模型参数（如 temperature、maxTokens 等）。
+
+您的聊天机器人可能不需要随时了解您拥有的所有工具。
+例如，当用户只是向聊天机器人打招呼或说再见时，
+给予 LLM 访问数十个或数百个工具是昂贵且有时甚至是危险的
+（LLM 调用中包含的每个工具都会消耗大量 token）
+并且可能导致意外结果（LLM 可能出现幻觉或被操纵以调用带有意外输入的工具）。
+
+关于 RAG：类似地，有时需要向 LLM 提供一些上下文，
+但并非总是如此，因为这会产生额外成本（更多上下文 = 更多 token）
+并增加响应时间（更多上下文 = 更高的延迟）。
+
+关于模型参数：在某些情况下，您可能需要 LLM 具有高度确定性，
+因此您会设置较低的 temperature。在其他情况下，您可能会选择较高的 temperature，等等。
+
+关键是，更小、更具体的组件更容易、更便宜地开发、测试、维护和理解。
+
+需要考虑的另一方面涉及两个极端：
+
+- 您是否希望您的应用程序高度确定性，其中应用程序控制流程，而 LLM 只是组件之一？
+- 或者您是否希望 LLM 具有完全的自主权并驱动您的应用程序？
+或者根据具体情况混合使用两者？
+当您将应用程序分解为更小、更易管理的部分时，所有这些选项都是可行的。
+
+AI Services 可以用作并与常规（确定性）软件组件结合使用：
+
+- 您可以一个接一个地调用 AI Service（也称为链接）。
+- 您可以使用确定性和由 LLM 驱动的 if/else 语句（AI Services 可以返回 boolean）。
+- 您可以使用确定性和由 LLM 驱动的 switch 语句（AI Services 可以返回 enum）。
+- 您可以使用确定性和由 LLM 驱动的 for/while 循环（AI Services 可以返回 int 和其他数值类型）。
+- 您可以在单元测试中模拟 AI Service（因为它是一个接口）。
+- 您可以单独对每个 AI Service 进行集成测试。
+- 您可以单独评估并找到每个 AI Service 的最佳参数。
+- 等等
+让我们考虑一个简单的示例。
+我想为我的公司构建一个聊天机器人。
+如果用户向聊天机器人打招呼，
+我希望它以预定义的问候语进行回应，而不依赖于 LLM 来生成问候语。
+如果用户提出问题，我希望 LLM 使用公司的内部知识库（即 RAG）生成响应。
+
+以下是此任务如何分解为 2 个单独的 AI Services：
+
+```
+interface GreetingExpert { @UserMessage("Is the following text a greeting? Text: {{it}}") boolean isGreeting(String text);}interface ChatBot { @SystemMessage("You are a polite chatbot of a company called Miles of Smiles.") String reply(String userMessage);}class MilesOfSmiles { private final GreetingExpert greetingExpert; private final ChatBot chatBot; ... public String handle(String userMessage) { if (greetingExpert.isGreeting(userMessage)) { return "Greetings from Miles of Smiles! How can I make your day better?"; } else { return chatBot.reply(userMessage); } }}GreetingExpert greetingExpert = AiServices.create(GreetingExpert.class, llama2);ChatBot chatBot = AiServices.builder(ChatBot.class) .chatModel(gpt4) .contentRetriever(milesOfSmilesContentRetriever) .build();MilesOfSmiles milesOfSmiles = new MilesOfSmiles(greetingExpert, chatBot);String greeting = milesOfSmiles.handle("Hello");System.out.println(greeting); // Greetings from Miles of Smiles! How can I make your day better?String answer = milesOfSmiles.handle("Which services do you provide?");System.out.println(answer); // At Miles of Smiles, we provide a wide range of services ...
+```
+
+请注意我们是如何对识别文本是否为问候语的简单任务使用更便宜的 Llama2，
+以及对更复杂的任务使用更昂贵的 GPT-4 以及内容检索器（RAG）的。
+
+这是一个非常简单且有些朴素的示例，但希望它能说明这个想法。
+
+现在，我可以同时模拟 GreetingExpert 和 ChatBot 并单独测试 MilesOfSmiles。
+此外，我可以单独对 GreetingExpert 和 ChatBot 进行集成测试。
+我可以单独评估它们，并为每个子任务找到最佳参数，
+或者从长远来看，甚至为每个特定子任务微调一个小型专用模型。
+
+## 测试
+
+- 客户支持代理的集成测试示例
+
+## 相关教程
+
+- 由 Siva 提供：LangChain4j AiServices 教程

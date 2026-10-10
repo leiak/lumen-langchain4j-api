@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>对话与语言模型 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html" class="active">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 对话与语言模型</nav>
+<h1>对话与语言模型</h1>
+<p>note本页面介绍的是底层 LLM API。 有关高级 LLM API，请参阅 AI Services。</p>
+
+<p>note所有受支持的大语言模型（LLM）可在此处找到。</p>
+
+<p>目前大语言模型有两种 API 类型：</p>
+
+<ul><li>LanguageModels。其 API 非常简单——接收 String 作为输入，返回 String 作为输出。该 API 正在逐渐被 chat API（第二种 API 类型）取代。</li><li>ChatModels。接收多个 ChatMessage 作为输入，返回单个 AiMessage 作为输出。ChatMessage 通常包含文本，但某些 LLM 还支持其他模态（例如图像、音频等）。此类聊天模型的示例包括 OpenAI 的 gpt-4o-mini 和 Google 的 gemini-1.5-pro。LangChain4j 不再扩展对 LanguageModels 的支持，因此在所有新功能中，我们将使用 ChatModel API。</li></ul>
+
+<p>ChatModel 是在 LangChain4j 中与 LLM 交互的底层 API，提供最大的能力和灵活性。还有一个高级 API（AI Services），我们将在介绍完基础知识后再讲解。</p>
+
+<p>除了 ChatModel 和 LanguageModel，LangChain4j 还支持以下类型的模型：</p>
+
+<ul><li>EmbeddingModel - 该模型可以将文本转换为 Embedding（嵌入向量）。</li><li>ImageModel - 该模型可以生成和编辑图像。</li><li>ModerationModel - 该模型可以检查文本是否包含有害内容。</li><li>ScoringModel - 该模型可以根据查询对多个文本进行打分（或排序），本质上就是确定每个文本与查询的相关性。这对于 RAG（检索增强生成）非常有用。 这些内容将在后续介绍。现在，让我们更仔细地看看 ChatModel API。</li></ul>
+
+<pre><code>public interface ChatModel { String chat(String userMessage); ...}</code></pre>
+
+<p>如您所见，这里有一个简单的 chat 方法，接收 String 作为输入，返回 String 作为输出，与 LanguageModel 类似。这只是一个便捷方法，以便您可以快速轻松地进行试验，而无需将 String 包装为 UserMessage。</p>
+
+<p>以下是其他 chat API 方法：</p>
+
+<pre><code> ... ChatResponse chat(ChatMessage... messages); ChatResponse chat(List&lt;ChatMessage&gt; messages); ...</code></pre>
+
+<p>这些版本的 chat 方法接收一个或多个 ChatMessage 作为输入。ChatMessage 是一个基础接口，表示聊天消息。下一节将提供有关聊天消息的更多详细信息。</p>
+
+<p>如果您希望自定义请求（例如指定模型名称、温度、工具、JSON 模式等），可以使用 chat(ChatRequest) 方法：</p>
+
+<pre><code> ... ChatResponse chat(ChatRequest chatRequest); ...</code></pre>
+
+<pre><code>ChatRequest chatRequest = ChatRequest.builder() .messages(...) .modelName(...) .temperature(...) .topP(...) .topK(...) .frequencyPenalty(...) .presencePenalty(...) .maxOutputTokens(...) .stopSequences(...) .toolSpecifications(...) .toolChoice(...) .responseFormat(...) .parameters(...) // 您还可以一次设置通用或特定于提供商的参数 .build();ChatResponse chatResponse = chatModel.chat(chatRequest);</code></pre>
+
+<h3>ChatMessage 的类型</h3>
+
+<p>目前有五种类型的聊天消息，每种对应消息的一个&quot;来源&quot;：</p>
+
+<ul><li>UserMessage：来自用户的消息。用户可以是您应用程序的最终用户（人类），也可以是您应用程序本身。它可以包含：</li></ul>
+
+<p>contents()：消息内容。根据 LLM 支持的模态，它可以仅包含单个文本（String），也可以包含其他模态。 name()：用户的名称。并非所有模型提供商都支持该字段。 attributes()：附加属性：这些属性不会发送给模型，但会存储在 ChatMemory 中。</p>
+<ul><li>AiMessage：由 AI 生成的消息，作为对所发送消息的响应。它可以包含：</li></ul>
+
+<p>text()：文本内容 thinking()：思考/推理内容 toolExecutionRequests()：执行工具的请求。我们将在另一部分探讨工具。 attributes()：附加属性，通常特定于提供商。</p>
+<ul><li>ToolExecutionResultMessage：这是 ToolExecutionRequest 的结果。</li><li>SystemMessage：来自系统的消息。通常，作为开发者，您应该定义此消息的内容。一般来说，您应该在此处编写关于 LLM 在此对话中的角色、如何表现、以什么风格回答等方面的指令。LLM 经过训练，会比对待其他类型的消息更关注 SystemMessage，因此请谨慎使用，最好不要让最终用户自由访问以定义或向 SystemMessage 注入输入。通常，它位于对话的开头。它可以包含：</li></ul>
+
+<p>text()：消息文本。 attributes()：附加属性：这些属性不会发送给模型，但会存储在 ChatMemory 中。</p>
+<ul><li>CustomMessage：这是一个可以包含任意属性的自定义消息。此消息类型只能由支持它的 ChatModel 实现使用（目前仅 Ollama）。现在我们已经了解了所有类型的 ChatMessage，接下来看看如何在对话中组合它们。</li></ul>
+
+<p>在最简单的场景中，我们可以将单个 UserMessage 实例提供给 chat 方法。这类似于 chat 方法的第一个版本，该版本以 String 作为输入。这里的主要区别在于它现在返回的不是 String，而是 ChatResponse。除了 AiMessage 之外，ChatResponse 还包含 ChatResponseMetadata。ChatResponseMetadata 包含 TokenUsage，其中包含有关输入包含多少个 token（您提供给 generate 方法的所有 ChatMessage）、作为输出生成了多少个 token（在 AiMessage 中）以及总数（输入 + 输出）的统计信息。您需要此信息来计算对 LLM 的特定调用的成本。然后，ChatResponseMetadata 还包含 FinishReason，它是一个枚举，包含生成停止的各种原因。通常情况下，如果 LLM 自行决定停止生成，则为 FinishReason.STOP。</p>
+
+<p>根据内容不同，有多种创建 UserMessage 的方式。最简单的是 new UserMessage(&quot;Hi&quot;) 或 UserMessage.from(&quot;Hi&quot;)。</p>
+
+<h3>多个 ChatMessage</h3>
+
+<p>那么，为什么需要提供多个 ChatMessage 作为输入，而不仅仅是一个呢？这是因为 LLM 本身是无状态的，这意味着它们不维护对话状态。因此，如果您希望支持多轮对话，您需要负责管理对话的状态。</p>
+
+<p>假设您要构建一个聊天机器人。想象用户和聊天机器人（AI）之间的简单多轮对话：</p>
+
+<ul><li>用户：你好，我叫 Klaus</li><li>AI：嗨 Klaus，我能帮你什么？</li><li>用户：我叫什么名字？</li><li>AI：Klaus 这是与 ChatModel 的交互方式：</li></ul>
+
+<pre><code>UserMessage firstUserMessage = UserMessage.from(&quot;Hello, my name is Klaus&quot;);AiMessage firstAiMessage = model.chat(firstUserMessage).aiMessage(); // 嗨 Klaus，我能帮你什么？UserMessage secondUserMessage = UserMessage.from(&quot;What is my name?&quot;);AiMessage secondAiMessage = model.chat(firstUserMessage, firstAiMessage, secondUserMessage).aiMessage(); // Klaus</code></pre>
+
+<p>如您所见，在 chat 方法的第二次调用中，我们不仅提供了单个 secondUserMessage，还提供了对话中之前的所有消息。</p>
+
+<p>手动维护和管理这些消息很麻烦。因此，存在 ChatMemory 的概念，我们将在下一节中探讨。</p>
+
+<h3>多模态</h3>
+
+<p>UserMessage 不仅可以包含文本，还可以包含其他类型的内容。UserMessage 包含一个 List&lt;Content&gt; contents。Content 是一个接口，具有以下实现：</p>
+
+<ul><li>TextContent（文本内容）</li><li>ImageContent（图像内容）</li><li>AudioContent（音频内容）</li><li>VideoContent（视频内容）</li><li>PdfFileContent（PDF 文件内容） 您可以在此处的对比表中查看哪些 LLM 提供商支持哪些模态。</li></ul>
+
+<p>以下示例展示了如何同时向 LLM 发送文本和图像：</p>
+
+<pre><code>UserMessage userMessage = UserMessage.from( TextContent.from(&quot;Describe the following image&quot;), ImageContent.from(&quot;https://example.com/cat.jpg&quot;));ChatResponse response = model.chat(userMessage);</code></pre>
+
+<h4>文本内容</h4>
+
+<p>TextContent 是最简单的 Content 形式，表示纯文本并包装单个 String。UserMessage.from(TextContent.from(&quot;Hello!&quot;)) 等同于 UserMessage.from(&quot;Hello!&quot;)。</p>
+
+<p>可以在 UserMessage 内提供一个或多个 TextContent：</p>
+
+<pre><code>UserMessage userMessage = UserMessage.from( TextContent.from(&quot;Hello!&quot;), TextContent.from(&quot;How are you?&quot;));</code></pre>
+
+<h4>图像内容</h4>
+
+<p>根据 LLM 提供商不同，ImageContent 可以从远程图像的 URL 创建（参见上面的示例），也可以从 Base64 编码的二进制数据创建：</p>
+
+<pre><code>byte[] imageBytes = readBytes(&quot;/home/me/cat.jpg&quot;);String base64Data = Base64.getEncoder().encodeToString(imageBytes);ImageContent imageContent = ImageContent.from(base64Data, &quot;image/jpg&quot;);UserMessage userMessage = UserMessage.from(imageContent);</code></pre>
+
+<p>还可以指定 DetailLevel 枚举（具有 LOW/HIGH/AUTO 选项）来控制模型如何处理图像。有关更多详细信息，请参见此处。</p>
+
+<h4>音频内容</h4>
+
+<p>AudioContent 与 ImageContent 类似，但表示音频内容。</p>
+
+<h4>视频内容</h4>
+
+<p>VideoContent 与 ImageContent 类似，但表示视频内容。</p>
+
+<h4>PDF 文件内容</h4>
+
+<p>PdfFileContent 与 ImageContent 类似，但表示 PDF 文件的二进制内容。</p>
+
+<h3>非阻塞调用</h3>
+
+<p>note实验性。API 带有 @Experimental 注解，可能会在未来的版本中更改。</p>
+
+<p>ChatModel 也可以在不阻塞调用线程的情况下给出回答：</p>
+
+<pre><code>CompletableFuture&lt;ChatResponse&gt; future = model.chatAsync(chatRequest);</code></pre>
+
+<p>与 chat(...) 一样存在相同的便捷重载，例如 CompletableFuture&lt;String&gt; chatAsync(String userMessage)。</p>
+
+<p>取消 future 将释放调用者，并尽最大努力中止正在进行的 HTTP 调用。该 future 在模型的传输线程上完成，因此附加的延续若没有显式 Executor，将在传输线程上运行——请保持其非阻塞，或者使用 thenApplyAsync(fn, executor)。</p>
+
+<p>尚未实现非阻塞路径的提供商会以 AsyncNotSupportedException 的形式在返回的 future 中明显失败，而不会悄无声息地阻塞线程。</p>
+
+<p>有关完整说明（包括流式响应和 AI Services），请参阅 Non-blocking and Reactive。</p>
+
+<h3>Kotlin 扩展</h3>
+
+<p>warning对 Kotlin 用户的破坏性变更。ChatModel 现在声明了一个 Java 成员 chatAsync(ChatRequest): CompletableFuture&lt;ChatResponse&gt;。在 Kotlin 中，同签名的成员优先于扩展函数，因此之前解析为 suspend 扩展（返回 ChatResponse）的单参数裸调用，现在解析为成员（返回 CompletableFuture&lt;ChatResponse&gt;）：</p>
+
+<pre><code>// 之前 - 解析为 suspend 扩展，返回 ChatResponse：val response: ChatResponse = model.chatAsync(request)// 之后 - 单参数裸调用解析为 Java 成员（一个 CompletableFuture）：val future: CompletableFuture&lt;ChatResponse&gt; = model.chatAsync(request)// 迁移 - 等待 future...val response: ChatResponse = model.chatAsync(request).await()// ...或者提供 coroutineContext，这仍然会选择 suspend 扩展：val response: ChatResponse = model.chatAsync(request, Dispatchers.IO)</code></pre>
+
+<p>ChatModel 的 Kotlin 扩展提供了利用 Kotlin 协程处理聊天模型异步交互的方法。chatAsync 方法允许对 ChatRequest 或 ChatRequest.Builder 配置进行非阻塞处理，并返回带有模型回复的 ChatResponse。类似地，generateAsync 处理来自聊天消息响应的异步生成。这些扩展简化了在 Kotlin 应用程序中高效构建聊天请求和处理对话的过程。请注意，这些方法被标记为实验性的，可能会随时间演变。</p>
+
+<p>ChatModel.chatAsync(request: ChatRequest)：专为 Kotlin 协程设计，这个异步扩展函数使用 Dispatchers.IO 在协程作用域内包装同步的 chat 方法。这实现了非阻塞操作，对于保持应用程序响应能力至关重要。它之所以命名为 chatAsync，是为了与现有的同步 chat 避免冲突。其函数签名为：suspend fun ChatModel.chatAsync(request: ChatRequest): ChatResponse。suspend 关键字将其指定为协程函数。</p>
+
+<p>ChatModel.chat(block: ChatRequestBuilder.() -&gt; Unit)：此 chat 变体通过使用 Kotlin 的类型安全构建器 DSL 提供了更简化的方式。它简化了 ChatRequest 对象的构建，同时在内部使用 chatAsync 进行异步执行。此版本通过协程同时提供了简洁性和非阻塞行为。</p>
+
+<div class="prev-next">
+  <a href="index.html"><div class="label">← 返回</div><div>教程总览</div></a>
+  <a href="chat-memory.html"><div class="label">下一篇 →</div><div>对话记忆</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

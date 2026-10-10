@@ -1,0 +1,16 @@
+## 示例
+
+此处是一个针对客户支持智能体（Customer Support Agent）的集成测试示例。
+这对应于 Level 1：单元测试。
+
+## 推荐阅读
+
+- Your AI Product Needs Evals
+- Creating a LLM-as-a-Judge That Drives Business Results
+- A Practical Guide to RAG Pipeline Evaluation (Part 1: Retrieval)
+- A Practical Guide to RAG Pipeline Evaluation (Part 2: Generation)
+- How important is a Golden Dataset for LLM evaluation?
+- Case Study: Reference-free vs Reference-based evaluation of RAG pipeline
+- How to evaluate complex GenAI Apps: a granular approach
+- Generate Synthetic Data to Test LLM Applications
+note更多信息即将推出。

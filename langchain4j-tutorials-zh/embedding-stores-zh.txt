@@ -1,0 +1,20 @@
+注意：EmbeddingStore 可以实现 searchAsync(...) 方法，这样在非阻塞 AI Service 中使用时就不会阻塞线程。尚未实现该方法的存储仍然可以使用，但前提是检索器通过 offloadBlocking(true) 显式选择卸载阻塞调用；否则调用会以失败的形式明确报错，而不是悄悄地阻塞线程。详情请参阅非阻塞与响应式相关内容。
+
+关于 embedding store（向量存储）的文档可以在这里找到。
+
+所有受支持的向量存储可以在这里找到。
+
+## 示例
+
+- 使用内存向量存储的示例
+- 使用 Chroma 向量存储的示例
+- 使用 Elasticsearch 向量存储的示例
+- 使用 Milvus 向量存储的示例
+- 使用 Neo4j 向量存储的示例
+- 使用 OpenSearch 向量存储的示例
+- 使用 Pinecone 向量存储的示例
+- 使用 Qdrant 向量存储的示例
+- 使用 Redis 向量存储的示例
+- 使用 Vespa 向量存储的示例
+- 使用 Weaviate 向量存储的示例
+- 使用 PGVector 向量存储的示例

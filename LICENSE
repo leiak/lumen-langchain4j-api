@@ -2,6 +2,11 @@ MIT License
 
 Copyright (c) 2026 ted
 
+本项目为 LangChain4j 官方文档的中文翻译衍生作品。
+
+原文版权 © LangChain4j Contributors，遵循其原始开源协议发布。
+原文来源：https://github.com/langchain4j/langchain4j
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -19,3 +24,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+================================================================================
+使用条款（Use Terms）— 翻译衍生作品特别说明
+================================================================================
+
+1. 本项目为 LangChain4j 官方文档的翻译衍生作品，仅供学习参考。
+
+2. 翻译内容应以英文官方文档（https://docs.langchain4j.dev/）为准。
+
+3. 二次使用时请保留对原文及 LangChain4j 项目的署名引用。
+
+4. 禁止声称为官方翻译版本，或用于商业转售。
+
+================================================================================
+Source / Original Work Attribution
+================================================================================
+
+This project is a Chinese translation of the LangChain4j official documentation.
+The original work is copyright by LangChain4j Contributors and licensed under
+its own open-source license.
+
+Original source: https://github.com/langchain4j/langchain4j
+Original documentation: https://docs.langchain4j.dev/

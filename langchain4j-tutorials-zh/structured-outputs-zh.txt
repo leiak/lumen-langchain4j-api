@@ -1,0 +1,458 @@
+注意："结构化输出"一词是多义的，可以指代两件事：
+
+- LLM 以结构化格式生成输出的一般能力（这是我们在本页面介绍的内容）
+- OpenAI 的"结构化输出"功能，
+它适用于响应格式和工具（函数调用）两者。
+
+许多 LLM 和 LLM 提供者支持以结构化格式（通常是 JSON）生成输出。
+这些输出可以轻松映射到 Java 对象，并在应用程序的其他部分中使用。
+
+例如，假设我们有一个 Person 类：
+
+```
+record Person(String name, int age, double height, boolean married) {}
+```
+
+我们的目标是从描述虚构角色的非结构化文本中提取一个 Person 对象：
+
+```
+Eldwin Brightblade is 412 years old and serves as court wizard in the kingdom of Aelyria.He stands 1.65 meters tall and is known for his flowing white beard.Currently unmarried, he devotes his time to studying ancient runes.
+```
+
+目前，根据 LLM 和 LLM 提供者的不同，有三种方法可以实现这一点
+（从最可靠到最不可靠）：
+
+- JSON Schema
+- 提示词 + JSON 模式
+- 提示词
+
+## JSON Schema
+
+某些 LLM 提供者（目前是 Amazon Bedrock、Azure OpenAI、Google AI Gemini、Mistral、Ollama 和 OpenAI）允许为所需输出指定 JSON schema。
+你可以在此处的"JSON Schema"列中查看所有受支持的 LLM 提供者。
+
+在请求中指定 JSON schema 时，期望 LLM 生成符合此 schema 的输出。
+
+注意：请注意，JSON schema 是在对 LLM 提供者 API 的请求中的专用属性中指定的，
+不需要在提示词中包含任何自由格式的指令（例如，在系统或用户消息中）。
+
+LangChain4j 在低级 ChatModel API 和高级 AI Service API 中都支持 JSON Schema 功能。
+
+### 在 ChatModel 中使用 JSON Schema
+
+在低级 ChatModel API 中，可以在创建 ChatRequest 时使用与 LLM 提供者无关的 ResponseFormat 和 JsonSchema 指定 JSON schema：
+
+```
+ResponseFormat responseFormat = ResponseFormat.builder() .type(JSON) // 类型可以是 TEXT（默认）或 JSON .jsonSchema(JsonSchema.builder() .name("Person") // OpenAI 要求为 schema 指定名称 .rootElement(JsonObjectSchema.builder() // 请参阅下面的 [1] .addStringProperty("name") .addIntegerProperty("age") .addNumberProperty("height") .addBooleanProperty("married") .required("name", "age", "height", "married") // 请参阅下面的 [2] .build()) .build()) .build();UserMessage userMessage = UserMessage.from(""" Eldwin Brightblade is 412 years old and serves as court wizard in the kingdom of Aelyria. He stands 1.65 meters tall and is known for his flowing white beard. Currently unmarried, he devotes his time to studying ancient runes. """);ChatRequest chatRequest = ChatRequest.builder() .responseFormat(responseFormat) .messages(userMessage) .build();ChatModel chatModel = OpenAiChatModel.builder() .apiKey(System.getenv("OPENAI_API_KEY")) .modelName("gpt-4o-mini") .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = AzureOpenAiChatModel.builder() .endpoint(System.getenv("AZURE_OPENAI_URL")) .apiKey(System.getenv("AZURE_OPENAI_API_KEY")) .deploymentName("gpt-4o-mini") .logRequestsAndResponses(true) .build();// 或者ChatModel chatModel = GoogleAiGeminiChatModel.builder() .apiKey(System.getenv("GOOGLE_AI_GEMINI_API_KEY")) .modelName("gemini-1.5-flash") .logRequestsAndResponses(true) .build();// 或者ChatModel chatModel = OllamaChatModel.builder() .baseUrl("http://localhost:11434") .modelName("llama3.1") .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = MistralAiChatModel.builder() .apiKey(System.getenv("MISTRAL_AI_API_KEY")) .modelName("mistral-small-latest") .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = WatsonxChatModel.builder() .baseUrl(System.getenv("WATSONX_URL")) .projectId(System.getenv("WATSONX_PROJECT_ID")) .apiKey(System.getenv("WATSONX_API_KEY")) .modelName("ibm/granite-4-h-small") .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = BedrockChatModel.builder() .modelId("us.anthropic.claude-haiku-4-5-20251001-v1:0") .logRequests(true) .logResponses(true) .build();ChatResponse chatResponse = chatModel.chat(chatRequest);String output = chatResponse.aiMessage().text();System.out.println(output); // {"name":"Eldwin Brightblade","age":412,"height":1.65,"married":false}Person person = new ObjectMapper().readValue(output, Person.class);System.out.println(person); // Person[name=Eldwin Brightblade, age=412, height=1.65, married=false]
+```
+
+注意事项：
+
+- [1] - 在大多数情况下，根元素必须是 JsonObjectSchema 类型，
+但是：
+
+Amazon Bedrock、Azure OpenAI、Mistral、Ollama、OpenAI 和 OpenAI Official 也允许将 JsonRawSchema 作为根元素
+Gemini 还允许将 JsonEnumSchema 和 JsonArraySchema 作为根元素
+- [2] - 必需属性必须明确指定；否则，它们被视为可选。
+
+JSON schema 的结构是使用 JsonSchemaElement 接口定义的，
+具有以下子类型：
+
+- JsonObjectSchema - 用于对象类型。
+- JsonStringSchema - 用于 String、char/Character 类型。
+- JsonIntegerSchema - 用于 int/Integer、long/Long、BigInteger 类型。
+- JsonNumberSchema - 用于 float/Float、double/Double、BigDecimal 类型。
+- JsonBooleanSchema - 用于 boolean/Boolean 类型。
+- JsonEnumSchema - 用于枚举类型。
+- JsonArraySchema - 用于数组和集合（例如 List、Set）。
+- JsonReferenceSchema - 用于支持递归（例如，Person 有一个 Set<Person> children 字段）。
+- JsonAnyOfSchema - 用于支持多态（例如，Shape 可以是 Circle 或 Rectangle）。
+- JsonNullSchema - 用于支持可空类型。
+- JsonRawSchema - 用于使用你自定义的完全定义的 JSON schema。
+
+#### JsonObjectSchema
+
+JsonObjectSchema 表示具有嵌套属性的对象。
+它通常是 JsonSchema 的根元素。
+
+有几种方法可以向 JsonObjectSchema 添加属性：
+
+- 你可以使用 properties(Map<String, JsonSchemaElement> properties) 方法一次添加所有属性：
+
+```
+JsonSchemaElement citySchema = JsonStringSchema.builder() .description("The city for which the weather forecast should be returned") .build();JsonSchemaElement temperatureUnitSchema = JsonEnumSchema.builder() .enumValues("CELSIUS", "FAHRENHEIT") .build();Map<String, JsonSchemaElement> properties = Map.of( "city", citySchema, "temperatureUnit", temperatureUnitSchema);JsonSchemaElement rootElement = JsonObjectSchema.builder() .addProperties(properties) .required("city") // 应明确指定必需属性 .build();
+```
+
+- 你可以使用 addProperty(String name, JsonSchemaElement jsonSchemaElement) 方法单独添加属性：
+
+```
+JsonSchemaElement rootElement = JsonObjectSchema.builder() .addProperty("city", citySchema) .addProperty("temperatureUnit", temperatureUnitSchema) .required("city") .build();
+```
+
+- 你可以使用 add{Type}Property(String name) 或 add{Type}Property(String name, String description) 方法之一单独添加属性：
+
+```
+JsonSchemaElement rootElement = JsonObjectSchema.builder() .addStringProperty("city", "The city for which the weather forecast should be returned") .addEnumProperty("temperatureUnit", List.of("CELSIUS", "FAHRENHEIT")) .required("city") .build();
+```
+
+有关更多详细信息，请参阅 JsonObjectSchema 的 Javadoc。
+
+#### JsonStringSchema
+
+创建 JsonStringSchema 的示例：
+
+```
+JsonSchemaElement stringSchema = JsonStringSchema.builder() .description("The name of the person") .build();
+```
+
+#### JsonIntegerSchema
+
+创建 JsonIntegerSchema 的示例：
+
+```
+JsonSchemaElement integerSchema = JsonIntegerSchema.builder() .description("The age of the person") .build();
+```
+
+#### JsonNumberSchema
+
+创建 JsonNumberSchema 的示例：
+
+```
+JsonSchemaElement numberSchema = JsonNumberSchema.builder() .description("The height of the person") .build();
+```
+
+#### JsonBooleanSchema
+
+创建 JsonBooleanSchema 的示例：
+
+```
+JsonSchemaElement booleanSchema = JsonBooleanSchema.builder() .description("Is the person married?") .build();
+```
+
+#### JsonEnumSchema
+
+创建 JsonEnumSchema 的示例：
+
+```
+JsonSchemaElement enumSchema = JsonEnumSchema.builder() .description("Marital status of the person") .enumValues(List.of("SINGLE", "MARRIED", "DIVORCED")) .build();
+```
+
+#### JsonArraySchema
+
+创建 JsonArraySchema 以定义字符串数组的示例：
+
+```
+JsonSchemaElement itemSchema = JsonStringSchema.builder() .description("The name of the person") .build();JsonSchemaElement arraySchema = JsonArraySchema.builder() .description("All names of the people found in the text") .items(itemSchema) .build();
+```
+
+#### JsonReferenceSchema
+
+JsonReferenceSchema 可用于支持递归：
+
+```
+String reference = "person"; // 引用在 schema 内应该是唯一的JsonObjectSchema jsonObjectSchema = JsonObjectSchema.builder() .addStringProperty("name") .addProperty("children", JsonArraySchema.builder() .items(JsonReferenceSchema.builder() .reference(reference) .build()) .build()) .required("name", "children") .definitions(Map.of(reference, JsonObjectSchema.builder() .addStringProperty("name") .addProperty("children", JsonArraySchema.builder() .items(JsonReferenceSchema.builder() .reference(reference) .build()) .build()) .required("name", "children") .build())) .build();
+```
+
+注意：JsonReferenceSchema 目前仅由 Azure OpenAI、Mistral 和 OpenAI 支持。
+
+#### JsonAnyOfSchema
+
+JsonAnyOfSchema 可用于支持多态：
+
+```
+JsonSchemaElement circleSchema = JsonObjectSchema.builder() .addNumberProperty("radius") .build();JsonSchemaElement rectangleSchema = JsonObjectSchema.builder() .addNumberProperty("width") .addNumberProperty("height") .build();JsonSchemaElement shapeSchema = JsonAnyOfSchema.builder() .anyOf(circleSchema, rectangleSchema) .build();JsonSchema jsonSchema = JsonSchema.builder() .name("Shapes") .rootElement(JsonObjectSchema.builder() .addProperty("shapes", JsonArraySchema.builder() .items(shapeSchema) .build()) .required(List.of("shapes")) .build()) .build();ResponseFormat responseFormat = ResponseFormat.builder() .type(ResponseFormatType.JSON) .jsonSchema(jsonSchema) .build();UserMessage userMessage = UserMessage.from(""" Extract information from the following text: 1. A circle with a radius of 5 2. A rectangle with a width of 10 and a height of 20 """);ChatRequest chatRequest = ChatRequest.builder() .messages(userMessage) .responseFormat(responseFormat) .build();ChatResponse chatResponse = model.chat(chatRequest);System.out.println(chatResponse.aiMessage().text()); // {"shapes":[{"radius":5},{"width":10,"height":20}]}
+```
+
+注意：JsonAnyOfSchema 目前仅由 OpenAI、Azure OpenAI 和 Google AI Gemini 支持。
+
+#### JsonRawSchema
+
+从现有 schema 字符串创建 JsonRawSchema 的示例：
+
+```
+var rawSchema = """{ "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"], "additionalProperties": false}""";JsonRawSchema schema = JsonRawSchema.from(rawSchema);
+```
+
+注意：JsonRawSchema 目前仅由 Amazon Bedrock、Azure OpenAI、Mistral、Ollama、OpenAI、OpenAI Official 和 Google AI Gemini 支持。
+有关 Google AI Gemini 的具体示例，请参阅 Response JSON Schema 中的示例。
+
+#### 添加描述
+
+除了 JsonReferenceSchema 之外，所有 JsonSchemaElement 子类型都具有 description 属性。
+如果 LLM 未提供所需的输出，可以提供 description
+以为 LLM 提供更多正确输出的指令和示例，例如：
+
+```
+JsonSchemaElement stringSchema = JsonStringSchema.builder() .description("The name of the person, for example: John Doe") .build();
+```
+
+#### 限制
+
+在 ChatModel 中使用 JSON Schema 时，存在一些限制：
+
+- 它仅适用于受支持的 Amazon Bedrock、Azure OpenAI、Google AI Gemini、Mistral、Ollama 和 OpenAI 模型。
+- 它目前不适用于 OpenAI 的流式模式。
+对于 Google AI Gemini、Mistral 和 Ollama，可以通过创建/构建模型时的 responseSchema(...) 指定 JSON Schema。
+- JsonReferenceSchema 和 JsonAnyOfSchema 目前仅由 Azure OpenAI、Mistral 和 OpenAI 支持。
+
+### 在 AI Services 中使用 JSON Schema
+
+当使用 AI Services 时，可以用更少的代码以更简单的方式实现相同的功能：
+
+```
+interface PersonExtractor { Person extractPersonFrom(String text);}ChatModel chatModel = OpenAiChatModel.builder() // 请参阅下面的 [1] .apiKey(System.getenv("OPENAI_API_KEY")) .modelName("gpt-4o-mini") .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) // 请参阅下面的 [2] .strictJsonSchema(true) // 请参阅下面的 [2] .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = AzureOpenAiChatModel.builder() // 请参阅下面的 [1] .endpoint(System.getenv("AZURE_OPENAI_URL")) .apiKey(System.getenv("AZURE_OPENAI_API_KEY")) .deploymentName("gpt-4o-mini") .strictJsonSchema(true) .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) // 请参阅下面的 [3] .logRequestsAndResponses(true) .build();// 或者ChatModel chatModel = GoogleAiGeminiChatModel.builder() // 请参阅下面的 [1] .apiKey(System.getenv("GOOGLE_AI_GEMINI_API_KEY")) .modelName("gemini-1.5-flash") .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) // 请参阅下面的 [4] .logRequestsAndResponses(true) .build();// 或者ChatModel chatModel = OllamaChatModel.builder() // 请参阅下面的 [1] .baseUrl("http://localhost:11434") .modelName("llama3.1") .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) // 请参阅下面的 [5] .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = MistralAiChatModel.builder() .apiKey(System.getenv("MISTRAL_AI_API_KEY")) .modelName("mistral-small-latest") .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) // 请参阅下面的 [6] .strictJsonSchema(true) // 请参阅下面的 [6] .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = WatsonxChatModel.builder() .baseUrl(System.getenv("WATSONX_URL")) .projectId(System.getenv("WATSONX_PROJECT_ID")) .apiKey(System.getenv("WATSONX_API_KEY")) .modelName("ibm/granite-4-h-small") .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) // 请参阅下面的 [7] .logRequests(true) .logResponses(true) .build();// 或者ChatModel chatModel = BedrockChatModel.builder() .modelId("us.anthropic.claude-haiku-4-5-20251001-v1:0") .supportedCapabilities(RESPONSE_FORMAT_JSON_SCHEMA) // 请参阅下面的 [8] .logRequests(true) .logResponses(true) .build();PersonExtractor personExtractor = AiServices.create(PersonExtractor.class, chatModel); // 请参阅下面的 [1]String text = """ Eldwin Brightblade is 412 years old and serves as court wizard in the kingdom of Aelyria. He stands 1.65 meters tall and is known for his flowing white beard. Currently unmarried, he devotes his time to studying ancient runes. """;Person person = personExtractor.extractPersonFrom(text);System.out.println(person); // Person[name=Eldwin Brightblade, age=412, height=1.65, married=false]
+```
+
+注意事项：
+
+- [1] - 在 Quarkus 或 Spring Boot 应用程序中，无需显式创建 ChatModel 和 AI Service，
+因为这些 bean 是自动创建的。有关更多信息：
+对于 Quarkus，
+对于 Spring Boot。
+- [2] - 这对于为 OpenAI 启用 JSON Schema 功能是必需的，请参阅此处的更多详细信息。
+- [3] - 这对于为 Azure OpenAI 启用 JSON Schema 功能是必需的。
+- [4] - 这对于为 Google AI Gemini 启用 JSON Schema 功能是必需的。
+- [5] - 这对于为 Ollama 启用 JSON Schema 功能是必需的。
+- [6] - 这对于为 Mistral 启用 JSON Schema 功能是必需的。
+- [7] - 这对于为 watsonx.ai 启用 JSON Schema 功能是必需的。
+- [8] - 这对于为 Amazon Bedrock 启用 JSON Schema 功能是必需的。
+
+当满足以下所有条件时：
+
+- AI Service 方法返回 POJO
+- 使用的 ChatModel 支持 JSON Schema 功能
+- JSON Schema 功能在使用的 ChatModel 上已启用
+
+那么将根据指定的返回类型自动生成带有 JsonSchema 的 ResponseFormat。
+
+注意：确保在配置 ChatModel 时显式启用 JSON Schema 功能，
+因为它默认是禁用的。
+
+生成的 JsonSchema 的名称是返回类型的简单名称（getClass().getSimpleName()），
+在本例中为："Person"。
+
+LLM 响应后，输出将解析为对象并从 AI Service 方法返回。
+
+你可以在此处和此处找到许多受支持用例的示例。
+
+#### 必需和可选
+
+默认情况下，生成的 JsonSchema 中的所有字段和子字段都被视为可选。
+这是因为 LLM 倾向于产生幻觉，并在缺乏足够信息时填充合成数据（例如，当名称缺失时使用"John Doe"）。
+
+注意：请注意，如果 LLM 未提供值，
+则具有原始类型（例如 int、boolean 等）的可选字段将用默认值（例如 int 的 0、boolean 的 false 等）初始化。
+
+注意：请注意，当严格模式开启（strictJsonSchema(true)）时，
+可选的 enum 字段仍可能填充幻觉值。
+
+要将字段设置为必需，你可以使用 @JsonProperty(required = true) 对其进行注解：
+
+```
+record Person(@JsonProperty(required = true) String name, String surname) {}interface PersonExtractor { Person extractPersonFrom(String text);}
+```
+
+注意：请注意，当与工具一起使用时，
+默认情况下所有字段和子字段都被视为必需。
+
+#### 添加描述
+
+如果 LLM 未提供所需的输出，可以使用 @Description 对类和字段进行注解，
+以为 LLM 提供更多正确输出的指令和示例，例如：
+
+```
+@Description("a person")record Person(@Description("person's first and last name, for example: John Doe") String name, @Description("person's age, for example: 42") int age, @Description("person's height in meters, for example: 1.78") double height, @Description("is person married or not, for example: false") boolean married) {}
+```
+
+注意：请注意，@Description 放在 enum 值上无效，并且不会包含在生成的 JSON schema 中：
+
+```
+enum Priority { @Description("Critical issues such as payment gateway failures or security breaches.") // 这将被忽略 CRITICAL, @Description("High-priority issues like major feature malfunctions or widespread outages.") // 这将被忽略 HIGH, @Description("Low-priority issues such as minor bugs or cosmetic problems.") // 这将被忽略 LOW}
+```
+
+#### 多态类型
+
+AI Service 方法可以返回多态类型 - 一个基类型，其具体子类型由 LLM 在运行时决定。支持两种风格：
+
+- 密封接口和密封类 - 不需要注解；子类型通过 Class.getPermittedSubclasses() 发现。
+- 普通抽象类和接口 - 必须使用 Jackson 的 @JsonSubTypes 显式声明其子类型。
+
+多态返回类型适用于类型本身、集合（List<T>、Set<T>）、嵌套在其他 POJO 中的字段，以及子类型包含基类型作为字段的递归层次结构（例如，BinaryOp(left: ExpressionNode, right: ExpressionNode)，其中 ExpressionNode 是密封基类）。
+
+将鉴别器属性（默认为 "type"）添加到每个子类型，以便 LLM
+可以传达它生成了哪个具体类型；然后解析器自动分派到正确的子类型。
+
+密封接口和类 - 不需要注解：
+
+```
+sealed interface Animal permits Dog, Cat {}record Dog(String name, String breed) implements Animal {}record Cat(String name, boolean indoor) implements Animal {}interface AnimalExtractor { Animal extractAnimalFrom(String text);}
+```
+
+LLM 会看到一个在 Dog 和 Cat 上使用 anyOf 的 schema，每个子类型都被限制在其 type 属性中发出其简单类名。给定：
+
+```
+Rex is a Labrador.
+```
+
+LLM 发出 {"value":{"type":"Dog","name":"Rex","breed":"Labrador"}}，该消息被解析回 Dog 实例。
+
+注意：因为许多 LLM 提供者不支持根级使用 anyOf 的 JSON schema，
+该 schema 将多态选择包装在 value 属性下（集合则为 values）。
+包装器是实现细节 - 你的 AI Service 方法仍然返回未包装的子类型。
+
+多态类型的集合：
+
+```
+interface AnimalsExtractor { List<Animal> extractAnimalsFrom(String text);}
+```
+
+另一个 POJO 中的多态字段：
+
+```
+record Owner(String name, Animal pet) {}interface OwnerExtractor { Owner extractOwnerFrom(String text);}
+```
+
+Jackson 的 @JsonSubTypes / @JsonTypeInfo 也受支持，可让你将传输名称与 Java 类名解耦：
+
+```
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")@JsonSubTypes({ @JsonSubTypes.Type(value = Square.class, name = "square"), @JsonSubTypes.Type(value = Circle.class, name = "circle")})interface Shape {}class Square implements Shape { double side; }class Circle implements Shape { double radius; }
+```
+
+鉴别器值的解析顺序：
+
+- 基类型上的 @JsonSubTypes.Type(name = "...")
+- 子类型上的 @JsonTypeName
+- Class.getSimpleName()（默认值）
+
+因此 @JsonTypeName 是一种便捷方式，用于在你不想在基类型上声明传输名称时设置传输名称：
+
+```
+sealed interface Bird permits Eagle, Sparrow {}@JsonTypeName("bird_eagle")record Eagle(double wingspanMeters) implements Bird {}@JsonTypeName("bird_sparrow")record Sparrow(boolean migratory) implements Bird {}
+```
+
+LLM 将看到 "bird_eagle" / "bird_sparrow" 作为鉴别器值，而不是简单的类名（"Eagle"/"Sparrow"）。
+
+支持的 @JsonTypeInfo 配置：
+
+| 属性 | 支持的值 |
+| use | Id.NAME、Id.SIMPLE_NAME |
+| include | As.PROPERTY（默认）、As.EXISTING_PROPERTY |
+| property | 任何显式值；为空时默认为 "@type" |
+| defaultImpl | 任何具体子类 - 当 LLM 的鉴别器缺失或未知时使用 |
+| visible | true 将鉴别器字段保留在反序列化的 bean 上（并绕过字段冲突检查） |
+
+其他任何内容（例如，Id.CLASS、As.WRAPPER_OBJECT）都会在 schema 生成时
+被拒绝，并抛出 UnsupportedFeatureException。
+
+defaultImpl 用于幻觉容忍：
+
+```
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, defaultImpl = UnknownTool.class)@JsonSubTypes({ @JsonSubTypes.Type(value = Hammer.class, name = "hammer"), @JsonSubTypes.Type(value = Wrench.class, name = "wrench")})interface Tool {}
+```
+
+如果 LLM 发出未知的鉴别器（例如 "saw"）或完全省略它，
+解析器会返回 UnknownTool 而不是失败，因此你的代码可以检测并处理该幻觉。
+
+添加描述：
+
+你可以通过使用 @Description 注解基类型和/或子类型来指导 LLM。
+基类型描述附加到 anyOf 元素，每个子类型的描述附加到其各自的选项：
+
+```
+@Description("A pet that lives in your home")sealed interface Pet permits Hamster, Parrot {}@Description("A small caged rodent kept as a pet")record Hamster(String name, double weightGrams) implements Pet {}@Description("A talking bird that can mimic human speech")record Parrot(String name, int vocabulary) implements Pet {}
+```
+
+当省略 @Description 时，描述回退到简单的类名
+（例如 "Hamster"），以便 LLM 仍然具有每个选项的标签。
+
+递归多态类型：
+
+子类型包含其作为字段的基类型的多态基类也可以正常工作：
+
+```
+sealed interface ExpressionNode permits Literal, BinaryOp {}record Literal(int value) implements ExpressionNode {}record BinaryOp(String operator, ExpressionNode left, ExpressionNode right) implements ExpressionNode {}
+```
+
+递归多态 schema 需要支持 $ref / $defs 的模型
+（目前是 Azure OpenAI、Mistral 和 OpenAI）。
+
+鉴别器字段冲突：
+
+如果子类型声明了与鉴别器同名的字段（例如，仅密封基类型上的 type 字段），
+则 schema 生成会失败并显示明确的错误消息。修复选项：
+
+- 重命名字段，或
+- 使用 @JsonTypeInfo(property = "...") 选择不同的鉴别器名称，或
+- 如果该字段是有意作为子类型的一部分，则设置 @JsonTypeInfo(visible = true)，或
+- 当子类型上的字段是鉴别器的真实来源时，使用 @JsonTypeInfo(include = As.EXISTING_PROPERTY)。
+
+#### 限制
+
+在 AI Services 中使用 JSON Schema 时，存在一些限制：
+
+- 它仅适用于受支持的 Amazon Bedrock、Azure OpenAI、Google AI Gemini、Mistral、Ollama 和 OpenAI 模型。
+- 在配置 ChatModel 时需要显式启用 JSON Schema 支持。
+- 它不适用于流式模式。
+- 并非所有类型都受支持。请参阅此处受支持类型的列表。
+- POJO 可以包含：
+
+标量/简单类型（例如，String、int/Integer、double/Double、boolean/Boolean 等）
+枚举
+嵌套 POJO
+List<T>、Set<T> 和 T[]，其中 T 是标量、枚举或 POJO
+多态类型（密封接口/类或使用 Jackson @JsonSubTypes 注解的类型）
+- 递归目前仅由 Azure OpenAI、Mistral 和 OpenAI 支持。
+- 多态类型需要支持 JSON schema 中 anyOf 的 LLM。
+- 当 LLM 不支持 JSON Schema 功能，或未启用该功能，或类型不受支持时，
+AI Service 将回退到提示词。
+
+## 提示词 + JSON 模式
+
+更多信息即将推出。
+同时，请阅读本节和本文。
+
+## 提示词
+
+当使用提示词时（这是默认选择，除非启用对 JSON schema 的支持），
+AI Service 将自动生成格式指令并将它们附加到 UserMessage 的末尾，
+指示 LLM 应以何种格式进行响应。
+在方法返回之前，AI Service 将 LLM 的输出解析为所需的类型。
+
+你可以通过启用日志来观察附加的指令。
+
+注意：这种方法非常不可靠。
+如果 LLM 和 LLM 提供者支持上述方法，则最好使用这些方法。
+
+## 支持的类型
+
+| 类型 | JSON Schema | 提示词 |
+| POJO | ✅ | ✅ |
+| List<POJO>、Set<POJO> | ✅ | ❌ |
+| Enum | ✅ | ✅ |
+| List<Enum>、Set<Enum> | ✅ | ✅ |
+| List<String>、Set<String> | ✅ | ✅ |
+| 多态（密封 / @JsonSubTypes），包括 List/Set | ✅ | ❌ |
+| boolean、Boolean | ✅ | ✅ |
+| int、Integer | ✅ | ✅ |
+| long、Long | ✅ | ✅ |
+| float、Float | ✅ | ✅ |
+| double、Double | ✅ | ✅ |
+| byte、Byte | ✅ | ✅ |
+| short、Short | ✅ | ✅ |
+| BigInteger | ✅ | ✅ |
+| BigDecimal | ✅ | ✅ |
+| Date | ❌ | ✅ |
+| LocalDate | ❌ | ✅ |
+| LocalTime | ❌ | ✅ |
+| LocalDateTime | ❌ | ✅ |
+| Map<?, ?> | ❌ | ✅ |
+
+一些示例：
+
+```
+record Person(String firstName, String lastName) {}enum Sentiment { POSITIVE, NEGATIVE, NEUTRAL}interface Assistant { Person extractPersonFrom(String text); Set<Person> extractPeopleFrom(String text); Sentiment extractSentimentFrom(String text); List<Sentiment> extractSentimentsFrom(String text); List<String> generateOutline(String topic); boolean isSentimentPositive(String text); Integer extractNumberOfPeopleMentionedIn(String text);}
+```
+
+## 相关教程
+
+- 数据提取：让 LLM 输出 JSON 内容的多种方式，作者 Guillaume Laforge

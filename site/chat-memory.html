@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>对话记忆 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html" class="active">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 对话记忆</nav>
+<h1>对话记忆</h1>
+<p>手动维护和管理 ChatMessage 很麻烦。因此，LangChain4j 提供了 ChatMemory 抽象以及多个开箱即用的实现。</p>
+
+<p>ChatMemory 既可以作为独立的底层组件使用，也可以作为高级组件（如 AI Services）的一部分使用。</p>
+
+<p>ChatMemory 充当 ChatMessage 的容器（由 List 支持），具有以下附加功能：</p>
+
+<ul><li>淘汰策略（Eviction policy）</li><li>持久化（Persistence）</li><li>对 SystemMessage 的特殊处理</li><li>对工具消息的特殊处理</li></ul>
+
+<h2>内存与历史记录</h2>
+
+<p>请注意，&quot;内存&quot;（memory）和&quot;历史记录&quot;（history）是相似但不同的概念。</p>
+
+<ul><li>历史记录保留用户和 AI 之间的所有消息不变。历史记录是用户在 UI 中看到的内容。它代表了实际所说的内容。</li><li>内存保留一些信息，这些信息会被提供给 LLM，使其表现得好像&quot;记住&quot;了对话。内存与历史记录大不相同。根据所使用的内存算法，它可以通过多种方式修改历史记录：淘汰某些消息、汇总多条消息、汇总单独的消息、删除消息中不重要的细节、向消息注入额外信息（例如用于 RAG）或指令（例如用于结构化输出），等等。LangChain4j 目前只提供&quot;内存&quot;，不提供&quot;历史记录&quot;。如果您需要保留完整的历史记录，请手动处理。</li></ul>
+
+<h2>淘汰策略</h2>
+
+<p>淘汰策略在以下几个原因中是必要的：</p>
+
+<ul><li>适应 LLM 的上下文窗口。LLM 一次可以处理的 token 数量有上限。某些时候，对话可能超过此限制。在这种情况下，应该淘汰某些消息。通常淘汰最旧的消息，但如果需要，可以实现更复杂的算法。</li><li>控制成本。每个 token 都有成本，因此每次调用 LLM 都会变得更加昂贵。淘汰不必要的消息可以降低成本。</li><li>控制延迟。发送给 LLM 的 token 越多，处理它们所需的时间就越长。 目前，LangChain4j 提供 2 种开箱即用的实现：</li></ul>
+
+<ul><li>较简单的一种是 MessageWindowChatMemory，它作为滑动窗口运行，保留最近的 N 条消息，并淘汰那些不再适合的旧消息。然而，由于每条消息可能包含不同数量的 token，MessageWindowChatMemory 主要用于快速原型设计。</li><li>更复杂的一种选择是 TokenWindowChatMemory，它同样作为滑动窗口运行，但重点是保留最近的 N 个 token，根据需要淘汰旧消息。消息是不可分割的。如果一条消息不适合，则会被完全淘汰。TokenWindowChatMemory 需要一个 TokenCountEstimator 来统计每个 ChatMessage 中的 token 数。</li></ul>
+
+<h2>持久化</h2>
+
+<p>默认情况下，ChatMemory 实现将 ChatMessage 存储在内存中。</p>
+
+<p>如果需要持久化，可以实现自定义的 ChatMemoryStore，以将 ChatMessage 存储在您选择的任何持久化存储中：</p>
+
+<pre><code>class PersistentChatMemoryStore implements ChatMemoryStore { @Override public List&lt;ChatMessage&gt; getMessages(Object memoryId) { // TODO: 实现按内存 ID 从持久化存储中获取所有消息。 // ChatMessageDeserializer.messageFromJson(String) 和 // ChatMessageDeserializer.messagesFromJson(String) 辅助方法可用于 // 方便地从 JSON 反序列化聊天消息。 } @Override public void updateMessages(Object memoryId, List&lt;ChatMessage&gt; messages) { // TODO: 实现按内存 ID 更新持久化存储中的所有消息。 // ChatMessageSerializer.messageToJson(ChatMessage) 和 // ChatMessageSerializer.messagesToJson(List&lt;ChatMessage&gt;) 辅助方法可用于 // 方便地将聊天消息序列化为 JSON。 } @Override public void deleteMessages(Object memoryId) { // TODO: 实现按内存 ID 从持久化存储中删除所有消息。 } }ChatMemory chatMemory = MessageWindowChatMemory.builder() .id(&quot;12345&quot;) .maxMessages(10) .chatMemoryStore(new PersistentChatMemoryStore()) .build();</code></pre>
+
+<p>每次向 ChatMemory 添加新的 ChatMessage 时，都会调用 updateMessages() 方法。这通常在与 LLM 的每次交互中发生两次：一次是在添加新的 UserMessage 时，另一次是在添加新的 AiMessage 时。updateMessages() 方法应该更新与给定内存 ID 关联的所有消息。ChatMessage 可以单独存储（例如每条消息一个记录/行/对象），也可以一起存储（例如整个 ChatMemory 一个记录/行/对象）。</p>
+
+<p>note请注意，从 ChatMemory 淘汰的消息也将从 ChatMemoryStore 中淘汰。当消息被淘汰时，将使用不包含被淘汰消息的消息列表调用 updateMessages() 方法。</p>
+
+<p>当 ChatMemory 的用户请求所有消息时，会调用 getMessages() 方法。这通常在与 LLM 的每次交互中发生一次。Object memoryId 参数的值对应于创建 ChatMemory 时指定的 id。它可用于区分多个用户和/或对话。getMessages() 方法应返回与给定内存 ID 关联的所有消息。</p>
+
+<p>每当调用 ChatMemory.clear() 时，都会调用 deleteMessages() 方法。如果您不使用此功能，可以将该方法留空。</p>
+
+<h2>对 SystemMessage 的特殊处理</h2>
+
+<p>SystemMessage 是一种特殊类型的消息，因此其处理方式与其他消息类型不同：</p>
+
+<ul><li>一旦添加，SystemMessage 将始终保留。</li><li>同时只能保留一个 SystemMessage。</li><li>如果添加了具有相同内容的新 SystemMessage，则会被忽略。</li><li>如果添加了具有不同内容的新 SystemMessage，则会替换前一个。 默认情况下，新的 SystemMessage 将添加到消息列表的末尾。您可以在创建 ChatMemory 时通过设置 alwaysKeepSystemMessageFirst 属性来更改此行为。</li></ul>
+
+<h2>对工具消息的特殊处理</h2>
+
+<p>如果包含 ToolExecutionRequests 的 AiMessage 被淘汰，则以下孤立的 ToolExecutionResultMessage 也会被自动淘汰，以避免某些 LLM 提供商（例如 OpenAI）禁止在请求中发送孤立 ToolExecutionResultMessage 而产生的问题。</p>
+
+<p>note执行 I/O 操作的 ChatMemory 或 ChatMemoryStore 可以实现异步版本（addAsync/messagesAsync/setAsync、getMessagesAsync/updateMessagesAsync/deleteMessagesAsync），以便在 AI Service 以非阻塞模式使用时不会阻塞线程。请参阅 Non-blocking and Reactive。</p>
+
+<h2>示例</h2>
+
+<ul><li>使用 AiServices：</li></ul>
+
+<p>聊天内存 每个用户使用单独的聊天内存 持久化聊天内存 每个用户使用持久化聊天内存</p>
+<ul><li>使用遗留 Chains</li></ul>
+
+<p>ConversationalChain 与聊天内存 ConversationalRetrievalChain 与聊天内存 所有支持的聊天内存存储可在此处找到。</p>
+
+<h2>相关教程</h2>
+
+<ul><li>由 Siva 提供：使用 LangChain4j ChatMemory 进行生成式 AI 对话</li></ul>
+
+<div class="prev-next">
+  <a href="chat-and-language-models.html"><div class="label">← 上一篇</div><div>对话与语言模型</div></a>
+  <a href="model-parameters.html"><div class="label">下一篇 →</div><div>模型参数</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

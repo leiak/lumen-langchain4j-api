@@ -1,0 +1,3 @@
+Micronaut 为 LangChain4j 提供了一个 Micronaut 模块。
+
+你可以在此处找到所有必要的文档，并可以在这里查看一份教程。

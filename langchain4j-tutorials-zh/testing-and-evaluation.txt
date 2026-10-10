@@ -1,0 +1,17 @@
+## Examples​
+
+Here
+is an example of an integration testing for a Customer Support Agent.
+This corresponds to Level 1: Unit Tests.
+
+## Recommended Reading​
+
+- Your AI Product Needs Evals
+- Creating a LLM-as-a-Judge That Drives Business Results
+- A Practical Guide to RAG Pipeline Evaluation (Part 1: Retrieval)
+- A Practical Guide to RAG Pipeline Evaluation (Part 2: Generation)
+- How important is a Golden Dataset for LLM evaluation?
+- Case Study: Reference-free vs Reference-based evaluation of RAG pipeline
+- How to evaluate complex GenAI Apps: a granular approach
+- Generate Synthetic Data to Test LLM Applications
+noteMore information coming soon.

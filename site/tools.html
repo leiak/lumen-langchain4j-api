@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工具（函数调用） | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html" class="active">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 工具（函数调用）</nav>
+<h1>工具（函数调用）</h1>
+<p>某些 LLM 除了生成文本之外，还可以触发动作。</p>
+
+<p>note支持工具的所有 LLM 可在此处找到（参见&quot;Tools&quot;列）。</p>
+
+<p>note并非所有 LLM 都同样良好地支持工具。理解、选择和正确使用工具的能力在很大程度上取决于具体的模型及其能力。某些模型可能根本不支持工具，而另一些模型可能需要仔细的提示工程或额外的系统指令。</p>
+
+<p>有一个概念称为&quot;工具&quot;或&quot;函数调用&quot;。它允许 LLM 在必要时调用一个或多个可用工具，通常由开发者定义。工具可以是任何东西：网络搜索、外部 API 的调用或特定代码段的执行等。LLM 实际上不能自己调用工具；相反，它们会在其响应中表达调用特定工具的意图（而不是以纯文本形式响应）。然后，作为开发者，我们应该使用提供的参数执行此工具并报告工具执行的结果。</p>
+
+<p>例如，我们知道 LLM 本身在数学方面不是很好。如果您的用例涉及偶尔的数学计算，您可能希望为 LLM 提供一个&quot;数学工具&quot;。通过在请求中声明一个或多个工具，它可以在认为合适时决定调用其中一个。给定一个数学问题以及一组数学工具，LLM 可能会决定要正确回答该问题，首先应该调用其中一个提供的数学工具。</p>
+
+<p>让我们看看这在实践中如何工作（带工具和不带工具）：</p>
+
+<p>不使用工具的消息交换示例：</p>
+
+<pre><code>Request:- messages: - UserMessage: - text: 475695037565 的平方根是多少？Response:- AiMessage: - text: 475695037565 的平方根约为 689710。</code></pre>
+
+<p>接近，但并不正确。</p>
+
+<p>使用以下工具的消息交换示例：</p>
+
+<pre><code>@Tool(&quot;对两个给定的数字求和&quot;)double sum(double a, double b) { return a + b;}@Tool(&quot;返回给定数字的平方根&quot;)double squareRoot(double x) { return Math.sqrt(x);}</code></pre>
+
+<pre><code>Request 1:- messages: - UserMessage: - text: 475695037565 的平方根是多少？- tools: - sum(double a, double b): 对两个给定的数字求和 - squareRoot(double x): 返回给定数字的平方根Response 1:- AiMessage: - toolExecutionRequests: - squareRoot(475695037565)... 在这里我们用 &quot;475695037565&quot; 参数执行 squareRoot 方法，得到 &quot;689706.486532&quot; 作为结果 ...Request 2:- messages: - UserMessage: - text: 475695037565 的平方根是多少？ - AiMessage: - toolExecutionRequests: - squareRoot(475695037565) - ToolExecutionResultMessage: - text: 689706.486532Response 2:- AiMessage: - text: 475695037565 的平方根是 689706.486532。</code></pre>
+
+<p>如您所见，当 LLM 可以访问工具时，它可以在适当时决定调用其中一个。</p>
+
+<p>这是一个非常强大的功能。在这个简单的示例中，我们为 LLM 提供了基本的数学工具，但想象一下，如果我们为它提供 googleSearch 和 sendEmail 工具，以及类似&quot;我的朋友想知道 AI 领域的最新消息。将简短摘要发送给 friend@email.com&quot;的查询，那么它可以使用 googleSearch 工具找到最新消息，然后使用 sendEmail 工具通过电子邮件发送摘要。</p>
+
+<p>note为了增加 LLM 使用正确参数调用正确工具的可能性，我们应该提供清晰明确的：</p>
+
+<ul><li>工具名称</li><li>工具功能的描述以及何时应使用它</li><li>每个工具参数的描述 一个好的经验法则是：如果人类可以理解工具的目的以及如何使用它，那么 LLM 也可以。</li></ul>
+
+<p>LLM 经过专门的微调以检测何时调用工具以及如何调用它们。某些模型甚至可以一次调用多个工具，例如 OpenAI。</p>
+
+<p>note请注意，并非所有模型都支持工具。要查看哪些模型支持工具，请参阅 此页 上的&quot;Tools&quot;列。</p>
+
+<p>note请注意，工具/函数调用与 JSON 模式不同。</p>
+
+<h1>两个抽象层次</h1>
+
+<p>LangChain4j 为使用工具提供了两个抽象层次：</p>
+
+<ul><li>底层，使用 ChatModel 和 ToolSpecification API</li><li>高级，使用 AI Services 和 @Tool 注解的 Java 方法</li></ul>
+
+<h2>底层工具 API</h2>
+
+<p>在底层，您可以使用 ChatModel 的 chat(ChatRequest) 方法。StreamingChatModel 中也存在类似的方法。</p>
+
+<p>您可以在创建 ChatRequest 时指定一个或多个 ToolSpecifications。</p>
+
+<p>ToolSpecification 是一个包含有关工具的所有信息的对象：</p>
+
+<ul><li>工具的名称</li><li>工具的描述</li><li>工具的参数及其描述</li><li>工具的元数据。 默认情况下，它不会发送给 LLM 提供商，您必须在创建 ChatModel 时明确指定应发送哪些元数据键。目前，工具元数据仅由 langchain4j-anthropic 模块支持。当工具由 McpToolProvider 提供时，元数据可以包含 MCP 特定的条目。建议提供尽可能多的有关工具的信息：清晰的名称、全面的描述以及每个参数的描述等。</li></ul>
+
+<h3>创建工具规范</h3>
+
+<p>有两种方法可以创建 ToolSpecification：</p>
+
+<ul><li>手动</li></ul>
+
+<pre><code>ToolSpecification toolSpecification = ToolSpecification.builder() .name(&quot;getWeather&quot;) .description(&quot;返回给定城市的天气预报&quot;) .parameters(JsonObjectSchema.builder() .addStringProperty(&quot;city&quot;, &quot;应返回天气预报的城市&quot;) .addEnumProperty(&quot;temperatureUnit&quot;, List.of(&quot;CELSIUS&quot;, &quot;FAHRENHEIT&quot;)) .required(&quot;city&quot;) // 必需的属性应明确指定 .build()) .build();</code></pre>
+
+<p>有关 JsonObjectSchema 的更多信息，请参见 此处。</p>
+
+<ul><li>使用辅助方法：</li><li>ToolSpecifications.toolSpecificationsFrom(Class)</li><li>ToolSpecifications.toolSpecificationsFrom(Object)</li><li>ToolSpecifications.toolSpecificationFrom(Method)</li></ul>
+
+<pre><code>class WeatherTools { @Tool(&quot;返回给定城市的天气预报&quot;) String getWeather( @P(&quot;应返回天气预报的城市&quot;) String city, TemperatureUnit temperatureUnit ) { ... }}List&lt;ToolSpecification&gt; toolSpecifications = ToolSpecifications.toolSpecificationsFrom(WeatherTools.class);</code></pre>
+
+<h3>JSON 序列化</h3>
+
+<p>ToolSpecification 可以使用 toJson() 和 fromJson() 方法序列化为 JSON 并反序列化回来。例如，当您希望将工具规范存储在数据库中或通过网络传输它们时，这可能很有用。</p>
+
+<pre><code>String json = toolSpecification.toJson();ToolSpecification deserialized = ToolSpecification.fromJson(json);</code></pre>
+
+<p>默认情况下，JSON 转换使用专用的 Jackson ObjectMapper。您可以通过实现 ToolSpecificationJsonCodecFactory 并将其注册到 META-INF/services/dev.langchain4j.spi.agent.tool.ToolSpecificationJsonCodecFactory，从而通过 SPI 提供您自己的 ToolSpecificationJsonCodec 实现。</p>
+
+<h3>使用 ChatModel</h3>
+
+<p>一旦您拥有 List&lt;ToolSpecification&gt;，就可以调用模型：</p>
+
+<pre><code>ChatRequest request = ChatRequest.builder() .messages(UserMessage.from(&quot;London 明天天气怎么样？&quot;)) .toolSpecifications(toolSpecifications) .build();ChatResponse response = model.chat(request);AiMessage aiMessage = response.aiMessage();</code></pre>
+
+<p>如果 LLM 决定调用工具，则返回的 AiMessage 将在 toolExecutionRequests 字段中包含数据。在这种情况下，AiMessage.hasToolExecutionRequests() 将返回 true。根据 LLM 的不同，它可以包含一个或多个 ToolExecutionRequest 对象（某些 LLM 支持并行调用多个工具）。</p>
+
+<p>每个 ToolExecutionRequest 应包含：</p>
+
+<ul><li>工具调用的 id。请注意，某些 LLM 提供商（例如 Google、Ollama）可能会忽略此 ID。</li><li>要调用的工具的名称，例如：getWeather</li><li>参数，例如：{ &quot;city&quot;: &quot;London&quot;, &quot;temperatureUnit&quot;: &quot;CELSIUS&quot; } 您需要使用 ToolExecutionRequest(s) 中的信息手动执行工具。</li></ul>
+
+<p>如果您希望将工具执行的结果发送回 LLM，则需要创建一个 ToolExecutionResultMessage（每个 ToolExecutionRequest 一个）并将其与所有先前的消息一起发送：</p>
+
+<pre><code>String result = &quot;预计 London 明天有雨。&quot;;ToolExecutionResultMessage toolExecutionResultMessage = ToolExecutionResultMessage.from(toolExecutionRequest, result);ChatRequest request2 = ChatRequest.builder() .messages(List.of(userMessage, aiMessage, toolExecutionResultMessage)) .toolSpecifications(toolSpecifications) .build();ChatResponse response2 = model.chat(request2);</code></pre>
+
+<h4>多模态工具结果</h4>
+
+<p>ToolExecutionResultMessage 还可以携带非文本内容，例如图像。除了使用 text() 之外，您还可以使用带有 contents() 的 builder：</p>
+
+<pre><code>ToolExecutionResultMessage toolExecutionResultMessage = ToolExecutionResultMessage.builder() .id(toolExecutionRequest.id()) .toolName(toolExecutionRequest.name()) .contents( TextContent.from(&quot;这是照片&quot;), ImageContent.from(Image.builder() .base64Data(base64Data) .mimeType(&quot;image/png&quot;) .build()) ) .build();</code></pre>
+
+<p>note并非所有 LLM 提供商都支持多模态工具结果。有关提供商支持的详细信息，请参阅 Returning Images and Multimodal Content。</p>
+
+<h3>使用 StreamingChatModel</h3>
+
+<p>一旦您拥有 List&lt;ToolSpecification&gt;，就可以调用模型：</p>
+
+<pre><code>ChatRequest request = ChatRequest.builder() .messages(UserMessage.from(&quot;London 明天天气怎么样？&quot;)) .toolSpecifications(toolSpecifications) .build();model.chat(request, new StreamingChatResponseHandler() { @Override public void onPartialResponse(String partialResponse) { System.out.println(&quot;onPartialResponse: &quot; + partialResponse); } @Override public void onPartialToolCall(PartialToolCall partialToolCall) { System.out.println(&quot;onPartialToolCall: &quot; + partialToolCall); } @Override public void onCompleteToolCall(CompleteToolCall completeToolCall) { System.out.println(&quot;onCompleteToolCall: &quot; + completeToolCall); } @Override public void onCompleteResponse(ChatResponse completeResponse) { System.out.println(&quot;onCompleteResponse: &quot; + completeResponse); } @Override public void onError(Throwable error) { error.printStackTrace(); }});</code></pre>
+
+<p>如果 LLM 决定调用工具，则 onPartialToolCall(PartialToolCall) 回调通常会在最终调用 onCompleteToolCall(CompleteToolCall) 回调之前被多次调用，这表明该工具调用的流式传输已完成。</p>
+
+<p>note请注意，并非所有 LLM 提供商都流式传输部分工具调用。某些提供商（例如 Bedrock、Google、Mistral、Ollama）仅返回完整的工具调用。在这些情况下，onPartialToolCall 回调不会被调用——只有 onCompleteToolCall 会被调用。</p>
+
+<p>以下是单个工具调用的流式传输示例：</p>
+
+<pre><code>onPartialToolCall(index = 0, id = &quot;call_abc&quot;, name = &quot;get_weather&quot;, partialArguments = &quot;{\&quot;&quot;)onPartialToolCall(index = 0, id = &quot;call_abc&quot;, name = &quot;get_weather&quot;, partialArguments = &quot;city&quot;)onPartialToolCall(index = 0, id = &quot;call_abc&quot;, name = &quot;get_weather&quot;, partialArguments = &quot;&quot;\&quot;:\&quot;&quot;)onPartialToolCall(index = 0, id = &quot;call_abc&quot;, name = &quot;get_weather&quot;, partialArguments = &quot;London&quot;)onPartialToolCall(index = 0, id = &quot;call_abc&quot;, name = &quot;get_weather&quot;, partialArguments = &quot;\&quot;}&quot;)onCompleteToolCall(index = 0, id = &quot;call_abc&quot;, name = &quot;get_weather&quot;, arguments = &quot;{\&quot;city\&quot;:\&quot;London\&quot;}&quot;)</code></pre>
+
+<p>如果 LLM 发起多个工具调用，则 index 将递增，允许您将不同的 PartialToolCalls 彼此相关联，并与最终的 CompleteToolCall 相关联。</p>
+
+<p>当完整响应的流式传输结束并调用 onCompleteResponse(ChatResponse) 时，ChatResponse 中的 AiMessage 将包含流式传输期间发生的所有工具调用。</p>
+
+<h2>高级工具 API</h2>
+
+<p>在较高的抽象层次上，您可以使用 @Tool 注解任何 Java 方法，并在创建 AI Service 时指定它们。</p>
+
+<p>AI Service 将自动将这些方法转换为 ToolSpecifications，并将它们包含在与 LLM 的每次交互的请求中。当 LLM 决定调用工具时，AI Service 将自动执行相应的方法，并且方法的返回值（如果有）将被发送回 LLM。您可以在 DefaultToolExecutor 中找到实现细节。</p>
+
+<p>一些工具示例：</p>
+
+<pre><code>@Tool(&quot;根据查询搜索 Google 上的相关 URL&quot;)public List&lt;String&gt; searchGoogle(@P(&quot;搜索查询&quot;) String query) { return googleSearchService.search(query);}@Tool(&quot;返回给定 URL 的网页内容&quot;)public String getWebPageContent(@P(&quot;页面的 URL&quot;) String url) { Document jsoupDocument = Jsoup.connect(url).get(); return jsoupDocument.body().text();}</code></pre>
+
+<h3>工具方法的限制</h3>
+
+<p>使用 @Tool 注解的方法：</p>
+
+<ul><li>可以是静态的或非静态的</li><li>可以具有任何可见性（public、private 等）。</li></ul>
+
+<h3>工具方法参数</h3>
+
+<p>使用 @Tool 注解的方法可以接受任意数量的各种类型的参数：</p>
+
+<ul><li>基本类型：int、double 等</li><li>对象类型：String、Integer、Double 等</li><li>自定义 POJO（可以包含嵌套 POJO）</li><li>枚举</li><li>多态类型（sealed interface/class 或使用 Jackson 注解的类型 @JsonSubTypes / @JsonTypeInfo）— 请参阅 Polymorphic Tool Parameters</li><li>List&lt;T&gt;/Set&lt;T&gt;，其中 T 是上述类型之一</li><li>Map&lt;K,V&gt;（您需要在带有 @P 的参数描述中手动指定 K 和 V 的类型） 也支持不带参数的方法。</li></ul>
+
+<h4>参数名称</h4>
+
+<p>默认情况下，如果未指定 @P 的 name 属性，则参数名称通过反射获取。但是，如果没有 -parameters javac 选项，则反射返回诸如 arg0、arg1 之类的通用名称。参数的语义含义会丢失，这可能会让 LLM 感到困惑。</p>
+
+<p>在两种情况下设置 name 是有用的：</p>
+
+<ul><li>缺少 -parameters javac 选项 — 以避免 LLM 看到的通用 arg0/arg1 名称。注意，Quarkus 和 Spring 等框架默认启用 -parameters，因此实际的方法参数名称得以保留，并且在使用这些框架时通常无需设置 name。</li><li>为 LLM 自定义名称 — 当您希望 LLM 看到的参数名称与源代码中不同（例如，为了匹配特定的 API 契约或提供更具描述性的名称）。 示例：</li></ul>
+
+<pre><code>@Toolvoid getTemperature( @P(&quot;温度值&quot;) double value, @P(&quot;温度单位&quot;) Optional&lt;String&gt; unit) { ...}</code></pre>
+
+<h4>必需和可选</h4>
+
+<p>默认情况下，所有工具方法参数都被视为必需的。这意味着该参数列在发送给 LLM 的 JSON schema 的 required 数组中，指示其产生一个值。可以通过使用 @P(required = false) 注解将参数设为可选：</p>
+
+<pre><code>@ToolString getTemperature(String location, @P(required = false) Unit unit) { ...}</code></pre>
+
+<p>或者，您可以将参数声明为 Optional&lt;T&gt;：</p>
+
+<pre><code>@ToolString getTemperature(String location, Optional&lt;Unit&gt; unit) { ...}</code></pre>
+
+<p>复杂参数的字段和子字段默认也被视为必需。您可以通过使用 @JsonProperty(required = false) 注解将字段设为可选：</p>
+
+<pre><code>record User(String name, @JsonProperty(required = false) String email) {}@Toolvoid add(User user) { ...}</code></pre>
+
+<p>note请注意，当与结构化输出一起使用时，所有字段和子字段默认都被视为可选的。</p>
+
+<p>必需仅为参考性：LLM 仍可省略参数必需标志控制发送给 LLM 的 JSON schema（必需参数列在 schema 的 required 数组中）。LLM 预计会遵守此 schema，但实际上它可以忽略该 schema 并省略参数。</p>
+
+<p>在 LangChain4j 1.x 中，仅对基本参数（int、long、boolean 等）检测到这一点——丢失的基本参数会触发 ToolArgumentsErrorHandler（请参见下面的错误处理）。不会验证丢失的对象参数：即使 schema 将该参数标记为必需的，null 也会传递给 @Tool 注解的方法。</p>
+
+<p>我们计划在 LangChain4j 2.0 中消除这种不对称，以便统一验证所有必需的参数。如果此计划的更改会影响您的用例，请提交 一个 issue，以便我们在该更改落地之前听到您的反馈。</p>
+
+<p>如果您希望使用真实的回退值而不是 null（或者对于基本类型而不是错误），请使用 @P(defaultValue = ...)。</p>
+
+<h4>默认参数值</h4>
+
+<p>@P(defaultValue = &quot;...&quot;) 声明了一个 LangChain4j 在 LLM 省略参数时替换的值。这是使参数可选并为您的工具方法提供合理回退的最简单方法。</p>
+
+<pre><code>enum SortBy { RELEVANCE, DATE, RATING }@ToolList&lt;Article&gt; searchArticles( String query, @P(defaultValue = &quot;10&quot;) int limit, @P(defaultValue = &quot;[\&quot;en\&quot;]&quot;) List&lt;String&gt; languages, @P(defaultValue = &quot;RELEVANCE&quot;) SortBy sortBy) { // 当 LLM 省略它们时： // &#x27;limit&#x27; -&gt; 10 // &#x27;languages&#x27; -&gt; [&quot;en&quot;] // &#x27;sortBy&#x27; -&gt; SortBy.RELEVANCE}</code></pre>
+
+<p>设置 defaultValue 意味着在 JSON schema 中是可选的——无论 @P(required) 如何，该参数都不会列在 schema 的 required 数组中。LLM 被告知可以省略该参数；如果它省略了，LangChain4j 在调用您的方法之前会填入默认值。</p>
+
+<p>支持的类型：</p>
+
+<p>| 类型 | 格式 | 示例 | | String | 按原样使用 | defaultValue = &quot;USD&quot; | | 基本类型 / 装箱的基本类型 | 类型特定转换 | &quot;10&quot;、&quot;3.14&quot;、&quot;true&quot; | | enum | 枚举常量名称 | defaultValue = &quot;EUR&quot; | | UUID | UUID.fromString | &quot;550e8400-e29b-41d4-a716-446655440000&quot; | | BigDecimal, BigInteger | 数字字面量 | &quot;1.5&quot;、&quot;100&quot; | | List&lt;T&gt; / Set&lt;T&gt; / 数组 | JSON 数组 | &quot;[\&quot;a\&quot;,\&quot;b\&quot;]&quot;、&quot;[1,2,3]&quot; | | Map&lt;K,V&gt; | JSON 对象 | &quot;{\&quot;a\&quot;:1,\&quot;b\&quot;:2}&quot; | | POJO（包括嵌套） | JSON 对象 | &quot;{\&quot;name\&quot;:\&quot;Klaus\&quot;,\&quot;age\&quot;:42}&quot; |</p>
+
+<p>默认值字符串在 AI Service 注册时解析。如果无法转换为参数的类型，则 AI Service 构造将立即失败，并抛出 IllegalConfigurationException，指出有问题的参数——拼写错误是在启动时捕获的，而不是在第一次 LLM 调用时。</p>
+
+<p>默认值仅适用于缺失的情况，而不适用于错误的值。如果 LLM 提供了无法进行类型转换的参数（例如将 &quot;banana&quot; 作为 int），则类型转换错误将照常传播——默认值不用作回退。</p>
+
+<p>默认值在每次调用时都会重新解析，因此对带有默认值的 List/Map/POJO 进行修改的工具不会污染后续调用：</p>
+
+<pre><code>@Toolvoid process(@P(defaultValue = &quot;[\&quot;a\&quot;,\&quot;b\&quot;]&quot;) List&lt;String&gt; tags) { tags.add(&quot;processed&quot;); // 安全 — 下次调用仍将收到 [&quot;a&quot;,&quot;b&quot;]}</code></pre>
+
+<p>限制（在注册时拒绝，抛出 IllegalConfigurationException）：</p>
+
+<ul><li>defaultValue 不能与 Optional&lt;T&gt; 结合使用 — Optional 已经编码了&quot;缺失&quot;；请选择一种机制。</li><li>defaultValue 不能设置在 LangChain4j 注入的参数（@ToolMemoryId、InvocationContext 等）上 — 它们不来自 LLM。</li></ul>
+
+<h4>多态工具参数</h4>
+
+<p>工具参数可以是多态类型——一种基本类型，其具体子类型由 LLM 在调用时确定。Sealed interface 和 sealed class 无需注解即可工作；普通的抽象类和 interface 必须使用 Jackson 的 @JsonSubTypes 声明它们的子类型。 发送给 LLM 的 schema 包含一个 anyOf，覆盖允许的子类型，每个子类型都有一个鉴别器属性（默认为 &quot;type&quot;），以便 LLM 可以传达它所产生的具体类型；LangChain4j 在调用您的工具方法之前将 LLM 的参数反序列化为正确的子类型。</p>
+
+<p>这适用于作为参数的多态类型、List&lt;T&gt; / Set&lt;T&gt; 的多态类型以及嵌套在另一个 POJO 参数内的多态类型。</p>
+
+<p>Sealed interface 和 class — 无需注解：</p>
+
+<pre><code>sealed interface Animal permits Dog, Cat {}record Dog(String name, String breed) implements Animal {}record Cat(String name, boolean indoor) implements Animal {}class AnimalRegistry { @Tool(&quot;注册单个动物&quot;) void registerAnimal(Animal animal) { /* 分派给 Dog 或 Cat */ } @Tool(&quot;注册一批动物&quot;) void registerAnimals(List&lt;Animal&gt; animals) { /* 混合 Dog / Cat */ } @Tool(&quot;注册带有宠物的主人&quot;) void registerOwner(Owner owner) { /* 分派 Owner.pet */ }}record Owner(String name, Animal pet) {}</code></pre>
+
+<p>Jackson @JsonSubTypes / @JsonTypeInfo 也受支持，并允许您将线路名称与 Java 类名称解耦：</p>
+
+<pre><code>@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = &quot;kind&quot;)@JsonSubTypes({ @JsonSubTypes.Type(value = Square.class, name = &quot;square&quot;), @JsonSubTypes.Type(value = Circle.class, name = &quot;circle&quot;)})interface Shape {}class ShapeRegistry { @Tool(&quot;注册一个形状&quot;) void registerShape(Shape shape) { /* 分派给 Square 或 Circle */ }}</code></pre>
+
+<p>支持的 @JsonTypeInfo 选项集、鉴别器名称解析顺序、defaultImpl 行为、visible 标志和字段冲突检测在 Structured Outputs 下的 Polymorphic Types 中有详细描述——它们以相同的方式适用于工具参数。</p>
+
+<h4>递归参数</h4>
+
+<p>递归参数（例如，具有 Set&lt;Person&gt; children 字段的 Person 类）目前仅受 OpenAI 支持。</p>
+
+<h3>工具方法返回类型</h3>
+
+<p>使用 @Tool 注解的方法可以返回任何类型，包括 void。如果方法的返回类型是 void，则如果方法成功返回，则向 LLM 发送 &quot;Success&quot; 字符串。</p>
+
+<p>如果方法的返回类型是 String，则返回的值将原样发送给 LLM，不进行任何转换。</p>
+
+<p>对于其他返回类型，返回的值在发送给 LLM 之前将被转换为 JSON 字符串。</p>
+
+<h4>返回图像和多模态内容</h4>
+
+<p>工具还可以返回图像和其他非文本内容。当工具返回以下类型之一时，结果将以多模态内容（例如图像）的形式发送给 LLM，而不是被序列化为 JSON 文本：</p>
+
+<ul><li>Image — 作为单个图像发送</li><li>ImageContent — 作为单个图像内容发送</li><li>Content — 作为单个内容元素（例如 TextContent、ImageContent）发送</li><li>List&lt;Content&gt; — 作为多个内容元素发送</li><li>Content[] — 作为多个内容元素发送 例如，一个拍照并返回图像的工具：</li></ul>
+
+<pre><code>@Tool(&quot;拍照并返回&quot;)Image takePhoto() { byte[] imageBytes = camera.capture(); return Image.builder() .base64Data(Base64.getEncoder().encodeToString(imageBytes)) .mimeType(&quot;image/png&quot;) .build();}</code></pre>
+
+<p>或者返回文本和图像的工具：</p>
+
+<pre><code>@Tool(&quot;拍照并返回带有描述&quot;)List&lt;Content&gt; takePhoto() { Image image = camera.capture(); return List.of( TextContent.from(&quot;在 &quot; + LocalDateTime.now() + &quot; 拍摄的照片&quot;), ImageContent.from(image) );}</code></pre>
+
+<p>note并非所有 LLM 提供商都支持多模态工具结果。目前支持工具结果中图像的提供商包括 Anthropic、Amazon Bedrock 和 Google AI Gemini。其他提供商在工具返回非文本内容时将抛出 UnsupportedFeatureException。</p>
+
+<h3>作为其他 AI Service 工具的 AI Service</h3>
+
+<p>AI Service 还可以用作其他 AI Service 的工具。这在许多代理用例中都很有用，其中一个 AI Service 可以请求另一个更专业的 AI Service 的帮助来执行特定任务。例如，已经定义了以下 AI Service：</p>
+
+<pre><code> interface RouterAgent { @dev.langchain4j.service.UserMessage(&quot;&quot;&quot; 分析以下用户请求并将其归类为 &#x27;legal&#x27;、&#x27;medical&#x27; 或 &#x27;technical&#x27;，然后按原样将请求转发给作为工具提供的相应专家。最后返回您从专家那里收到的答案，不做任何修改。用户请求是：&#x27;{{it}}&#x27;。 &quot;&quot;&quot;) String askToExpert(String request); } interface MedicalExpert { @dev.langchain4j.service.UserMessage(&quot;&quot;&quot; 您是一位医学专家。从医学角度分析以下用户请求并提供最佳答案。用户请求是 {{it}}。 &quot;&quot;&quot;) @Tool(&quot;医学专家&quot;) String medicalRequest(String request); } interface LegalExpert { @dev.langchain4j.service.UserMessage(&quot;&quot;&quot; 您是一位法律专家。从法律角度分析以下用户请求并提供最佳答案。用户请求是 {{it}}。 &quot;&quot;&quot;) @Tool(&quot;法律专家&quot;) String legalRequest(String request); } interface TechnicalExpert { @dev.langchain4j.service.UserMessage(&quot;&quot;&quot; 您是一位技术专家。从技术角度分析以下用户请求并提供最佳答案。用户请求是 {{it}}。 &quot;&quot;&quot;) @Tool(&quot;技术专家&quot;) String technicalRequest(String request); }</code></pre>
+
+<p>RouterAgent 可以配置为使用 3 个其他 AI Service 作为工具，它们是特定领域的专家，将用户请求路由到其中一个。</p>
+
+<pre><code>MedicalExpert medicalExpert = AiServices.builder(MedicalExpert.class) .chatModel(model) .build();LegalExpert legalExpert = AiServices.builder(LegalExpert.class) .chatModel(model) .build();TechnicalExpert technicalExpert = AiServices.builder(TechnicalExpert.class) .chatModel(model) .build();RouterAgent routerAgent = AiServices.builder(RouterAgent.class) .chatModel(model) .tools(medicalExpert, legalExpert, technicalExpert) .build();routerAgent.askToExpert(&quot;我摔断了腿，我应该怎么办？&quot;);</code></pre>
+
+<p>note将 AI Service 用作其他 AI Service 的工具是一个强大的功能，可以构建复杂的代理系统。但是，这种方法也存在一些需要注意的相关缺点：</p>
+
+<ul><li>此实现要求 LLM 在工具调用中原封不动地复制粘贴用户请求，这可能是一个容易出错的操作。</li><li>作为工具调用另一个 LLM 的 LLM 必须重新处理其响应，就像任何其他工具调用一样发生，这在时间上和消耗的 token 上都可能是浪费的计算。</li><li>代理工具作为一个完全独立的 AI Service，无法访问调用它的代理的聊天内存，因此它无法使用聊天内存来提供更明智的答案。</li></ul>
+
+<h3>@Tool</h3>
+
+<p>任何使用 @Tool 注解的 Java 方法 并在构建 AI Service 时明确指定，可以由 LLM 执行：</p>
+
+<pre><code>interface MathGenius { String ask(String question);}class Calculator { @Tool double add(int a, int b) { return a + b; } @Tool double squareRoot(double x) { return Math.sqrt(x); }}MathGenius mathGenius = AiServices.builder(MathGenius.class) .chatModel(model) .tools(new Calculator()) .build();String answer = mathGenius.ask(&quot;What is the square root of 475695037565?&quot;);System.out.println(answer); // 475695037565 的平方根是 689706.486532。</code></pre>
+
+<p>当调用 ask 方法时，会发生 2 次与 LLM 的交互，如前面的部分所述。在这些交互之间，将自动调用 squareRoot 方法。</p>
+
+<p>@Tool 注解具有以下字段：</p>
+
+<ul><li>name：工具的名称。如果未提供，则该方法的名称将用作工具的名称。</li><li>value：工具的描述。</li><li>returnBehavior：请参阅 此处 获取更多详细信息</li><li>metadata：包含特定于 LLM 提供商工具元数据条目的有效 JSON 字符串。默认情况下，它不会发送给 LLM 提供商，您必须在创建 ChatModel 时明确指定应发送哪些元数据键。目前，工具元数据仅由 langchain4j-anthropic 模块支持。 根据工具的不同，即使没有任何描述，LLM 也可能很好地理解它 （例如 add(a, b) 是显而易见的）， 但通常最好提供清晰且有意义的名称和描述。 这样，LLM 可以获得更多信息以决定是否调用给定的工具，以及如何调用。</li></ul>
+
+<h3>继承和工具发现</h3>
+
+<p>当您将工具对象传递给 AI Service 时，LangChain4j 会从对象的类、其所有父类（最多但不包括 Object）以及所实现接口的 default 和 static 方法中发现 @Tool 方法。</p>
+
+<pre><code>class BaseMathTools { @Tool(&quot;计算两个数字的和&quot;) int sum(int a, int b) { return a + b; }}class AdvancedMathTools extends BaseMathTools { @Tool(&quot;计算两个数字的乘积&quot;) int multiply(int a, int b) { return a * b; }}Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .tools(new AdvancedMathTools()) // &quot;sum&quot; 和 &quot;multiply&quot; 都可用 .build();</code></pre>
+
+<p>子类可以覆盖来自其父类的 @Tool 方法。在这种情况下，仅使用子类版本——包括其 @Tool 注解：</p>
+
+<pre><code>class ParentTools { @Tool(&quot;返回问候语&quot;) String greet(String name) { return &quot;Hello, &quot; + name; }}class ChildTools extends ParentTools { @Override @Tool(name = &quot;greet_formal&quot;, value = &quot;返回正式的问候语&quot;) String greet(String name) { return &quot;Good day, &quot; + name; }}</code></pre>
+
+<p>此处 LLM 将看到一个名为 greet_formal 的工具，描述为&quot;返回正式的问候语&quot;。</p>
+
+<p>当方法覆盖或实现了一个 @Tool 注解的方法而不重复该注解时，它仍然是一个工具。当工具在 interface 中声明并在他处实现时，这很方便：</p>
+
+<pre><code>interface WeatherTools { @Tool(&quot;返回给定城市的天气&quot;) String weather(String city);}class OpenMeteoWeatherTools implements WeatherTools { @Override public String weather(String city) { return ...; }}Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .tools(new OpenMeteoWeatherTools()) // &quot;weather&quot; 可用，其描述如接口中所声明的 .build();</code></pre>
+
+<p>LLM 会看到覆盖方法的 @Tool 注解，除非覆盖方法自己声明了一个。</p>
+
+<p>这也是当工具对象被包装在代理中（例如应用了 @Aspect、@Transactional 或 @Async 的 Spring bean）时工具能够工作的原因。此类代理是一个生成的子类，它会覆盖工具方法，而 Java 不会将方法注解复制到覆盖方法中，因此会在被代理的类上查找注解。工具通过代理调用，因此拦截器和切面仍然会运行。</p>
+
+<p>如果子类声明的方法与父类方法同名但参数不同（重载，而非覆盖），则两个方法都会被发现。由于工具名称必须唯一且默认为方法名称，因此您必须为其中至少一个指定显式名称：</p>
+
+<pre><code>class ParentTools { @Tool(name = &quot;process_text&quot;, value = &quot;处理文本输入&quot;) String process(String input) { return input.toUpperCase(); }}class ChildTools extends ParentTools { @Tool(name = &quot;process_number&quot;, value = &quot;处理数字输入&quot;) int process(int input) { return input * 2; }}</code></pre>
+
+<p>如果两个方法解析为相同的工具名称，则在 AI Service 创建时将抛出 IllegalArgumentException。</p>
+
+<h3>@P</h3>
+
+<p>方法参数可以选择性地使用 @P 进行注解。</p>
+
+<p>@P 注解具有以下可选字段：</p>
+
+<ul><li>name：LLM 看到的参数名称。如果未指定，则使用实际的方法参数名称。</li><li>description：参数的描述（value 的别名）。默认为空。</li><li>value：参数的描述（description 的别名）。默认为空。</li><li>required：参数是否必需，默认为 true。</li></ul>
+
+<h4>参数名称</h4>
+
+<p>name 属性覆盖 LLM 将看到的参数名称。在两种情况下设置 name 是有用的：</p>
+
+<ul><li>缺少 -parameters javac 选项。 没有 -parameters javac 选项，Java 反射会返回诸如 arg0、arg1 之类的通用名称。参数的语义含义会丢失，这可能会让 LLM 感到困惑。设置 name 可恢复有意义的名称。注意，Quarkus 和 Spring 等框架默认启用 -parameters，因此实际的方法参数名称得以保留，并且在使用这些框架时通常无需设置 name。</li><li>为 LLM 自定义名称。 当您希望 LLM 看到的参数名称与开发人员在源代码中使用的不同（例如，为了匹配特定的 API 契约或提供更具描述性的名称）。</li></ul>
+
+<h4>参数描述</h4>
+
+<p>description 和 value 可以互换使用——它们都设置了 LLM 将看到的参数描述。仅需要描述时，请使用简写 value 形式：</p>
+
+<pre><code>@Toolvoid getWeather(@P(&quot;城市名称&quot;) String city) { ... }</code></pre>
+
+<p>当同时需要名称和描述时，请使用命名属性：</p>
+
+<pre><code>@Toolvoid getWeather(@P(name = &quot;city&quot;, description = &quot;城市名称&quot;) String city) { ... }</code></pre>
+
+<h3>@Description</h3>
+
+<p>类和字段的描述可以使用 @Description 注解指定：</p>
+
+<pre><code>@Description(&quot;要执行的查询&quot;)class Query { @Description(&quot;要选择的字段&quot;) private List&lt;String&gt; select; @Description(&quot;用于过滤的条件&quot;) private List&lt;Condition&gt; where;}@ToolResult executeQuery(Query query) { ...}</code></pre>
+
+<p>note请注意，放在 enum 值上的 @Description 没有任何效果，不会包含在生成的 JSON schema 中：</p>
+
+<pre><code>enum Priority { @Description(&quot;关键问题，如支付网关故障或安全漏洞。&quot;) // 这将被忽略 CRITICAL, @Description(&quot;高优先级问题，例如主要功能故障或大规模中断。&quot;) // 这将被忽略 HIGH, @Description(&quot;低优先级问题，例如小错误或外观问题。&quot;) // 这将被忽略 LOW}</code></pre>
+
+<h3>InvocationParameters</h3>
+
+<p>如果您希望在调用 AI Service 时将额外的数据传递给工具，可以使用 InvocationParameters 来做到这一点：</p>
+
+<pre><code>interface Assistant { String chat(@UserMessage String userMessage, InvocationParameters parameters);}class Tools { @Tool String getWeather(String city, InvocationParameters parameters) { String userId = parameters.get(&quot;userId&quot;); UserPreferences preferences = getUserPreferences(userId); return weatherService.getWeather(city, preferences.temperatureUnits()); }}InvocationParameters parameters = InvocationParameters.from(Map.of(&quot;userId&quot;, &quot;12345&quot;));String response = assistant.chat(&quot;London 的天气怎么样？&quot;, parameters);</code></pre>
+
+<p>在这种情况下，LLM 不知道这些参数；它们仅对 LangChain4j 和用户代码可见。</p>
+
+<p>InvocationParameters 也可以在其他 AI Service 组件中访问，例如：</p>
+
+<ul><li>ToolProvider：在 ToolProviderRequest 内部</li><li>ToolArgumentsErrorHandler 和 ToolExecutionErrorHandler： 在 ToolErrorContext 内部</li><li>RAG 组件：在 Query -&gt; Metadata 内部 参数存储在一个可变的、线程安全的 Map 中。</li></ul>
+
+<p>数据可以在 InvocationParameters 内部的 AI Service 组件之间传递 （例如，从一个工具到另一个工具，或从 RAG 组件到工具） 在 AI Service 的单次调用期间。</p>
+
+<h3>InvocationContext</h3>
+
+<p>与 InvocationParameters 类似，使用 @Tool 注解的方法 可以接受 InvocationContext 参数以获取有关 AI Service 调用的信息。</p>
+
+<pre><code>class Tools { @Tool String getWeather(String city, InvocationContext context) { UUID invocationId = context.invocationId(); String aiServiceInterfaceName = context.interfaceName(); ... }}</code></pre>
+
+<p>在这种情况下，LLM 不知道这些参数；它们仅对 LangChain4j 和用户代码可见。</p>
+
+<h3>@ToolMemoryId</h3>
+
+<p>如果您的 AI Service 方法具有使用 @MemoryId 注解的参数，您还可以使用 @ToolMemoryId 注解 @Tool 方法的参数：</p>
+
+<pre><code>interface Assistant{ String chat(@UserMessage String userMessage, @MemoryId memoryId);}class Tools { @Tool String addCalendarEvent(CalendarEvent event, @ToolMemoryId memoryId) { ... }}String answer = assistant.chat(&quot;明天 14:00 我将与 Klaus 开会&quot;, &quot;12345&quot;);</code></pre>
+
+<p>提供给 AI Service 方法的值将自动传递给 @Tool 方法。如果您有多个用户和/或每个用户有多个聊天/内存，并希望在 @Tool 方法内部区分它们，则此功能非常有用。</p>
+
+<h3>并发执行工具</h3>
+
+<p>默认情况下，当 LLM 一次调用多个工具（也称为并行工具调用）时， AI Service 按顺序执行它们。如果您希望工具并发执行， 可以在构建 AI Service 时调用 executeToolsConcurrently() 或 executeToolsConcurrently(Executor)。 如果启用这些选项，工具将并发执行（有一个例外 - 见下文）， 使用默认或指定的 Executor。</p>
+
+<h4>使用 ChatModel 时：</h4>
+
+<ul><li>当 LLM 调用多个工具时，它们使用 Executor 在单独的线程中并发执行。</li><li>当 LLM 调用单个工具时，它将在同一（调用方）线程中执行， 不使用 Executor，以避免浪费资源。</li></ul>
+
+<h4>使用 StreamingChatModel 时：</h4>
+
+<ul><li>当 LLM 调用多个工具时，它们使用 Executor 在单独的线程中并发执行。 一旦 StreamingChatResponseHandler.onCompleteToolCall(CompleteToolCall) 被调用，便开始执行每个工具，无需等待其他工具或响应流式传输的完成。</li><li>当 LLM 调用单个工具时，它使用 Executor 在单独的线程中执行。 我们无法在同一线程中执行它，因为在那个时候， 我们还不知道 LLM 将调用多少个工具。</li></ul>
+
+<h3>访问已执行的工具</h3>
+
+<p>如果您希望访问在 AI Service 调用期间执行的工具， 您可以轻松地通过将返回类型包装在 Result 类中来实现：</p>
+
+<pre><code>interface Assistant { Result&lt;String&gt; chat(String userMessage);}Result&lt;String&gt; result = assistant.chat(&quot;取消我的预订 123-456&quot;);String answer = result.content();List&lt;ToolExecution&gt; toolExecutions = result.toolExecutions();ToolExecution toolExecution = toolExecutions.get(0);ToolExecutionRequest request = toolExecution.request();String result = toolExecution.result(); // 工具执行结果（文本形式）List&lt;Content&gt; resultContents = toolExecution.resultContents(); // 工具执行结果（内容列表形式，可能包括图像）Object resultObject = toolExecution.resultObject(); // 工具返回的实际值Map&lt;String, Object&gt; attributes = toolExecution.attributes(); // 工具执行结果的属性，见下文</code></pre>
+
+<p>在流式模式下，您可以通过指定 onToolExecuted 回调来实现：</p>
+
+<pre><code>interface Assistant { TokenStream chat(String message);}TokenStream tokenStream = assistant.chat(&quot;取消我的预订&quot;);tokenStream .onToolExecuted((ToolExecution toolExecution) -&gt; System.out.println(toolExecution)) .onPartialResponse(...) .onCompleteResponse(...) .onError(...) .start();</code></pre>
+
+<h3>工具结果属性</h3>
+
+<p>工具执行结果可以携带属性：不会发送给 LLM 的 Map&lt;String, Object&gt;。属性对于仅应用程序需要的数据很有用，例如工具已创建的记录的 ID，或者您的 UI 应呈现的小部件。</p>
+
+<p>属性可以由自定义 ToolExecutor 设置：</p>
+
+<pre><code>ToolExecutor toolExecutor = (toolExecutionRequest, context) -&gt; ToolExecutionResult.builder() .resultText(&quot;晴朗，22 度&quot;) // 发送给 LLM .attributes(Map.of(&quot;widget&quot;, weatherWidget)) // 不发送给 LLM .build();</code></pre>
+
+<p>对于 MCP 工具，它们来自工具调用响应的 _meta 字段。 对于这些工具，工具提供者需要配置为 returnToolResultAttributes(true)。</p>
+
+<p>属性可以从 ToolExecution 中读取（请参见上面的访问已执行的工具）。 它们也被传播到 ToolExecutionResultMessage.attributes() 中， 因此与消息一起存储在 ChatMemory 中。</p>
+
+<p>note如果您使用持久化消息的 ChatMemoryStore，它们将被序列化为 JSON。 确保所有属性值都可以被序列化为 JSON，并且一旦反序列化也是有用的：</p>
+
+<ul><li>无法序列化的值（例如 InputStream）将使整个存储操作失败。</li><li>值被反序列化为普通 JSON 类型，因此以属性形式存储的自定义对象会以 Map 的形式返回，并且不能再转换为其原始类型。 属性也会为每条消息存储，因此如果对话被持久化，则避免在其中放置大值。</li></ul>
+
+<h3>以编程方式指定工具</h3>
+
+<p>使用 AI Services 时，也可以以编程方式指定工具。 这种方法提供了很大的灵活性，因为工具可以从外部源（例如数据库和配置文件）加载。</p>
+
+<p>工具名称、描述、参数名称和描述 都可以使用 ToolSpecification 进行配置：</p>
+
+<pre><code>ToolSpecification toolSpecification = ToolSpecification.builder() .name(&quot;get_booking_details&quot;) .description(&quot;返回预订详情&quot;) .parameters(JsonObjectSchema.builder() .properties(Map.of( &quot;bookingNumber&quot;, JsonStringSchema.builder() .description(&quot;B-12345 格式的预订号&quot;) .build() )) .build()) .build();</code></pre>
+
+<p>对于每个 ToolSpecification，需要提供一个 ToolExecutor 实现 来处理 LLM 生成的工具执行请求：</p>
+
+<pre><code>ToolExecutor toolExecutor = (toolExecutionRequest, memoryId) -&gt; { Map&lt;String, Object&gt; arguments = fromJson(toolExecutionRequest.arguments()); String bookingNumber = arguments.get(&quot;bookingNumber&quot;).toString(); Booking booking = getBooking(bookingNumber); return booking.toString();};</code></pre>
+
+<p>LangChain4j 还提供了 DefaultToolExecutor，它可以自动调用 Java 对象上的方法并处理 参数映射：</p>
+
+<pre><code>class BookingTools { String getBookingDetails(String bookingNumber) { Booking booking = loadBookingFromDatabase(bookingNumber); return booking.toString(); }}BookingTools tools = new BookingTools();Method method = BookingTools.class.getMethod(&quot;getBookingDetails&quot;, String.class);ToolExecutor toolExecutor = new DefaultToolExecutor(tools, method);</code></pre>
+
+<p>一旦我们拥有一个或多个 (ToolSpecification, ToolExecutor) 对， 我们将每对包装在 AiServiceTool 中，并将列表传递给 AI Service：</p>
+
+<pre><code>AiServiceTool tool = AiServiceTool.builder() .toolSpecification(toolSpecification) .toolExecutor(toolExecutor) .build();Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(List.of(tool)) .build();</code></pre>
+
+<h4>为编程工具配置立即返回</h4>
+
+<p>如果您需要指定 立即返回行为 对于工具，请在 AiServiceTool builder 上设置其 ReturnBehavior：</p>
+
+<pre><code>AiServiceTool bookingTool = AiServiceTool.builder() .toolSpecification(bookingToolSpec) .toolExecutor(bookingExecutor) .returnBehavior(IMMEDIATE) .build();AiServiceTool closeTool = AiServiceTool.builder() .toolSpecification(closeToolSpec) .toolExecutor(closeExecutor) .returnBehavior(IMMEDIATE_IF_LAST) .build();AiServiceTool weatherTool = AiServiceTool.builder() .toolSpecification(weatherToolSpec) .toolExecutor(weatherExecutor) // ReturnBehavior.TO_LLM 默认值 .build();Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(List.of(bookingTool, closeTool, weatherTool)) .build();</code></pre>
+
+<h3>动态指定工具</h3>
+
+<p>使用 AI Services 时，也可以为每次调用动态指定工具。 可以配置一个 ToolProvider，它将在每次调用 AI Service 时被调用 ，并将提供当前请求中应包含的工具。LLM。 ToolProvider 接受一个 ToolProviderRequest （包含 UserMessage、聊天内存 ID 和 InvocationParameters） 并返回一个 ToolProviderResult，其中包含当前 AI Service 调用的工具。</p>
+
+<p>以下是一个示例，演示如何仅在用户消息包含&quot;booking&quot;一词时添加 get_booking_details 工具：</p>
+
+<pre><code>ToolProvider toolProvider = (toolProviderRequest) -&gt; { if (toolProviderRequest.userMessage().singleText().contains(&quot;booking&quot;)) { ToolSpecification toolSpecification = ToolSpecification.builder() .name(&quot;get_booking_details&quot;) .description(&quot;返回预订详情&quot;) .parameters(JsonObjectSchema.builder() .addStringProperty(&quot;bookingNumber&quot;) .build()) .build(); return ToolProviderResult.builder() .add(toolSpecification, toolExecutor) .build(); } else { return null; }};Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .toolProvider(toolProvider) .build();</code></pre>
+
+<p>可以在同一 AI Service 调用中混合静态（@Tool 注解方法和以编程方式配置的工具） 和动态指定的工具。 在这种情况下，所有静态和动态工具都合并在一起。</p>
+
+<h4>为动态工具配置立即返回</h4>
+
+<p>在构建 ToolProviderResult 时，您可以标记工具为 立即返回 使用 ToolProviderResult.builder()。add(ToolSpecification, ToolExecutor, ReturnBehavior) 重载 接受 TO_LLM、IMMEDIATE 或 IMMEDIATE_IF_LAST 中的任何一个：</p>
+
+<pre><code>ToolProvider toolProvider = (toolProviderRequest) -&gt; { return ToolProviderResult.builder() .add(bookingToolSpec, bookingExecutor, ReturnBehavior.IMMEDIATE) .add(closeToolSpec, closeExecutor, ReturnBehavior.IMMEDIATE_IF_LAST) .add(weatherToolSpec, weatherExecutor) // ReturnBehavior.TO_LLM 默认值 .build();};</code></pre>
+
+<h3>工具搜索</h3>
+
+<p>当使用大量工具时， 在每个请求中发送所有工具会显著增加 token 使用量并降低模型性能。 为了解决这个问题，LangChain4j 提供了工具搜索机制 允许工具由 LLM 本身动态发现， 而不是事先公开。 其核心思想很简单：</p>
+
+<ul><li>最初，LLM 接触到一个或多个特殊的工具搜索工具</li><li>LLM 可以调用这些工具来搜索相关工具</li><li>一旦找到相关工具，它们将包含在后续对 LLM 的请求中 这实现了可扩展、token 高效和由模型驱动的工具发现。</li></ul>
+
+<h4>工具搜索的工作原理</h4>
+
+<p>工具搜索流程通常如下所示：</p>
+
+<ul><li>初始请求： LLM 仅看到工具搜索工具（而不是完整的工具集）</li><li>工具搜索 LLM 调用一个工具搜索工具，描述它需要的工具类型 工具搜索策略将请求与可用工具进行匹配</li><li>工具公开 匹配的工具将添加到对 LLM 的下一个请求中</li><li>工具执行 LLM 现在可以正常调用找到的工具 先前找到的工具会在多个工具搜索调用中累积。 每次 LLM 调用工具搜索工具时， 新匹配的工具都会添加到 LLM 可见的现有工具集中（它们被合并，而不是替换）。 这意味着 LLM 可见的工具列表可能会随时间增长。 找到的工具对 LLM 保持可见，直到其对应的 ToolExecutionResultMessage 从 ChatMemory 中被淘汰，并且至少到 AI Service 调用结束之前。</li></ul>
+
+<p>如果未配置 ChatMemory，则找到的工具仅对 LLM 保持可见 直到 AI Service 调用结束。</p>
+
+<h4>ToolSearchStrategy</h4>
+
+<p>工具搜索通过 ToolSearchStrategy 接口实现：</p>
+
+<pre><code>@Experimentalpublic interface ToolSearchStrategy { List&lt;ToolSpecification&gt; getToolSearchTools(InvocationContext invocationContext); ToolSearchResult search(ToolSearchRequest toolSearchRequest);}</code></pre>
+
+<p>ToolSearchStrategy 负责：</p>
+
+<ul><li>向 LLM 公开工具搜索工具</li><li>执行 LLM 生成的工具搜索请求</li><li>返回匹配的工具名称，然后将解析并公开它们 LangChain4j 目前提供了 3 种开箱即用的实现：</li></ul>
+
+<ul><li>SimpleToolSearchStrategy – 基于关键字的匹配</li><li>VectorToolSearchStrategy – 使用嵌入的语义搜索</li><li>DecisionModelToolSearchStrategy – 决策模型决定哪些工具匹配搜索 有关更多详细信息，请参见这些类的 Javadoc。</li></ul>
+
+<p>您还可以实现自定义策略。</p>
+
+<h4>在 AI Services 中配置工具搜索</h4>
+
+<p>工具搜索是在 AI Service 级别配置的：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .chatMemory(chatMemory) .tools(tools) // 工具搜索适用于静态工具 .toolProvider(mcpToolProvider) // 工具搜索适用于动态提供的工具（例如 MCP） .toolSearchStrategy(new SimpleToolSearchStrategy()) .build();</code></pre>
+
+<p>配置完成后：</p>
+
+<ul><li>LLM 不再立即看到所有工具</li><li>工具发现成为一个明确的、由模型驱动的步骤</li><li>特别是对于大型工具集，token 使用量会减少</li></ul>
+
+<h4>何时使用工具搜索</h4>
+
+<p>工具搜索在以下情况下特别有用：</p>
+
+<ul><li>您有许多工具（数十个或数百个）</li><li>工具是特定领域的或很少使用</li><li>工具可用性取决于上下文、用户或权限</li><li>您希望 LLM 推理它需要哪些工具，而不是从长列表中猜测 如果您只有少量工具，或者所有工具始终相关， 使用常规方法可能更简单。</li></ul>
+
+<h4>始终可见的工具</h4>
+
+<p>启用工具搜索后，工具通常对 LLM 隐藏，直到它们通过工具搜索调用被发现。 但是，在某些情况下，您可能希望某些工具始终对 LLM 可见。</p>
+
+<p>典型用例：</p>
+
+<ul><li>应始终可访问的核心工具</li><li>经常使用的工具，其中搜索开销是不必要的</li><li>实用工具 LangChain4j 通过 ALWAYS_VISIBLE 工具搜索行为支持这一点。</li></ul>
+
+<h5>它是如何工作的</h5>
+
+<p>当工具被标记为 ALWAYS_VISIBLE 时：</p>
+
+<ul><li>它在第一个请求中就暴露给 LLM</li><li>它不需要通过工具搜索发现</li><li>它在整个 AI Service 调用期间保持可见</li><li>它不包含在可搜索的工具候选中 所有其他工具继续遵循正常的工具搜索流程。</li></ul>
+
+<h5>使用 @Tool 注解</h5>
+
+<p>您可以通过 @Tool 注解将工具标记为始终可见：</p>
+
+<pre><code>@Tool(searchBehavior = ALWAYS_VISIBLE)String getWeather(String city) { return weatherService.getWeather(city);}</code></pre>
+
+<h5>使用 McpToolProvider</h5>
+
+<p>使用 MCP 工具时（通过 McpToolProvider），始终可见的工具可以通过 alwaysVisibleToolNames 进行配置：</p>
+
+<pre><code>McpToolProvider.builder() .mcpClients(mcpClient) .alwaysVisibleToolNames(&quot;getWeather&quot;) .build();</code></pre>
+
+<h5>使用 ToolSpecification</h5>
+
+<p>如果您以编程方式配置工具，则可以使用元数据将它们标记为始终可见：</p>
+
+<pre><code>ToolSpecification toolSpecification = ToolSpecification.builder() .name(&quot;getWeather&quot;) .parameters(JsonObjectSchema.builder() .addStringProperty(&quot;city&quot;) .required(&quot;city&quot;) .build()) .metadata(Map.of(ToolSpecification.METADATA_SEARCH_BEHAVIOR, SearchBehavior.ALWAYS_VISIBLE)) .build();</code></pre>
+
+<h4>注释和限制</h4>
+
+<p>note工具搜索依赖于 LLM 理解何时以及如何搜索工具的能力。此功能的有效性在很大程度上取决于所选模型。</p>
+
+<p>note工具搜索目前被标记为实验性的，可能会在未来的版本中发生变化。</p>
+
+<h3>立即返回工具执行请求的结果</h3>
+
+<p>默认情况下，工具执行请求的结果将被发送回使用此结果的 LLM，并进一步重新处理。但是，在某些情况下，该工具执行请求产生的结果已经代表了 AI Service 调用的预期结果。在这种情况下，可以将工具配置为立即/直接返回其结果，跳过由 LLM 进行的浪费且耗费资源的重新处理。这可以通过配置 @Tool 注解的 returnBehavior 字段来完成，如以下示例所示：</p>
+
+<pre><code>class CalculatorWithImmediateReturn { @Tool(returnBehavior = ReturnBehavior.IMMEDIATE) double add(int a, int b) { return a + b; }}</code></pre>
+
+<p>通过这种方式，一个类似以下的 Assistant 服务</p>
+
+<pre><code>interface Assistant { Result&lt;String&gt; chat(String userMessage);}</code></pre>
+
+<p>配置为使用上面的 CalculatorWithImmediateReturn 工具</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .tools(new CalculatorWithImmediateReturn()) .build();</code></pre>
+
+<p>将直接通过工具调用返回响应。例如，使用以下提示助手</p>
+
+<pre><code>Result&lt;String&gt; result = assistant.chat(&quot;37 加 87 等于多少？&quot;);</code></pre>
+
+<p>将生成一个 Result，其中 Result.content() == null， 而 124 的实际响应则必须从 result.toolExecutions() 中检索。 没有立即返回，LLM 必须重新处理 add 工具执行请求的结果， 因此返回类似如下的响应：37 加 87 的结果是 124。</p>
+
+<h4>非 Result AI Service 方法返回类型</h4>
+
+<p>如果您的 AI Service 方法签名不返回 Result 类型，则您的 chat 方法调用在存在立即工具调用时可能成功也可能失败，这取决于以下规则：</p>
+
+<ul><li>如果 AI Service 方法返回类型为 void，则请求将成功。</li><li>如果有任何非立即工具调用，则请求将失败，并抛出 IllegalConfigurationException 异常。</li><li>如果所有工具执行都有一个 null（或 void）结果，并且返回类型不是基本类型，则请求将成功，并且返回值将为 null。</li><li>如果有且只有一个非 null 工具执行结果，并且该结果可以解析为返回类型，则请求将成功并返回该工具结果。</li><li>如果有多个非 null 工具执行结果，则请求将失败，并抛出 IllegalConfigurationException 异常。</li><li>如果只有一个工具执行结果并且无法解析为返回类型，则请求将失败，并抛出 IllegalConfigurationException 异常。</li></ul>
+
+<h4>单次响应中多个工具调用的立即返回规则</h4>
+
+<p>当 LLM 在单次响应中返回多个工具调用时， 仅当同时满足以下两个条件时，循环才会立即返回（而不是将结果发送回 LLM）：</p>
+
+<ul><li>没有工具出错。任何工具调用中的任何错误都会强制重新处理，以便 LLM 可以在下一回合对错误做出反应。</li><li>响应中的每个工具都是 IMMEDIATE（没有混合的 TO_LLM 工具），或者最后一个工具是 IMMEDIATE_IF_LAST（请参见下一节）。 示例（工具按 LLM 在单次响应中返回的顺序列出； (err) 标记执行出错的工具）：</li></ul>
+
+<p>| 响应中的工具调用 | 结果 | 原因 | | [IMMEDIATE] | 立即返回 | 唯一的工具是 IMMEDIATE | | [IMMEDIATE, IMMEDIATE] | 立即返回 | 每个工具都是 IMMEDIATE/IMMEDIATE_IF_LAST | | [IMMEDIATE, TO_LLM] | 重新处理 | TO_LLM 不符合 all-immediate 规则 | | [IMMEDIATE_IF_LAST] | 立即返回 | 最后一个工具是 IMMEDIATE_IF_LAST | | [TO_LLM, IMMEDIATE_IF_LAST] | 立即返回 | 最后一个工具是 IMMEDIATE_IF_LAST | | [IMMEDIATE_IF_LAST, TO_LLM] | 重新处理 | 不是最后一个，并且 TO_LLM 不符合 all-immediate 规则 | | [IMMEDIATE, IMMEDIATE_IF_LAST] | 立即返回 | 最后一个工具是 IMMEDIATE_IF_LAST | | [IMMEDIATE_IF_LAST, IMMEDIATE] | 立即返回 | 每个工具都是 IMMEDIATE/IMMEDIATE_IF_LAST | | [TO_LLM, IMMEDIATE_IF_LAST, IMMEDIATE] | 重新处理 | 不是最后一个，并且 TO_LLM 不符合 all-immediate 规则 | | [IMMEDIATE_IF_LAST(err)] | 重新处理 | 任何错误都会禁用立即返回 | | [TO_LLM(err), IMMEDIATE_IF_LAST] | 重新处理 | 任何错误都会禁用立即返回 |</p>
+
+<p>有关完整的立即返回 vs 重新处理矩阵，请参阅 ReturnBehavior 的 Javadoc。</p>
+
+<h4>IMMEDIATE_IF_LAST 用于显式关闭操作序列的工具</h4>
+
+<p>ReturnBehavior.IMMEDIATE_IF_LAST 适用于 LLM 用于显式发出多步操作结束信号的工具——例如，LLM 在一系列点击、导航等之后追加的 endExecutionAndGetFinalResult 工具。</p>
+
+<p>没有 IMMEDIATE_IF_LAST，LLM 通常需要两个回合来完成执行： 一个回合混合使用工作工具（TO_LLM）和关闭工具， 以及第二个回合，其中 LLM 在看到所有结果后， 单独调用关闭工具。循环仅在第二个回合立即返回。</p>
+
+<p>使用 IMMEDIATE_IF_LAST，一旦 LLM 将工具放在响应的最后位置，循环就会立即返回——每次调用节省一个完整的 LLM 往返。</p>
+
+<pre><code>class ScreenAutomation { @Tool String leftMouseClick(int x, int y) { /* ... */ } @Tool String typeText(String text) { /* ... */ } @Tool(returnBehavior = ReturnBehavior.IMMEDIATE_IF_LAST) String endExecutionAndGetFinalResult(String summary) { return summary; }}</code></pre>
+
+<p>对于 [leftMouseClick, typeText, endExecutionAndGetFinalResult] 的 LLM 响应， 循环将在执行所有三个工具后立即返回。 如果 LLM 将关闭工具放在最后以外的位置 （例如 [endExecutionAndGetFinalResult, leftMouseClick]）， 循环将继续并将所有结果发送回 LLM。</p>
+
+<p>IMMEDIATE_IF_LAST 也计入 IMMEDIATE 的 all-immediate 规则： 仅由 IMMEDIATE 和/或 IMMEDIATE_IF_LAST 工具组成的响应会立即返回 不管哪个是最后一个（仍然受无错误规则的约束）。</p>
+
+<p>与 IMMEDIATE 一样，IMMEDIATE_IF_LAST 仅允许在具有 Result&lt;T&gt; 返回类型的 AI Service 上使用。</p>
+
+<h3>错误处理</h3>
+
+<p>note以下默认值适用于同步和 TokenStream 模式。异步和响应式模式 已经按照默认值所计划的行为方式进行：工具执行错误导致调用失败， 除非异常说明什么可以告诉 LLM，并且工具参数解析错误被发送给 LLM 而不是导致调用失败。您明确配置的处理器由每种模式使用。 请参阅 Non-blocking and Reactive。</p>
+
+<h4>现成的处理器</h4>
+
+<p>两个处理器接口都带有针对最常见情况的现成实现， 因此对于这些情况，您无需自己编写处理器：</p>
+
+<p>| 处理器 | 工具失败时会发生什么 | | ToolArgumentsErrorHandler.sendExceptionMessageToLlm() | 错误消息被发送给 LLM，以便它可以更正参数并重试。AI Service 调用继续进行。⚠️ 请参阅下面的警告。 | | ToolArgumentsErrorHandler.failInvocation() | 错误被重新抛出：AI Service 调用失败，没有任何内容被发送给 LLM。 | | ToolExecutionErrorHandler.sendExceptionMessageToLlm() | 由工具抛出的异常消息被发送给 LLM（或者来自 messageForLlm() 的文本，如果异常实现 ToolErrorVisibleToLlm），以便它可以做出反应。AI Service 调用继续进行。⚠️ 请参阅下面的警告。 | | ToolExecutionErrorHandler.failInvocationUnlessVisibleToLlm() | 仅显示实现 ToolErrorVisibleToLlm 的异常，使用它们提供的文本。每个其他异常都会使 AI Service 调用失败。请参阅 Deciding per exception what the LLM sees。 | | ToolExecutionErrorHandler.sendGenericMessageToLlmUnlessVisibleToLlm(String) | 向 LLM 显示实现 ToolErrorVisibleToLlm 的异常，使用它们提供的文本。对于每个其他异常，给定的通用消息被发送给 LLM，并且异常在 WARN 级别记录。AI Service 调用继续进行。 | | ToolExecutionErrorHandler.failInvocation() | 异常被重新抛出：AI Service 调用失败，没有任何内容被发送给 LLM。 |</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolArgumentsErrorHandler(ToolArgumentsErrorHandler.sendExceptionMessageToLlm()) .toolExecutionErrorHandler(ToolExecutionErrorHandler.failInvocation()) .build();</code></pre>
+
+<p>对于其他情况 - 在 LLM 看到错误之前对其进行清理，或根据错误类型进行决策 - 请按以下部分所述自己编写处理器。</p>
+
+<p>向 LLM 发送异常消息可能会泄露敏感数据异常消息通常是为开发者编写的，而不是为 LLM 编写的：它可能包含内部应用程序详细信息，例如文件路径、SQL、嵌入在错误字符串中的凭据、下游服务的响应或个人数据。发送给 LLM 的所有内容都会到达 LLM 提供商，存储在聊天记忆中，并可能最终出现在用户阅读的答案、日志和可观测性管道中。</p>
+
+<p>仅当您知道所有工具的异常消息都是针对该情况编写时，才使用 sendExceptionMessageToLlm()。否则向 LLM 发送通用的或经过清理的失败描述，并将详细信息保留在您的日志中。</p>
+
+<p>note当 AI Service 配置了工具，但未显式配置错误处理器时， LangChain4j 会在每个 JVM 上记录一次警告。显式配置处理器（使用此页面上的任何选项） 将删除该警告，并使您的应用程序免受计划中的默认值更改的影响。 该警告也可以通过将 dev.langchain4j.service.ToolErrorHandlingNotice logger 的日志级别设置为 OFF 来关闭。</p>
+
+<h5>在 Quarkus 中配置处理器</h5>
+
+<p>此页面上的示例使用 AiServices.builder(...)。在 Quarkus 中，AI Service 是使用 @RegisterAiService 声明的，处理器是使用 interface 上的 static 方法配置的：</p>
+
+<pre><code>@RegisterAiServicepublic interface Assistant { String chat(String userMessage); @HandleToolExecutionError static ToolErrorHandlerResult onToolError(Throwable error, ToolErrorContext context) { return ToolExecutionErrorHandler.failInvocationUnlessVisibleToLlm().handle(error, context); }}</code></pre>
+
+<p>对于整个应用程序，声明一个实现 ToolExecutionErrorHandler 的类，并使用 @DefaultToolExecutionErrorHandler 进行注解（限定符放在类型上，而不是生产者方法上）。</p>
+
+<p>请注意，Quarkus 自行构建其 AI Service，因此上面描述的警告不会在那里记录。Quarkus 还使用其自己的默认工具执行错误处理器，该处理器将异常消息发送给 LLM，而不考虑 ToolErrorVisibleToLlm。要使该 interface 受到尊重，请显式配置 failInvocationUnlessVisibleToLlm() 或 sendExceptionMessageToLlm()，如上所示。</p>
+
+<h5>在 Spring Boot 中配置处理器</h5>
+
+<p>使用 Spring Boot starter，AI Service 是使用 @AiService 声明的，处理器声明为 bean：</p>
+
+<pre><code>@Configurationclass ToolErrorHandlingConfig { @Bean ToolExecutionErrorHandler toolExecutionErrorHandler() { return ToolExecutionErrorHandler.failInvocationUnlessVisibleToLlm(); } @Bean ToolArgumentsErrorHandler toolArgumentsErrorHandler() { return ToolArgumentsErrorHandler.sendExceptionMessageToLlm(); }}</code></pre>
+
+<p>在默认（自动）连接模式下，这些 bean 被每个 @AiService 使用。 在显式连接模式下，每个 AI Service 命名它使用的 bean：</p>
+
+<pre><code>@AiService( wiringMode = EXPLICIT, chatModel = &quot;openAiChatModel&quot;, tools = &quot;bookingTools&quot;, toolExecutionErrorHandler = &quot;toolExecutionErrorHandler&quot;, toolArgumentsErrorHandler = &quot;toolArgumentsErrorHandler&quot;)interface Assistant { String chat(String userMessage);}</code></pre>
+
+<p>有关 连接模式 的更多详细信息，请参阅 Spring Boot Integration。</p>
+
+<h4>处理工具名称错误</h4>
+
+<p>可能会发生 LLM 对工具调用产生幻觉， 换句话说，它请求使用一个不存在的工具。 在这种情况下，默认情况下 LangChain4j 将抛出异常以报告问题， 但可以通过为 AI Service 提供 策略来配置不同的行为，以在这种情况下使用。</p>
+
+<p>此策略是 Function&lt;ToolExecutionRequest, ToolExecutionResultMessage&gt; 的实现，该函数定义了对于包含调用不可用工具的请求的 ToolExecutionRequest 应生成哪个 ToolExecutionResultMessage。例如，可以将 AI Service 配置为一个策略，该策略返回给 LLM 一个响应，希望该响应促使其重试不同的工具调用，因为已知先前要求的工具不存在，如以下示例所示：</p>
+
+<pre><code>AssistantHallucinatedTool assistant = AiServices.builder(AssistantHallucinatedTool.class) .chatModel(chatModel) .tools(new HelloWorld()) .hallucinatedToolNameStrategy(toolExecutionRequest -&gt; ToolExecutionResultMessage.from( toolExecutionRequest, &quot;Error: there is no tool called &quot; + toolExecutionRequest.name())) .build();</code></pre>
+
+<h4>处理工具参数错误</h4>
+
+<p>默认情况下，当工具参数出现问题（例如，LLM 生成无效的 JSON 或省略必需的参数）时，AI Service 将无法执行该工具，因此将失败并抛出异常。</p>
+
+<p>建议：将参数错误反馈给 LLM当前默认值（抛出异常）很少是您想要的。参数错误通常来自 LLM，而 LLM 通常可以在给出明确的错误消息时自行更正。配置一个返回错误文本的 ToolArgumentsErrorHandler，以便 LLM 可以使用更正后的参数重试。</p>
+
+<p>我们计划在即将发布的版本中将默认值更改为此行为。如果此计划的更改会影响您的用例，请提交 一个 issue 以便我们在该更改落地之前听到您的反馈。</p>
+
+<p>您可以通过在 AI Service 上配置 ToolArgumentsErrorHandler 来自定义此行为：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolArgumentsErrorHandler((error, errorContext) -&gt; ...) .build();</code></pre>
+
+<p>目前，在 ToolArgumentsErrorHandler 内有两种处理错误的方法：</p>
+
+<ul><li>返回一条文本消息（例如错误描述），该消息将被发送回 LLM，允许它适当地响应（例如，通过更正错误并重试）。</li><li>抛出异常：这将停止 AI Service 流程。 建议（让 LLM 重试）：</li></ul>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolArgumentsErrorHandler(ToolArgumentsErrorHandler.sendExceptionMessageToLlm()) .build();</code></pre>
+
+<p>严格（任何参数错误都停止流程）：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolArgumentsErrorHandler(ToolArgumentsErrorHandler.failInvocation()) .build();</code></pre>
+
+<p>如果您希望 AI Service 以您自己的类型异常失败，请从处理器中抛出它：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolArgumentsErrorHandler((error, errorContext) -&gt; { throw MyCustomException(error); }) .build();try { assistant.chat(...);} catch (MyCustomException e) { // 处理 e}</code></pre>
+
+<h5>访问原始异常</h5>
+
+<p>当工具抛出一个包装另一个异常的异常时（例如 ToolGuardrailException 包装 SecurityException），LangChain4j 通过 getCause() 提取内部原因并将其作为 error 参数传递。使用 errorContext.rawError() 访问原始抛出的外部异常——当包装类型（而非原因）决定应如何处理错误时，这很有用。</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolArgumentsErrorHandler((error, errorContext) -&gt; { if (errorContext.rawError() instanceof MyCriticalException) { throw (MyCriticalException) errorContext.rawError(); } return ToolErrorHandlerResult.text(error.getMessage()); }) .build();</code></pre>
+
+<h4>处理工具执行错误</h4>
+
+<p>默认情况下，当使用 @Tool 注解的方法抛出 Exception 时， Exception 的消息（e.getMessage()）将作为工具执行的结果发送给 LLM。 这允许 LLM 更正其错误并根据需要重试。</p>
+
+<p>建议：在生产环境中不要将原始异常消息发送给 LLM当前默认值将原始异常消息发送回 LLM。在生产中，这可能会泄露内部应用程序数据：堆栈跟踪、文件路径、嵌入在错误字符串中的凭据、下游 API 响应、错误消息中的 PII 等。一旦提供给 LLM，此内容可能会流入响应、聊天历史、可观测性管道和 LLM 提供商的日志。</p>
+
+<p>配置一个返回通用消息或经过策划/清理的失败描述的 ToolExecutionErrorHandler，并依赖您自己的日志和可观测性事件来获取基础详细信息。请注意，一旦您配置了处理器，LangChain4j 将停止为您记录工具失败 - 该日志仅存在以警告您有关默认行为。</p>
+
+<p>我们计划在即将发布的版本中将默认值更改为 failInvocationUnlessVisibleToLlm()：AI Service 调用失败，除非异常本身说明了可以告诉 LLM 的内容。如果此计划的更改会影响您的用例，请提交 一个 issue，以便我们在该更改落地之前听到您的反馈。</p>
+
+<p>您可以通过在 AI Service 上配置 ToolExecutionErrorHandler 来自定义此行为。</p>
+
+<p>建议（让每个异常自行决定，见下文）：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolExecutionErrorHandler(ToolExecutionErrorHandler.failInvocationUnlessVisibleToLlm()) .build();</code></pre>
+
+<p>严格（任何失败都不会到达 LLM）：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolExecutionErrorHandler(ToolExecutionErrorHandler.failInvocation()) .build();</code></pre>
+
+<p>让 LLM 对失败做出反应，但不暴露异常消息：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolExecutionErrorHandler((error, errorContext) -&gt; ToolErrorHandlerResult.text(&quot;工具执行失败。&quot;)) .build();</code></pre>
+
+<p>当前默认值（将异常消息发送给 LLM）- ⚠️ 有关泄露敏感数据的警告，请参见上文：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolExecutionErrorHandler(ToolExecutionErrorHandler.sendExceptionMessageToLlm()) .build();</code></pre>
+
+<p>与 ToolArgumentsErrorHandler 一样，在 ToolExecutionErrorHandler 中有两种处理错误的方法：返回文本消息或抛出异常。您可以使用 errorContext.rawError() 在确定如何处理错误之前检查原始错误（在进行原因解包之前）。</p>
+
+<h5>按异常决定 LLM 看到的内容</h5>
+
+<p>将每个异常发送给 LLM 是有风险的，而对每个异常都失败会剥夺 LLM 从其可以解决的失败中恢复的能力。通常您希望介于两者之间：LLM 应该知道它发明的 ID 没有订单，但不应该知道您的数据库称为 ORDERS_V2 并拒绝了查询。</p>
+
+<p>要表达这一点，让您的异常实现 ToolErrorVisibleToLlm 并在 messageForLlm() 中编写应该告诉 LLM 的确切内容：</p>
+
+<pre><code>public class OrderNotFoundException extends RuntimeException implements ToolErrorVisibleToLlm { private final String orderId; public OrderNotFoundException(String orderId) { super(&quot;Order &quot; + orderId + &quot; not found&quot;); this.orderId = orderId; } @Override public String messageForLlm() { return &quot;没有 ID 为 &quot; + orderId + &quot; 的订单。请用户检查订单号。&quot;; }}</code></pre>
+
+<p>如果您不想声明异常类，请改用现成的异常。如果需要，请自己记录原始错误：它作为原因保留，但不会发送给 LLM。</p>
+
+<pre><code>@Tool(&quot;返回订单状态&quot;)String orderStatus(String orderId) { try { return orderService.status(orderId); } catch (SQLException e) { // LLM 仅被告知它需要知道的内容；原因不会发送给它 log.warn(&quot;无法读取订单数据库&quot;, e); throw ToolErrorVisibleToLlm.from(&quot;订单数据库暂时不可用。&quot;, e); }}</code></pre>
+
+<p>然后配置尊重它的处理器：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .tools(tools) .toolExecutionErrorHandler(ToolExecutionErrorHandler.failInvocationUnlessVisibleToLlm()) .build();</code></pre>
+
+<p>现在 OrderNotFoundException 以&quot;没有 ID 为 ... 的订单&quot;的形式到达 LLM，而 NullPointerException 或失败的数据库连接会使 AI Service 调用失败，因此您可以了解到这一点，而不是 LLM 安静地向您的用户道歉。</p>
+
+<p>LangChain4j 提供的工具（例如 skills、tool search 和 MCP 工具）使用 LlmVisibleToolExecutionException 报告 LLM 可以处理的错误（例如，缺少参数或未知的 skill 名称），该异常实现了 ToolErrorVisibleToLlm，因此使用此处理器时 LLM 仍会看到它们。</p>
+
+<p>对于您无法更改的异常 - 通常是库抛出的异常 - 请按以下部分所述自己编写处理器，并决定在那里告诉 LLM 什么：</p>
+
+<pre><code>.toolExecutionErrorHandler((error, errorContext) -&gt; { if (error instanceof EntityNotFoundException) { return ToolErrorHandlerResult.text(&quot;该记录不存在。&quot;); } throw new RuntimeException(error);})</code></pre>
+
+<p>warning不要将库异常的消息未经修改地传递给 LLM：它是为开发者编写的，可能包含内部详细信息，就像您自己异常的消息一样。</p>
+
+<p>notefailInvocationUnlessVisibleToLlm() 是我们计划在即将发布的版本中设为默认值的行为。今天显式配置它意味着该更改不会影响您的应用程序。</p>
+
+<h3>补偿工具动作</h3>
+
+<p>当 AI Service 使用多个工具来完成一项任务时，一个工具的失败会使系统处于不一致状态 - 某些工具已经成功执行，而其他工具尚未执行。例如，在银行转账中，LLM 可能先贷记收款人的账户，然后由于资金不足而无法从发送人的账户中扣除，从而使收款人收到多余的钱。</p>
+
+<p>为了处理这个问题，您可以在工具错误时启用补偿。启用后，如果任何工具执行失败，所有先前成功且声明了补偿操作的工具调用将按相反顺序自动撤销。</p>
+
+<h4>使用 @CompensateFor 声明补偿操作</h4>
+
+<p>在方法上使用 @CompensateFor 注解，将其声明为 @Tool 的补偿操作。该值必须与工具公开给 LLM 的名称匹配——其 @Tool(name = ...) 属性（如果设置了），否则为 @Tool 方法名称（默认用作工具名称）。 补偿方法必须具有与工具相同的参数类型，或者接受单个 ToolExecution 参数。</p>
+
+<p>选项 1：相同的参数类型 - 补偿方法接收传递给原始工具的相同参数：</p>
+
+<pre><code>class BankAccountService { @Tool(&quot;将钱贷记到银行账户&quot;) void credit(String name, double amount) { accounts.merge(name, amount, Double::sum); } @CompensateFor(&quot;credit&quot;) void uncredit(String name, double amount) { accounts.merge(name, -amount, Double::sum); } @Tool(&quot;从银行账户取款&quot;) void withdraw(String name, double amount) { if (accounts.getOrDefault(name, 0.0) &lt; amount) { throw new RuntimeException(&quot;资金不足&quot;); } accounts.merge(name, -amount, Double::sum); } @CompensateFor(&quot;withdraw&quot;) void unwithdraw(String name, double amount) { accounts.merge(name, amount, Double::sum); }}</code></pre>
+
+<p>选项 2：ToolExecution 参数 - 补偿方法接收完整的 ToolExecution，可同时访问原始参数和工具的返回值。当撤消动作需要由原始执行产生的信息（例如，交易 ID）时，这很有用：</p>
+
+<pre><code>class BankAccountService { @Tool(&quot;将钱贷记到银行账户&quot;) String credit(String name, double amount) { accounts.merge(name, amount, Double::sum); return createTransactionRecord(name, amount); // 例如 &quot;TX-42&quot; } @CompensateFor(&quot;credit&quot;) void uncredit(ToolExecution toolExecution) { String transactionId = toolExecution.result(); // &quot;TX-42&quot; reverseTransaction(transactionId); }}</code></pre>
+
+<h4>启用补偿</h4>
+
+<p>在构建 AI Service 时调用 .compensateOnToolErrors(true)：</p>
+
+<pre><code>Assistant assistant = AiServices.builder(Assistant.class) .chatModel(model) .tools(new BankAccountService()) .compensateOnToolErrors(true) .build();</code></pre>
+
+<p>使用此配置，如果 LLM 调用 credit(&quot;Dmytro&quot;, 100) 然后调用 withdraw(&quot;Mario&quot;, 100) 失败，框架将自动调用 uncredit(&quot;Dmytro&quot;, 100) 以撤消贷记。框架不会抛出异常，而是将信息性结果消息发送回每个工具的 LLM：已回滚的工具会收到类似&quot;工具 &#x27;credit&#x27; 已成功执行，但由于工具 &#x27;withdraw&#x27; 失败而被回滚&quot;的消息，而失败的工具则会收到正常的错误消息。这使 ChatMemory 保持一致，并允许 LLM 决定下一步该做什么 - 重试、通知用户或采用不同的方法。</p>
+
+<p>如果没有 .compensateOnToolErrors(true)，错误将照常发送回 LLM，并且不会进行补偿 - 即使存在 @CompensateFor 注解也是如此。</p>
+
+<h4>验证</h4>
+
+<p>启用 .compensateOnToolErrors(true) 时，会对每个 @CompensateFor 进行验证：</p>
+
+<ul><li>引用的工具（按名称）必须存在于同一对象上。</li><li>补偿方法必须具有与工具完全相同的参数类型，或者接受单个 ToolExecution 参数。 如果任何检查失败，将立即抛出 IllegalConfigurationException，因此在启动时而不是在运行时捕获配置错误。 如果未启用 .compensateOnToolErrors(true)，@CompensateFor 注解将被静默忽略，并且不执行验证。</li></ul>
+
+<h4>注释和限制</h4>
+
+<p>note补偿是尽力而为的：如果补偿操作本身抛出异常，则会以 WARN 级别记录该异常，并继续执行其余的补偿操作。</p>
+
+<p>note@CompensateFor 方法不会暴露给 LLM - 它们是内部补偿基础设施，不会出现在工具规范中。</p>
+
+<p>note即使工具执行配置为通过 .executeToolsConcurrently() 并行运行，补偿操作始终按相反顺序顺序运行。</p>
+
+<p>note@CompensateFor 方法可以从父类继承，与 @Tool 方法的发现方式一致。</p>
+
+<p>note@CompensateFor 仅适用于 @Tool 注解的方法。不支持以编程方式或动态定义的工具（例如 MCP 工具、通过 ToolSpecification 注册的工具）。</p>
+
+<p>note补偿工具动作目前被标记为实验性的，可能会在未来的版本中发生变化。</p>
+
+<h2>模型上下文协议（MCP）</h2>
+
+<p>您还可以从 MCP 服务器导入工具。 有关此内容的更多信息可在 此处 找到。</p>
+
+<p>note在异步和响应式 AI Service 模式下，工具的行为有所不同：它们始终在 Executor 上运行，因此默认情况下并发执行（传递单线程 Executor 给 executeToolsConcurrently(Executor) 以将它们序列化），工具执行错误会导致调用失败，而工具参数解析错误会发送回 LLM，并且手动编写的 ToolExecutor 应实现 executeAsync(...)，否则它会明显失败而不是阻塞线程。 请参阅 Non-blocking and Reactive。</p>
+
+<h2>相关教程</h2>
+
+<ul><li>关于工具的精彩指南 作者 Tales from the jar side（Ken Kousen）</li></ul>
+
+<h2>示例</h2>
+
+<ul><li>使用工具的示例</li><li>使用动态工具的示例</li></ul>
+
+<div class="prev-next">
+  <a href="agents.html"><div class="label">← 上一篇</div><div>智能体与智能体 AI</div></a>
+  <a href="rag.html"><div class="label">下一篇 →</div><div>检索增强生成（RAG）</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,263 @@
+noteSkills API 处于实验阶段。API 和行为在未来的版本中可能仍会发生变化。
+
+Skills 是一种为 LLM 配备可重用、自包含的行为指令的机制。
+一个 skill 捆绑了一个名称、一个简短的描述以及一段指令主体（其内容），
+以及可选的资源（例如参考资料、素材、模板等）。
+LLM 按需加载 skill，保持初始上下文较小，仅在实际需要时才会拉取详细的指令。
+
+noteSkills 是根据 Agent Skills 规范设计的。
+
+## 创建 Skills
+
+### 从文件系统创建
+
+通常，每个 skill 存在于其自己的目录中，其中包含一个 SKILL.md 文件。
+该文件必须以一个 YAML front matter 块开头，该块声明了 skill 的名称和描述。
+front matter 下方的一切都成为 skill 的内容 —— 即当 LLM 激活该 skill 时提供给它的指令。
+
+```
+skills/├── docx/│ ├── SKILL.md│ └── references/│ └── tracked-changes.md ← 作为资源加载└── data-analysis/ └── SKILL.md
+```
+
+SKILL.md 示例：
+
+```
+---name: docxdescription: 使用修订功能编辑和审阅 Word 文档---当用户要求你编辑 Word 文档时：1. 始终使用修订功能，以便可以审阅编辑内容。 ...
+```
+
+skill 目录中除 SKILL.md 本身以及 scripts/ 子目录下的文件之外的任何文件都会自动作为 SkillResource 加载，供 LLM 按需读取。
+
+使用 langchain4j-skills 模块中的 FileSystemSkillLoader 从文件系统加载 skills：
+
+```
+<dependency> <groupId>dev.langchain4j</groupId> <artifactId>langchain4j-skills</artifactId> <version>1.22.0-beta32</version></dependency>
+```
+
+```
+// 加载在直接子目录中找到的所有 skills：List<FileSystemSkill> skills = FileSystemSkillLoader.loadSkills(Path.of("skills/"));// 或者通过目录加载单个 skill：FileSystemSkill skill = FileSystemSkillLoader.loadSkill(Path.of("skills/docx"));
+```
+
+### 从 Classpath 创建
+
+ClassPathSkillLoader 的工作方式与 FileSystemSkillLoader 类似，但从 classpath 而不是文件系统解析 skill 目录。当 skills 捆绑在您的 JAR 中或位于 src/main/resources 下时，这非常有用：
+
+```
+src/main/resources/└── skills/ ├── docx/ │ ├── SKILL.md │ └── references/ │ └── tracked-changes.md └── data-analysis/ └── SKILL.md
+```
+
+```
+// 从 classpath 目录加载所有 skills：List<FileSystemSkill> skills = ClassPathSkillLoader.loadSkills("skills");// 或者加载单个 skill：FileSystemSkill skill = ClassPathSkillLoader.loadSkill("skills/docx");
+```
+
+默认情况下，ClassPathSkillLoader 使用线程的上下文类加载器。
+如果需要，您可以传递自定义 ClassLoader：
+
+```
+FileSystemSkill skill = ClassPathSkillLoader.loadSkill("skills/docx", myClassLoader);
+```
+
+与 FileSystemSkillLoader 一样，SKILL.md 格式、资源加载规则和 scripts/ 排除规则也适用。
+
+### 以编程方式创建
+
+Skills 不必基于文件系统。
+您可以使用构建器 API 从任何来源创建它们 —— 数据库、远程 API、运行时生成：
+
+```
+Skill skill = Skill.builder() .name("incident-response") .description("用于诊断和解决生产事故的分步运行手册") .content(""" 当生产告警触发时： 1. 调用 `fetchRecentLogs(serviceName)` 获取最近 5 分钟的日志。 2. 调用 `checkServiceHealth(serviceName)` 获取当前健康指标。 3. 根据结果，调用 `createIncidentTicket(summary, severity)`。 4. 如果严重性为 CRITICAL，还要调用 `pageOnCall(incidentId)`。 """) .build();
+```
+
+您还可以以编程方式附加资源：
+
+```
+SkillResource reference = SkillResource.builder() .relativePath("references/tone-guide.md") .content("使用温暖、简洁的语言。避免使用专业术语。") .build();Skill skill = Skill.builder() .name("customer-support") .description("处理客户支持咨询") .content("请遵循 references/tone-guide.md 中的语气指南 ...") .resources(List.of(reference)) .build();
+```
+
+## 模式
+
+Skills 可以以两种不同的模式与 AI Service 集成，具体取决于您需要多少控制权和信任度。
+
+### 工具模式（推荐）
+
+类：Skills（来自 langchain4j-skills 模块）
+
+这对应于 Agent Skills 规范中描述的基于工具的智能体集成方法。
+
+在此模式下，LLM 激活一个 skill 以接收分步指令，然后通过调用您显式注册的工具来执行这些指令。
+LLM 在推理时无法访问文件系统 —— 所有 skill 内容和资源都会预先加载到内存中（例如通过 FileSystemSkillLoader），activate_skill 和 read_skill_resource 工具返回的是预先加载的内容，而不是从磁盘读取。
+由于只能调用您预定义的工具，因此不存在任意代码执行的风险。
+
+#### 已注册的工具
+
+| 工具 | 注册时机 |
+| activate_skill | 始终注册。LLM 调用此工具以将 skill 的完整指令加载到上下文中。 |
+| read_skill_resource | 当至少一个 skill 拥有资源时注册。LLM 调用此工具以读取各个参考文件。 |
+| Skill-scoped 工具 | 在 skill 激活之后。 |
+
+#### 工作原理
+
+- 系统消息列出了可用的 skills（名称和描述），以便 LLM 进行选择。
+- 用户提出需要特定 skill 的问题。
+- LLM 调用 activate_skill("my-skill") 来接收其指令。
+- LLM 按照这些指令完成任务，并可选择在过程中读取资源文件。
+
+#### Skill 示例
+
+Skills 描述了策略 —— 调用的确切顺序、必需的参数、错误处理步骤以及示例，而实际执行则保留在类型安全且经过测试的 Java 代码中：
+
+```
+---name: process-orderdescription: 端到端处理客户订单---要处理订单：1. 调用 `validateOrder(orderId)` 检查订单是否有效。2. 调用 `reserveInventory(orderId)` 预留所需库存。3. 仅当预留成功时，才调用 `chargePayment(orderId)`。4. 最后，调用 `sendConfirmationEmail(orderId)`。如果任何步骤失败，请在报告错误之前调用 `rollbackOrder(orderId)`。
+```
+
+#### 接线配置
+
+将 Skills 的 ToolProvider 与您的常规工具一起传递给 AI Service 构建器。
+使用 formatAvailableSkills() 将 skill 目录注入到系统消息中，以便 LLM 知道它可以激活哪些 skills：
+
+```
+Skills skills = Skills.from(FileSystemSkillLoader.loadSkills(Path.of("skills/")));MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .tools(new OrderTools()) // 您的工具 .toolProvider(skills.toolProvider()) // 或者如果您已经配置了 tool provider，则使用 .toolProviders(myToolProvider, skills.toolProvider()) .systemMessage("您可以访问以下 skills：\n" + skills.formatAvailableSkills() + "\n当用户的请求与这些 skills 中的某一个相关时，请先使用 `activate_skill` 工具激活它，然后再继续。") .build();
+```
+
+formatAvailableSkills() 返回一个 XML 格式的块，列出每个 skill 的名称和描述：
+
+```
+<available_skills> <skill> <name>process-order</name> <description>端到端处理客户订单</description> </skill> <skill> <name>data-analysis</name> <description>分析表格数据并生成图表</description> </skill></available_skills>
+```
+
+#### 自定义
+
+每个工具的名称、描述和参数元数据都可以通过构建器上相应的配置类进行覆盖：
+
+```
+Skills skills = Skills.builder() .skills(mySkills) .activateSkillToolConfig(ActivateSkillToolConfig.builder() .name(...) // 工具名称（默认："activate_skill"） .description(...) // 工具描述 .parameterName(...) // 参数名称（默认："skill_name"） .parameterDescription(...) // 参数描述 .throwToolArgumentsExceptions(...) // 抛出 ToolArgumentsException 而不是 ToolExecutionException（默认：false） .build()) .readResourceToolConfig(ReadResourceToolConfig.builder() .name(...) // 工具名称（默认："read_skill_resource"） .description(...) // 工具描述 .skillNameParameterName(...) // skill_name 参数名称（默认："skill_name"） .skillNameParameterDescription(...) // skill_name 参数描述 .relativePathParameterName(...) // relative_path 参数名称（默认："relative_path"） .relativePathParameterDescription(...) // 静态描述（优先于 provider） .relativePathParameterDescriptionProvider(...) // 基于可用资源的动态描述 .throwToolArgumentsExceptions(...) // 抛出 ToolArgumentsException 而不是 ToolExecutionException（默认：false） .build()) .build();
+```
+
+#### Skill 范围内的工具
+
+您可以直接将工具附加到某个 skill。这些工具仅在通过 activate_skill 工具激活该 skill 后才会暴露给 LLM。
+这使得 LLM 的工具列表保持小巧且专注，并确保特定 skill 的工具仅在相关时才出现。
+
+##### 使用 @Tool 注解的方法
+
+附加工具的最简单方式是传递带有 @Tool 注解方法的对象：
+
+```
+class OrderTools { @Tool("通过 ID 验证客户订单") String validateOrder(String orderId) { // 验证逻辑 return "valid"; } @Tool("为客户订单收取付款") String chargePayment(String orderId) { // 付款逻辑 return "charged"; }}Skill skill = Skill.builder() .name("process-order") .description("端到端处理客户订单") .content(""" 要处理订单： 1. 调用 `validateOrder(orderId)` 检查订单是否有效。 2. 调用 `chargePayment(orderId)`。 """) .tools(new OrderTools()) .build();
+```
+
+也可以使用 toBuilder() 将工具附加到已构建的 skill —— 例如，向从文件系统加载的 skill 添加工具：
+
+```
+FileSystemSkill skill = FileSystemSkillLoader.loadSkill(Path.of("skills/process-order"));Skill skillWithTools = skill.toBuilder() .tools(new OrderTools()) .build();
+```
+
+##### 使用 Tool Providers
+
+您还可以将 ToolProviders 附加到 skill —— 例如，仅在 skill 激活后才暴露来自 MCP 服务器的工具：
+
+```
+ToolProvider mcpToolProvider = McpToolProvider.builder() .mcpClients(mcpClient) .toolFilter((tool, mcpClient) -> tool.name().startsWith("inventory_")) .build();Skill skill = Skill.builder() .name("inventory-management") .description("管理仓库库存") .content(""" 使用库存工具检查库存水平并更新数量。 """) .toolProviders(mcpToolProvider) .build();
+```
+
+##### 使用 Map<ToolSpecification, ToolExecutor>
+
+为了完全控制工具规范和执行逻辑，您可以直接传递一个 map：
+
+```
+ToolSpecification validateOrder = ToolSpecification.builder() .name("validateOrder") .description("通过 ID 验证客户订单") .addParameter("orderId", JsonSchemaProperty.STRING, JsonSchemaProperty.description("订单 ID")) .build();ToolExecutor validateOrderExecutor = (request, memoryId) -> { String orderId = parseOrderId(request.arguments()); return validate(orderId);};Skill skill = Skill.builder() .name("process-order") .description("端到端处理客户订单") .content(""" 要处理订单： 1. 调用 `validateOrder(orderId)` 检查订单是否有效。 """) .tools(Map.of(validateOrder, validateOrderExecutor)) .build();
+```
+
+这三种方式可以组合使用 —— @Tool 方法、ToolProviders 和 Map 条目会合并成一组 Skill 范围内的工具：
+
+```
+Skill skill = Skill.builder() .name("process-order") .description("端到端处理客户订单") .content("...") .tools(new OrderTools()) .tools(Map.of(validateOrder, validateOrderExecutor)) .toolProviders(mcpToolProvider) .build();
+```
+
+##### 接线配置
+
+```
+Skills skills = Skills.from(skill);MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .chatMemory(MessageWindowChatMemory.withMaxMessages(100)) .toolProvider(skills.toolProvider()) .systemMessage("您可以访问以下 skills：\n" + skills.formatAvailableSkills() + "\n当用户的请求与这些 skills 中的某一个相关时，请先激活它。") .build();
+```
+
+##### Skill 范围内的工具如何工作
+
+- 在 skill 激活之前，LLM 只能看到 activate_skill（以及 read_skill_resource）工具。
+Skill 范围内的工具不包括在工具列表中。
+- 当 LLM 调用 activate_skill("process-order") 时，激活操作会记录在 ToolExecutionResultMessage 中。
+- 在下一次 LLM 调用之前（在同一个 AI Service 调用内），AI Service 会根据当前消息重新评估动态 tool provider。
+Skill 范围内的工具（例如 validateOrder）将变为可见状态，并且 LLM 可以在同一 AI Service 调用中立即调用它们。
+Skill 范围内的工具在下一次 AI Service 调用中保持对 LLM 可见，仅当 skill 被停用时才会变得不可见。
+
+##### 将 Skills 与工具搜索结合使用
+
+Skills 与工具搜索一起使用。当两者都被配置时，它们彼此独立运行：
+
+- Skill 范围内的工具永远不可搜索。它们不会出现在可搜索的工具池中，也无法通过 tool_search_tool 找到。它们仅在 LLM 激活相应的 skill 之后才可见。
+- 常规工具保持可搜索。通过 AI Service 上的 .tools(...)（而不是在 skill 上）注册的工具继续保持可搜索，无论是否有 skill 被激活。
+- activate_skill 始终可见。它被标记为 ALWAYS_VISIBLE，因此即使启用了工具搜索，LLM 也始终可以调用它。
+
+```
+Skills skills = Skills.from(mySkills);MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .chatMemory(MessageWindowChatMemory.withMaxMessages(100)) .tools(new MySearchableTools()) // 这些是可搜索的 .toolProvider(skills.toolProvider()) // Skill 范围内的工具不可搜索 .toolSearchStrategy(new SimpleToolSearchStrategy()) .systemMessage("您可以访问以下 skills：\n" + skills.formatAvailableSkills() + "\n当用户的请求与这些 skills 中的某一个相关时，请先激活它。") .build();
+```
+
+### Shell 模式（实验性）
+
+类：ShellSkills（来自 langchain4j-experimental-skills-shell 模块）
+
+这对应于 Agent Skills 规范中描述的基于文件系统的智能体集成方法。
+
+warningShell 执行本质上是不安全的。
+命令直接在宿主进程环境中运行，没有任何沙箱、容器化或权限限制。
+行为不当或被提示注入的 LLM 可以在运行您应用程序的机器上执行任意命令。
+仅在您完全信任输入并接受相关风险的可控环境中使用此模式。
+
+在此模式下，LLM 获得一个 run_shell_command 工具，并使用 shell 命令直接从文件系统读取 skill 指令。
+没有 activate_skill 或 read_skill_resource 工具 —— LLM 像人类开发人员一样浏览 skill 文件。
+
+#### 已注册的工具
+
+| 工具 | 注册时机 |
+| run_shell_command | 始终注册。LLM 运行 shell 命令以读取 SKILL.md 文件、资源文件并执行脚本。 |
+
+#### 工作原理
+
+- 系统消息列出可用的 skills 以及它们的绝对文件系统路径。
+- 用户提出需要特定 skill 的问题。
+- LLM 运行 cat /path/to/skills/docx/SKILL.md 来读取指令。
+- LLM 通过运行进一步的 shell 命令来遵循这些指令。
+
+#### 依赖项
+
+Shell 执行位于一个独立的实验性工件中 —— 将其添加到您的构建中：
+
+```
+<dependency> <groupId>dev.langchain4j</groupId> <artifactId>langchain4j-experimental-skills-shell</artifactId> <version>1.22.0-beta32</version></dependency>
+```
+
+#### 接线配置
+
+所有 skills 必须基于文件系统（通过 FileSystemSkillLoader 加载）。
+使用 ShellSkills 而不是 Skills：
+
+```
+ShellSkills skills = ShellSkills.from(FileSystemSkillLoader.loadSkills(Path.of("skills/")));MyAiService service = AiServices.builder(MyAiService.class) .chatModel(chatModel) .toolProvider(skills.toolProvider()) // 或者如果您已经配置了 tool provider，则使用 .toolProviders(myToolProvider, skills.toolProvider()) .systemMessage("您可以访问以下 skills：\n" + skills.formatAvailableSkills() + "\n当用户的请求与这些 skills 中的某一个相关时，请在继续之前先读取其 SKILL.md。") .build();
+```
+
+formatAvailableSkills() 包含一个 <location> 字段，因此 LLM 确切地知道在哪里找到每个 SKILL.md：
+
+```
+<available_skills> <skill> <name>docx</name> <description>使用修订功能编辑和审阅 Word 文档</description> <location>/path/to/skills/docx/SKILL.md</location> </skill> <skill> <name>data-analysis</name> <description>分析表格数据并生成图表</description> <location>/path/to/skills/data-analysis/SKILL.md</location> </skill></available_skills>
+```
+
+#### 何时使用 Shell 模式
+
+此模式最适合用于实验和原型设计，或者您希望使用社区发布的第三方 skills（例如来自 agentskills.io 生态系统的 skills）而无需先将其移植到 Java。
+它允许您快速连接一个可用的工作流，然后在解决方案成熟时将各个操作迁移到工具。
+
+#### 自定义
+
+使用 RunShellCommandToolConfig 来调整工作目录、输出限制和参数名称：
+
+```
+ShellSkills skills = ShellSkills.builder() .skills(mySkills) .runShellCommandToolConfig(RunShellCommandToolConfig.builder() .name(...) // 工具名称（默认："run_shell_command"） .description(...) // 工具描述（默认：包括操作系统名称） .commandParameterName(...) // 命令参数名称（默认："command"） .commandParameterDescription(...) // 命令参数描述 .timeoutSecondsParameterName(...) // 超时参数名称（默认："timeout_seconds"） .timeoutSecondsParameterDescription(...) // 超时参数描述 .workingDirectory(...) // 命令的工作目录（默认：JVM 的 user.dir） .maxStdOutChars(...) // 结果中的最大 stdout 字符数（默认：10_000） .maxStdErrChars(...) // 结果中的最大 stderr 字符数（默认：10_000） .executorService(...) // 用于读取 stdout/stderr 流的 ExecutorService .throwToolArgumentsExceptions(...) // 抛出 ToolArgumentsException 而不是 ToolExecutionException（默认：false） .build()) .build();
+```

@@ -1,0 +1,6 @@
+More info coming soon
+
+## Examples​
+
+- Example of Image generation
+- Example of Image as inputs

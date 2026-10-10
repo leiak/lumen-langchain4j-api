@@ -1,0 +1,40 @@
+LangChain4j 使用 SLF4J 进行日志记录，
+你因此可以接入任何你喜欢的日志后端，
+例如 Logback 或 Log4j。
+
+## 纯 Java
+
+在创建模型实例时，你可以通过设置
+.logRequests(true) 和 .logResponses(true) 来启用对 LLM 每次请求和响应的日志记录：
+
+```
+OpenAiChatModel.builder() ... .logRequests(true) .logResponses(true) .build();
+```
+
+请确保在依赖中加入任意一个 SLF4J 日志后端，例如 Logback：
+
+```
+<dependency> <groupId>ch.qos.logback</groupId> <artifactId>logback-classic</artifactId> <version>1.5.8</version></dependency>
+```
+
+## Quarkus
+
+在使用 Quarkus 集成时，
+日志相关的配置在 application.properties 文件中完成：
+
+```
+...quarkus.langchain4j.openai.chat-model.log-requests = truequarkus.langchain4j.openai.chat-model.log-responses = truequarkus.log.console.enable = truequarkus.log.file.enable = false
+```
+
+这些属性也可以在 Quarkus Dev UI 中设置和更改，
+当以开发模式（mvn quarkus:dev）运行应用时即可使用。
+Dev UI 的访问地址为 http://localhost:8080/q/dev-ui。
+
+## Spring Boot
+
+在使用 Spring Boot 集成时，
+日志相关的配置在 application.properties 文件中完成：
+
+```
+...langchain4j.open-ai.chat-model.log-requests = truelang4j.open-ai.chat-model.log-responses = truelogging.level.dev.langchain4j = DEBUG
+```
