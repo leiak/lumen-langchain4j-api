@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>可观测性 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html" class="active">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 可观测性</nav>
+<h1>可观测性</h1>
+<h2>AI 服务可观测性</h2>
+
+<p>noteAI 服务可观测性是一项实验性功能。其 API 和行为在未来的版本中可能会发生变化。</p>
+
+<p>AI 服务可观测性机制允许用户跟踪 AiService 调用期间发生的情况。单个调用可能涉及多次大语言模型（LLM）调用，其中任何一次都可能成功或失败。AI 服务可观测性允许用户跟踪整个调用序列及其结果。</p>
+
+<p>noteAI 服务可观测性功能仅在使用 AI Services 时可用。它们是更高级别的抽象，不能应用于 ChatModel 或 StreamingChatModel。</p>
+
+<p>该实现最初在 Quarkus LangChain4j 扩展中实现，后被反向移植到这里。</p>
+
+<h3>事件类型</h3>
+
+<p>每种事件类型都有一个唯一标识符，可用于在多次调用之间关联事件。 每种事件类型都包含封装在 InvocationContext 中的信息。</p>
+
+<p>以下事件类型目前可用：</p>
+
+<p>| 事件名称 | 描述 | | AiServiceStartedEvent | 当大语言模型调用开始时触发。 | | AiServiceRequestIssuedEvent | 在向大语言模型发送请求之前触发。包含正在发出请求的详细信息。需要注意的是，在存在工具或防护栏时，单次 AiService 调用期间可能会多次触发此事件。包含系统消息和用户消息等信息。 | | AiServiceResponseReceivedEvent | 当收到来自大语言模型的响应时触发。包含大语言模型响应以及相应的请求。需要注意的是，在存在工具或防护栏时，单次 AiService 调用期间可能会多次触发此事件。包含系统消息和用户消息等信息。并非每次调用都会收到此事件。如果调用失败，它将收到 AiServiceErrorEvent。 | | AiServiceErrorEvent | 当与大语言模型的调用失败时触发。失败原因可能是网络故障、AI 服务不可用、输入/输出防护栏阻止请求等多种原因。包含发生的失败的相关信息。 | | AiServiceCompletedEvent | 当大语言模型调用成功完成时触发。并非每次调用都会收到此事件。如果调用失败，它将收到 AiServiceErrorEvent。包含调用结果的相关信息。 | | ToolExecutedEvent | 当工具调用完成时触发。需要注意的是，在单次大语言模型调用期间可能会多次触发此事件。包含工具请求和结果的相关信息。 | | ToolCompensatedEvent | 当先前已完成的工具被补偿时触发，因为该交互后来被取消或失败。属于实验性事件，由非阻塞 AI 服务模式发出。包含工具请求、其结果以及补偿原因。 | | InputGuardrailExecutedEvent | 当输入防护栏验证已执行时触发。每次防护栏调用都会触发这些事件之一。包含各个输入防护栏的输入、其输出（即是成功还是失败？）以及执行时长。 | | OutputGuardrailExecutedEvent | 当输出防护栏验证已执行时触发。每次防护栏调用都会触发这些事件之一。包含各个输出防护栏的输入、其输出（即是否成功？失败？重试？重新提示？）以及执行时长。 |</p>
+
+<h3>监听事件</h3>
+
+<p>每种事件类型都有自己的监听器接口，可以实现该接口以接收事件。您可以选择性地监听您想要的事件。</p>
+
+<p>要监听事件，请创建您自己的类，实现您想要监听的监听器接口。以下是可用的监听器接口：</p>
+
+<p>| 监听器名称 | 事件 | | AiServiceStartedListener | AiServiceStartedEvent | | AiServiceRequestIssuedListener | AiServiceRequestIssuedEvent | | AiServiceResponseReceivedListener | AiServiceResponseReceivedEvent | | AiServiceErrorListener | AiServiceErrorEvent | | AiServiceCompletedListener | AiServiceCompletedEvent | | ToolExecutedEventListener | ToolExecutedEvent | | ToolCompensatedEventListener | ToolCompensatedEvent | | InputGuardrailExecutedListener | InputGuardrailExecutedEvent | | OutputGuardrailExecutedListener | OutputGuardrailExecutedEvent |</p>
+
+<p>定义好监听器后，在创建 AI Services 时注册它们。AiServices 类上有多种 registerListener 方法变体。</p>
+
+<p>例如，您可以执行以下操作来创建并注册一个 AiServiceCompletedEvent 的监听器：</p>
+
+<pre><code>import java.time.Instant;import java.util.List;import java.util.Optional;import java.util.UUID;import dev.langchain4j.observability.api.AiServiceListenerRegistrar;import dev.langchain4j.observability.api.event.AiServiceCompletedEvent;import dev.langchain4j.observability.api.listener.AiServiceCompletedListener;import dev.langchain4j.invocation.InvocationContext;public class MyAiServiceCompletedListener implements AiServiceCompletedListener { @Override public void onEvent(AiServiceCompletedEvent event) { InvocationContext invocationContext = event.invocationContext(); Optional&lt;Object&gt; result = event.result(); // 调用 ID 对于同一 LLM 调用关联的所有事件都相同 UUID invocationId = invocationContext.invocationId(); String aiServiceInterfaceName = invocationContext.interfaceName(); String aiServiceMethodName = invocationContext.methodName(); List&lt;Object&gt; aiServiceMethodArgs = invocationContext.methodArguments(); Object chatMemoryId = invocationContext.chatMemoryId(); Instant eventTimestamp = invocationContext.timestamp(); // 使用这些数据执行某些操作 }}// 创建 AI Service 时MyAiServiceCompletedListener myListener = new MyAiServiceCompletedListener();var myService = AiServices.builder(MyAiService.class) .chatModel(chatModel) // 也可以是 .streamingChatModel(...) .registerListener(myListener) .build();</code></pre>
+
+<h3>创建您自己的事件和监听器</h3>
+
+<p>AI 服务可观测性功能被设计为可扩展的。如果您想创建自己的事件，可以通过实现 AiServiceEvent 接口来定义您自己的事件。</p>
+
+<p>然后，通过实现 AiServiceListener 接口来创建您自己的事件监听器。</p>
+
+<p>在拥有事件和监听器后，您需要通过获取/管理 AiServiceListenerRegistrar 实例并调用 fireEvent(event) 方法来触发事件。</p>
+
+<p>一旦事件开始被触发，您就可以像使用内置事件一样创建监听器并注册您的监听器。</p>
+
+<h3>扩展点</h3>
+
+<p>您还可以通过实现 AiServiceListenerRegistrarFactory 并使用 Java 服务提供者接口（Java SPI）注册它，来创建您自己的自定义 AiServiceListenerRegistrar。</p>
+
+<p>如果您想管理注册/注销监听器的方式和/或想要触发事件的方式，这可能会很有用。</p>
+
+<h2>聊天模型可观测性</h2>
+
+<p>ChatModel 和 StreamingChatModel 的某些实现（请参阅&quot;Observability&quot;列）允许配置 ChatModelListener 来监听以下事件：</p>
+
+<ul><li>向大语言模型发出的请求</li><li>来自大语言模型的响应</li><li>错误 这些事件包含各种属性，如 OpenTelemetry Generative AI 语义约定中所述，例如：</li></ul>
+
+<ul><li>请求：</li><li>消息</li><li>模型</li><li>Temperature</li><li>Top P</li><li>Max Tokens</li><li>Tools</li><li>Response Format</li><li>等等</li><li>响应：</li><li>Assistant Message</li><li>ID</li><li>Model</li><li>Token Usage</li><li>Finish Reason</li><li>等等 以下是使用 ChatModelListener 的示例：</li></ul>
+
+<pre><code>ChatModelListener listener = new ChatModelListener() { @Override public void onRequest(ChatModelRequestContext requestContext) { ChatRequest chatRequest = requestContext.chatRequest(); List&lt;ChatMessage&gt; messages = chatRequest.messages(); System.out.println(messages); ChatRequestParameters parameters = chatRequest.parameters(); System.out.println(parameters.modelName()); System.out.println(parameters.temperature()); System.out.println(parameters.topP()); System.out.println(parameters.topK()); System.out.println(parameters.frequencyPenalty()); System.out.println(parameters.presencePenalty()); System.out.println(parameters.maxOutputTokens()); System.out.println(parameters.stopSequences()); System.out.println(parameters.toolSpecifications()); System.out.println(parameters.toolChoice()); System.out.println(parameters.responseFormat()); if (parameters instanceof OpenAiChatRequestParameters openAiParameters) { System.out.println(openAiParameters.maxCompletionTokens()); System.out.println(openAiParameters.logitBias()); System.out.println(openAiParameters.parallelToolCalls()); System.out.println(openAiParameters.seed()); System.out.println(openAiParameters.user()); System.out.println(openAiParameters.store()); System.out.println(openAiParameters.metadata()); System.out.println(openAiParameters.serviceTier()); System.out.println(openAiParameters.reasoningEffort()); } System.out.println(requestContext.modelProvider()); Map&lt;Object, Object&gt; attributes = requestContext.attributes(); attributes.put(&quot;my-attribute&quot;, &quot;my-value&quot;); } @Override public void onResponse(ChatModelResponseContext responseContext) { ChatResponse chatResponse = responseContext.chatResponse(); AiMessage aiMessage = chatResponse.aiMessage(); System.out.println(aiMessage); ChatResponseMetadata metadata = chatResponse.metadata(); System.out.println(metadata.id()); System.out.println(metadata.modelName()); System.out.println(metadata.finishReason()); if (metadata instanceof OpenAiChatResponseMetadata openAiMetadata) { System.out.println(openAiMetadata.created()); System.out.println(openAiMetadata.serviceTier()); System.out.println(openAiMetadata.systemFingerprint()); } TokenUsage tokenUsage = metadata.tokenUsage(); System.out.println(tokenUsage.inputTokenCount()); System.out.println(tokenUsage.outputTokenCount()); System.out.println(tokenUsage.totalTokenCount()); if (tokenUsage instanceof OpenAiTokenUsage openAiTokenUsage) { System.out.println(openAiTokenUsage.inputTokensDetails().cachedTokens()); System.out.println(openAiTokenUsage.outputTokensDetails().reasoningTokens()); } ChatRequest chatRequest = responseContext.chatRequest(); System.out.println(chatRequest); System.out.println(responseContext.modelProvider()); Map&lt;Object, Object&gt; attributes = responseContext.attributes(); System.out.println(attributes.get(&quot;my-attribute&quot;)); } @Override public void onError(ChatModelErrorContext errorContext) { Throwable error = errorContext.error(); error.printStackTrace(); ChatRequest chatRequest = errorContext.chatRequest(); System.out.println(chatRequest); System.out.println(errorContext.modelProvider()); Map&lt;Object, Object&gt; attributes = errorContext.attributes(); System.out.println(attributes.get(&quot;my-attribute&quot;)); }};ChatModel model = OpenAiChatModel.builder() .apiKey(System.getenv(&quot;OPENAI_API_KEY&quot;)) .modelName(GPT_4_O_MINI) .listeners(List.of(listener)) .build();model.chat(&quot;Tell me a joke about Java&quot;);</code></pre>
+
+<p>属性映射允许在同一个 ChatModelListener 的 onRequest、onResponse 和 onError 方法之间，以及多个 ChatModelListeners 之间传递信息。如果需要向监听器提供每次调用的元数据，请使用 ChatRequestOptions。例如，您可以通过 listenerAttributes 将租户或关联标识符传递给 ChatModelListeners。这些选项仅在 LangChain4j 调用链中使用；它们不会发送给 LLM 提供商。</p>
+
+<pre><code>ChatRequest chatRequest = ChatRequest.builder() .messages(UserMessage.from(&quot;Tell me a joke about Java&quot;)) .build();ChatRequestOptions options = ChatRequestOptions.builder() .addListenerAttribute(&quot;tenantId&quot;, &quot;tenant-123&quot;) .addListenerAttribute(&quot;correlationId&quot;, &quot;corr-456&quot;) .build();model.chat(chatRequest, options);</code></pre>
+
+<p>同样的规则也适用于 StreamingChatModel.chat(chatRequest, options, handler)。</p>
+
+<h3>监听器如何工作</h3>
+
+<ul><li>监听器被指定为 List&lt;ChatModelListener&gt;，并按迭代顺序调用。</li><li>监听器以同步方式在同一个线程中被调用。请参阅下面的流式情况了解更多详情。第二个监听器在第一个监听器返回之前不会被调用。</li><li>ChatModelListener.onRequest() 方法在调用 LLM 提供商 API 之前立即被调用。</li><li>ChatModelListener.onRequest() 方法每个请求只调用一次。如果在调用 LLM 提供商 API 时发生错误并发生重试，ChatModelListener.onRequest() 不会为每次重试都被调用。</li><li>ChatModelListener.onResponse() 方法只调用一次，在成功接收到来自 LLM 提供商的响应后立即调用。</li><li>ChatModelListener.onError() 方法只调用一次。如果在调用 LLM 提供商 API 时发生错误并发生重试，ChatModelListener.onError() 不会为每次重试都被调用。</li><li>如果某个 ChatModelListener 方法抛出异常，它将以 WARN 级别记录。后续监听器的执行将照常继续。</li><li>通过 ChatModelRequestContext、ChatModelResponseContext 和 ChatModelErrorContext 提供的 ChatRequest 是最终请求，它包含了在 ChatModel 上配置的默认 ChatRequestParameters 与特定于请求的 ChatRequestParameters 合并后的内容。</li><li>对于 StreamingChatModel，ChatModelListener.onResponse() 和 ChatModelListener.onError() 是在与 ChatModelListener.onRequest() 不同的线程上调用的。线程上下文目前不会自动传播，因此您可能需要使用 attributes 映射将任何必要的数据从 ChatModelListener.onRequest() 传播到 ChatModelListener.onResponse() 或 ChatModelListener.onError()。</li><li>对于 StreamingChatModel，ChatModelListener.onResponse() 在 StreamingChatResponseHandler.onCompleteResponse() 之前被调用。ChatModelListener.onError() 在 StreamingChatResponseHandler.onError() 之前被调用。</li></ul>
+
+<h2>审核模型可观测性</h2>
+
+<p>支持监听器的 ModerationModel 实现（例如 OpenAiModerationModel、MistralAiModerationModel 和 WatsonxModerationModel）允许配置 ModerationModelListener 来监听以下事件：</p>
+
+<ul><li>向审核 API 发出的请求</li><li>来自审核 API 的响应</li><li>错误 以下是使用 ModerationModelListener 的示例：</li></ul>
+
+<pre><code>ModerationModelListener listener = new ModerationModelListener() { @Override public void onRequest(ModerationModelRequestContext requestContext) { ModerationRequest moderationRequest = requestContext.moderationRequest(); // 访问被审核的文本 System.out.println(&quot;Moderating texts: &quot; + moderationRequest.texts()); System.out.println(requestContext.modelProvider()); System.out.println(moderationRequest.modelName()); Map&lt;Object, Object&gt; attributes = requestContext.attributes(); attributes.put(&quot;startTime&quot;, System.currentTimeMillis()); } @Override public void onResponse(ModerationModelResponseContext responseContext) { ModerationResponse moderationResponse = responseContext.moderationResponse(); Moderation moderation = moderationResponse.moderation(); System.out.println(&quot;Flagged: &quot; + moderation.flagged()); if (moderation.flagged()) { System.out.println(&quot;Flagged text: &quot; + moderation.flaggedText()); } ModerationRequest moderationRequest = responseContext.moderationRequest(); System.out.println(moderationRequest); System.out.println(responseContext.modelProvider()); System.out.println(moderationRequest.modelName()); Map&lt;Object, Object&gt; attributes = responseContext.attributes(); Long startTime = (Long) attributes.get(&quot;startTime&quot;); if (startTime != null) { System.out.println(&quot;Duration: &quot; + (System.currentTimeMillis() - startTime) + &quot;ms&quot;); } } @Override public void onError(ModerationModelErrorContext errorContext) { Throwable error = errorContext.error(); error.printStackTrace(); ModerationRequest moderationRequest = errorContext.moderationRequest(); System.out.println(moderationRequest); System.out.println(errorContext.modelProvider()); System.out.println(moderationRequest.modelName()); Map&lt;Object, Object&gt; attributes = errorContext.attributes(); System.out.println(attributes.get(&quot;startTime&quot;)); }};ModerationModel model = OpenAiModerationModel.builder() .apiKey(System.getenv(&quot;OPENAI_API_KEY&quot;)) .listeners(List.of(listener)) .build();model.moderate(&quot;Text to check for policy violations&quot;);</code></pre>
+
+<p>属性映射允许在同一个 ModerationModelListener 的 onRequest、onResponse 和 onError 方法之间，以及多个 ModerationModelListeners 之间传递信息。</p>
+
+<h3>监听器如何工作</h3>
+
+<ul><li>监听器被指定为 List&lt;ModerationModelListener&gt;，并按迭代顺序调用。</li><li>监听器以同步方式在同一个线程中被调用。</li><li>ModerationModelListener.onRequest() 方法在调用审核 API 之前立即被调用。</li><li>ModerationModelListener.onRequest() 方法每个请求只调用一次。如果在调用审核 API 时发生错误并发生重试，ModerationModelListener.onRequest() 不会为每次重试都被调用。</li><li>ModerationModelListener.onResponse() 方法只调用一次，在成功接收到响应后立即调用。</li><li>ModerationModelListener.onError() 方法只调用一次。如果在调用审核 API 时发生错误并发生重试，ModerationModelListener.onError() 不会为每次重试都被调用。</li><li>如果某个 ModerationModelListener 方法抛出异常，它将以 WARN 级别记录。后续监听器的执行将照常继续。</li></ul>
+
+<h2>RAG 可观测性（EmbeddingModel、EmbeddingStore 和 ContentRetriever）</h2>
+
+<p>EmbeddingModel、EmbeddingStore 和 ContentRetriever 可以使用监听器进行插桩，以观测：</p>
+
+<ul><li>延迟（使用属性测量时长）</li><li>负载（例如 EmbeddingSearchRequest.queryEmbedding() 和检索到的匹配/内容）</li><li>错误</li></ul>
+
+<h3>EmbeddingModel 监听器</h3>
+
+<p>实现 EmbeddingModelListener：</p>
+
+<pre><code>import dev.langchain4j.model.embedding.listener.EmbeddingModelListener;import dev.langchain4j.model.embedding.listener.EmbeddingModelRequestContext;import dev.langchain4j.model.embedding.listener.EmbeddingModelResponseContext;import dev.langchain4j.model.embedding.listener.EmbeddingModelErrorContext;public class MyEmbeddingModelListener implements EmbeddingModelListener { @Override public void onRequest(EmbeddingModelRequestContext requestContext) { requestContext.attributes().put(&quot;startNanos&quot;, System.nanoTime()); // requestContext.embeddingRequest() 暴露输入、每次调用的参数（input_type, dimensions, ...） // 以及多模态内容。 // requestContext.modelProvider() 标识提供商。 } @Override public void onResponse(EmbeddingModelResponseContext responseContext) { long startNanos = (long) responseContext.attributes().get(&quot;startNanos&quot;); long durationNanos = System.nanoTime() - startNanos; // 使用 duration 和/或 responseContext.embeddingResponse()（embeddings + metadata）执行某些操作 } @Override public void onError(EmbeddingModelErrorContext errorContext) { // 使用 errorContext.error() 执行某些操作 }}</code></pre>
+
+<p>通过模型构建器的 listeners(...) 方法附加监听器（推荐）：</p>
+
+<pre><code>EmbeddingModel model = OpenAiEmbeddingModel.builder() .apiKey(System.getenv(&quot;OPENAI_API_KEY&quot;)) .modelName(&quot;text-embedding-3-small&quot;) .listeners(List.of(new MyEmbeddingModelListener())) .build();model.embed(&quot;hello&quot;);</code></pre>
+
+<p>监听器会在 embed(EmbeddingRequest) 以及 embed(String) / embed(TextSegment) 便捷方法周围被通知。</p>
+
+<p>note您还可以通过使用 EmbeddingModel#addListener(s) 包装已构建的模型来附加监听器：</p>
+
+<pre><code>EmbeddingModel observedModel = embeddingModel.addListener(new MyEmbeddingModelListener());observedModel.embed(&quot;hello&quot;);</code></pre>
+
+<p>这对于向已构建的模型或者构建器未公开 listeners(...) 的模型添加监听器非常方便。当构建器确实公开了 listeners(...) 时，应优先使用该方法，因为它不需要包装。</p>
+
+<h3>EmbeddingStore 监听器</h3>
+
+<p>实现 EmbeddingStoreListener：</p>
+
+<pre><code>import dev.langchain4j.store.embedding.listener.EmbeddingStoreListener;import dev.langchain4j.store.embedding.listener.EmbeddingStoreRequestContext;import dev.langchain4j.store.embedding.listener.EmbeddingStoreResponseContext;import dev.langchain4j.store.embedding.listener.EmbeddingStoreErrorContext;public class MyEmbeddingStoreListener implements EmbeddingStoreListener { @Override public void onRequest(EmbeddingStoreRequestContext&lt;?&gt; requestContext) { requestContext.attributes().put(&quot;startNanos&quot;, System.nanoTime()); } @Override public void onResponse(EmbeddingStoreResponseContext&lt;?&gt; responseContext) { long startNanos = (long) responseContext.attributes().get(&quot;startNanos&quot;); long durationNanos = System.nanoTime() - startNanos; // 使用 duration 和/或响应负载（如果有）执行某些操作，例如： if (responseContext instanceof EmbeddingStoreResponseContext.Search&lt;?&gt; search) { // 使用 search.searchResult() 执行某些操作 } } @Override public void onError(EmbeddingStoreErrorContext&lt;?&gt; errorContext) { // 使用 errorContext.error() 执行某些操作 }}</code></pre>
+
+<p>使用 EmbeddingStore#addListener(s) 附加监听器：</p>
+
+<pre><code>EmbeddingStore&lt;TextSegment&gt; observedStore = embeddingStore.addListener(new MyEmbeddingStoreListener());// 像往常一样使用 observedStore，例如在 EmbeddingStoreIngestor / EmbeddingStoreContentRetriever 中</code></pre>
+
+<h3>ContentRetriever 监听器</h3>
+
+<p>实现 ContentRetrieverListener：</p>
+
+<pre><code>import dev.langchain4j.rag.content.retriever.listener.ContentRetrieverListener;import dev.langchain4j.rag.content.retriever.listener.ContentRetrieverRequestContext;import dev.langchain4j.rag.content.retriever.listener.ContentRetrieverResponseContext;import dev.langchain4j.rag.content.retriever.listener.ContentRetrieverErrorContext;public class MyContentRetrieverListener implements ContentRetrieverListener { @Override public void onRequest(ContentRetrieverRequestContext requestContext) { requestContext.attributes().put(&quot;startNanos&quot;, System.nanoTime()); } @Override public void onResponse(ContentRetrieverResponseContext responseContext) { long startNanos = (long) responseContext.attributes().get(&quot;startNanos&quot;); long durationNanos = System.nanoTime() - startNanos; // 使用 duration 和/或 responseContext.contents() 执行某些操作 } @Override public void onError(ContentRetrieverErrorContext errorContext) { // 使用 errorContext.error() 执行某些操作 }}</code></pre>
+
+<p>使用 ContentRetriever#addListener(s) 附加监听器：</p>
+
+<pre><code>ContentRetriever observedRetriever = contentRetriever.addListener(new MyContentRetrieverListener());observedRetriever.retrieve(Query.from(&quot;my query&quot;));</code></pre>
+
+<h3>监听器如何工作</h3>
+
+<ul><li>监听器被指定为一个 List，并按迭代顺序调用。</li><li>监听器以同步方式在同一个线程中被调用。</li><li>onRequest() 在执行底层操作之前立即被调用。</li><li>onResponse() 在成功完成后被调用一次。</li><li>onError() 在底层操作抛出异常时被调用一次。</li><li>如果某个监听器方法抛出异常，它将以 WARN 级别记录并被忽略。</li><li>属性映射允许在同一个监听器的 onRequest、onResponse 和 onError 方法之间，以及多个监听器之间传递信息。</li></ul>
+
+<h2>使用 Micrometer 的可观测性指标</h2>
+
+<p>langchain4j-micrometer-metrics 模块为 LangChain4j 库提供了基于 Micrometer 的指标实现。目前，它通过使用 ChatModelListener 实现为 ChatModel 和 StreamingChatModel 交互提供指标，并通过使用 EmbeddingModelListener 实现为 EmbeddingModel 交互提供指标，这些指标通过 Micrometer 的 MeterRegistry 收集。</p>
+
+<p>指标的命名遵循 OpenTelemetry Generative AI Metrics 语义约定。(v1.39.0)</p>
+
+<p>⚠️ 实验性：本模块标记为 @Experimental，在未来版本中可能有破坏性更改。</p>
+
+<p>⚠️ 警告：OpenTelemetry Generative AI 语义约定目前是实验性的，尚未稳定。这意味着它们在未来版本中可能会有破坏性更改。如果您遵循这些约定，当约定更新时，您可能需要为您的仪表板、告警和自动化引入破坏性更改。</p>
+
+<h3>指标</h3>
+
+<p>目前收集以下指标：</p>
+
+<p>| 指标名称 | 类型 | 描述 | | gen_ai.client.token.usage | Histogram (DistributionSummary) | 每次聊天模型请求使用的输入和输出 token 数，以及每次嵌入模型请求使用的输入 token 数 | | gen_ai.client.operation.duration | Timer | 每次聊天和嵌入模型请求所花费的时间，无论成功还是失败 |</p>
+
+<h4>gen_ai.client.token.usage 上的标签</h4>
+
+<p>| 标签 | 描述 | 示例值 | | gen_ai.operation.name | 正在执行的操作 | chat, embeddings | | gen_ai.provider.name | AI 提供商名称 | openai, azure.ai.inference, anthropic | | gen_ai.request.model | 请求中的模型名称 | gpt-4, gpt-35-turbo, text-embedding-3-small | | gen_ai.response.model | 响应中的模型名称 | gpt-4-0613 | | gen_ai.token.type | 被计数的 token 类型 | input, output（embeddings 仅记录 input） |</p>
+
+<h4>gen_ai.client.operation.duration 上的标签</h4>
+
+<p>| 标签 | 描述 | 示例值 | | gen_ai.operation.name | 正在执行的操作 | chat, embeddings | | gen_ai.provider.name | AI 提供商名称 | openai, azure.ai.inference, anthropic | | gen_ai.request.model | 请求中的模型名称 | gpt-4, gpt-35-turbo, text-embedding-3-small | | gen_ai.response.model | 响应中的模型名称，失败调用时为 unknown | gpt-4-0613, unknown | | outcome | 调用成功还是失败 | SUCCESS, ERROR | | error.type | 异常的类名，成功调用时为 none | none, java.util.concurrent.TimeoutException |</p>
+
+<h4>创建 MicrometerMetricsChatModelListener</h4>
+
+<p>MicrometerMetricsChatModelListener 为 ChatModel 和 StreamingChatModel 交互收集指标。 它需要一个 Micrometer 的 MeterRegistry 来实例化。</p>
+
+<pre><code>import dev.langchain4j.data.message.UserMessage;import dev.langchain4j.micrometer.metrics.listeners.MicrometerMetricsChatModelListener;import dev.langchain4j.model.azure.AzureOpenAiChatModel;import dev.langchain4j.model.chat.request.ChatRequest;import dev.langchain4j.model.chat.response.ChatResponse;import io.micrometer.core.instrument.MeterRegistry;import java.util.List;// 获取 MeterRegistryMeterRegistry meterRegistry = new SimpleMeterRegistry();// 1. 使用 MeterRegistry 和 AI 系统名称创建监听器MicrometerMetricsChatModelListener listener = new MicrometerMetricsChatModelListener(meterRegistry);// 2. 将监听器添加到您的 ChatModelAzureOpenAiChatModel chatModel = AzureOpenAiChatModel.builder() .endpoint(System.getenv(&quot;AZURE_OPENAI_ENDPOINT&quot;)) .apiKey(System.getenv(&quot;AZURE_OPENAI_KEY&quot;)) .deploymentName(System.getenv(&quot;AZURE_OPENAI_DEPLOYMENT_NAME&quot;)) .listeners(List.of(listener)) .build();// 3. 像往常一样使用聊天模型 - 指标会自动收集ChatResponse response = chatModel.chat(ChatRequest.builder() .messages(UserMessage.from(&quot;Hello!&quot;)) .build());</code></pre>
+
+<h4>gen_ai.client.operation.duration（embeddings）上的标签</h4>
+
+<p>| 标签 | 描述 | 示例值 | | gen_ai.operation.name | 正在执行的操作 | embeddings | | gen_ai.provider.name | AI 提供商名称 | openai, ollama | | gen_ai.request.model | 请求中的模型名称 | text-embedding-3-small | | gen_ai.response.model | 响应中的模型名称，失败调用时为 unknown | text-embedding-3-small, unknown | | outcome | 调用成功还是失败 | SUCCESS, ERROR | | error.type | 异常的类名，成功调用时为 none | none, java.net.SocketTimeoutException |</p>
+
+<h4>创建 MicrometerMetricsEmbeddingModelListener</h4>
+
+<p>MicrometerMetricsEmbeddingModelListener 为 EmbeddingModel 交互收集指标。 它以 gen_ai.token.type = input 记录 gen_ai.client.token.usage，因为嵌入调用没有输出 token， 并为每次调用（无论成功还是失败）记录 gen_ai.client.operation.duration。 它需要一个 Micrometer 的 MeterRegistry 来实例化。</p>
+
+<pre><code>import dev.langchain4j.data.embedding.Embedding;import dev.langchain4j.data.segment.TextSegment;import dev.langchain4j.micrometer.metrics.listeners.MicrometerMetricsEmbeddingModelListener;import dev.langchain4j.model.openai.OpenAiEmbeddingModel;import dev.langchain4j.model.output.Response;import io.micrometer.core.instrument.MeterRegistry;import io.micrometer.core.instrument.simple.SimpleMeterRegistry;import java.util.List;// 获取 MeterRegistryMeterRegistry meterRegistry = new SimpleMeterRegistry();// 1. 使用 MeterRegistry 创建监听器MicrometerMetricsEmbeddingModelListener listener = new MicrometerMetricsEmbeddingModelListener(meterRegistry);// 2. 将监听器添加到您的 EmbeddingModelOpenAiEmbeddingModel embeddingModel = OpenAiEmbeddingModel.builder() .apiKey(System.getenv(&quot;OPENAI_API_KEY&quot;)) .modelName(&quot;text-embedding-3-small&quot;) .listeners(List.of(listener)) .build();// 3. 像往常一样使用嵌入模型 - 指标会自动收集Response&lt;List&lt;Embedding&gt;&gt; embeddings = embeddingModel.embedAll(List.of(TextSegment.from(&quot;Hello!&quot;)));</code></pre>
+
+<h2>Micrometer Observation API</h2>
+
+<p>这使用 Micrometer Observation API 实现 ChatModelListener，允许透明地生成指标和追踪。</p>
+
+<p>这是在 langchain4j-observation 模块中实现的。</p>
+
+<h3>生成的遥测数据</h3>
+
+<h4>追踪</h4>
+
+<p>这将为每次聊天交互提供 span。</p>
+
+<p>示例：</p>
+
+<h4>指标</h4>
+
+<p>用于以下直方图：</p>
+
+<ul><li>gen_ai_client_token_usage</li><li>gen_ai_client_operation_duration 示例：</li></ul>
+
+<pre><code># HELP gen_ai_client_operation_duration_active_seconds # TYPE gen_ai_client_operation_duration_active_seconds summarygen_ai_client_operation_duration_active_seconds_count{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;unknown&quot;,outcome=&quot;SUCCESS&quot;} 0gen_ai_client_operation_duration_active_seconds_sum{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;unknown&quot;,outcome=&quot;SUCCESS&quot;} 0.0# HELP gen_ai_client_operation_duration_active_seconds_max # TYPE gen_ai_client_operation_duration_active_seconds_max gaugegen_ai_client_operation_duration_active_seconds_max{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;unknown&quot;,outcome=&quot;SUCCESS&quot;} 0.0# HELP gen_ai_client_operation_duration_seconds # TYPE gen_ai_client_operation_duration_seconds summarygen_ai_client_operation_duration_seconds_count{error=&quot;none&quot;,gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,outcome=&quot;SUCCESS&quot;} 2gen_ai_client_operation_duration_seconds_sum{error=&quot;none&quot;,gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,outcome=&quot;SUCCESS&quot;} 3.384050045# HELP gen_ai_client_operation_duration_seconds_max # TYPE gen_ai_client_operation_duration_seconds_max gaugegen_ai_client_operation_duration_seconds_max{error=&quot;none&quot;,gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,outcome=&quot;SUCCESS&quot;} 2.115592691# HELP gen_ai_client_token_usage_tokens 测量使用的 token 数量# TYPE gen_ai_client_token_usage_tokens summarygen_ai_client_token_usage_tokens_count{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,gen_ai_token_type=&quot;input&quot;} 2gen_ai_client_token_usage_tokens_sum{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,gen_ai_token_type=&quot;input&quot;} 508.0gen_ai_client_token_usage_tokens_count{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,gen_ai_token_type=&quot;output&quot;} 2gen_ai_client_token_usage_tokens_sum{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,gen_ai_token_type=&quot;output&quot;} 53.0# HELP gen_ai_client_token_usage_tokens_max 测量使用的 token 数量# TYPE gen_ai_client_token_usage_tokens_max gaugegen_ai_client_token_usage_tokens_max{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,gen_ai_token_type=&quot;input&quot;} 273.0gen_ai_client_token_usage_tokens_max{gen_ai_operation_name=&quot;chat&quot;,gen_ai_provider_name=&quot;OPEN_AI&quot;,gen_ai_request_model=&quot;gpt-4o-mini&quot;,gen_ai_response_model=&quot;gpt-4o-mini-2024-07-18&quot;,gen_ai_token_type=&quot;output&quot;} 27.0</code></pre>
+
+<p>note监听器回调不得阻塞。ChatModelListener 和 EmbeddingModelListener 回调在模型自己的线程上同步调用，永远不会被卸载。在同步 API 上是调用者的线程；在异步和响应式 API 上，onResponse/onError 在读取响应的传输 I/O 工作线程上运行。在该线程上执行阻塞 I/O —— 比如同步数据库写入、对可观测性后端的同步 HTTP 调用 —— 会使该工作线程停顿，并在并发情况下降低每个进行中调用的吞吐量。记录指标或启动/停止 span（捆绑的 Micrometer 和 Observation 监听器设计上是非阻塞的）；如果回调确实必须阻塞，请从回调内部将其卸载到您自己的执行器。请参阅非阻塞和响应式。</p>
+
+<h2>Spring Boot 应用程序中的可观测性</h2>
+
+<p>更多详细信息请参阅此处。</p>
+
+<p>有关如何在 Spring Boot 应用程序中收集 Micrometer 指标的更多详细信息，请参阅此处。</p>
+
+<p>有关如何将 Micrometer Observation API 库与 SpringBoot 集成的详细信息，请参阅此处。</p>
+
+<h2>第三方集成</h2>
+
+<ul><li>Arize Phoenix 是 Arize AI 提供的开源、自托管选项，用于本地追踪检查和实验。</li><li>Arize AX 支持托管云和企业自托管可观测性，适用于生产环境的 LangChain4j 应用程序。</li><li>有关基于追踪构建的评估工作流，请参阅 Arize 的智能体评估指南和 LLM 评估指南。</li></ul>
+
+<h3>OpenTelemetry GenAI 插桩</h3>
+
+<p>社区维护的 otel-genai-bridges 项目提供了一个 Spring Boot 启动器，使用 OpenTelemetry Generative AI 语义约定自动插桩 LangChain4j 聊天应用程序。</p>
+
+<h4>为什么要使用它？</h4>
+
+<ul><li>包装任何 ChatModel bean 并发出 span、事件和指标。</li><li>开箱即用地捕获提示词、补全、工具调用、延迟、token 使用、成本和 RAG 检索延迟。</li><li>提供 Docker Compose 示例（Collector → Tempo/Prometheus → Grafana）以及预构建的 Grafana 仪表板。</li></ul>
+
+<h4>入门</h4>
+
+<p>将启动器添加到您的 Spring Boot 项目：</p>
+
+<pre><code>&lt;!-- pom.xml --&gt;&lt;dependency&gt; &lt;groupId&gt;com.dineshkumarkummara.otel&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-otel&lt;/artifactId&gt; &lt;version&gt;0.1.0-SNAPSHOT&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<p>通过 application.yaml 启用启动器：</p>
+
+<pre><code>otel: langchain4j: enabled: true system: openai default-model: gpt-4o capture-prompts: true capture-completions: true cost: enabled: true input-per-thousand: 0.0005 output-per-thousand: 0.0015</code></pre>
+
+<p>嵌套的 cost 段是可选的；当您需要按 token 计费的指标时，请包含它。</p>
+
+<p>将依赖项添加到 classpath 后，启动器会自动定位 ChatModel bean 并用遥测包装它们。</p>
+
+<h4>可观测性视图</h4>
+
+<p>有关完整的工作示例（包括可观测性堆栈和 Semantic Kernel 兼容性），请参阅 dineshkumarkummara/otel-genai-bridges。</p>
+
+<div class="prev-next">
+  <a href="jackson-3.html"><div class="label">← 上一篇</div><div>使用 Jackson 3</div></a>
+  <a href="skills.html"><div class="label">下一篇 →</div><div>技能（Skills）</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型上下文协议（MCP） | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html" class="active">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 模型上下文协议（MCP）</nav>
+<h1>模型上下文协议（MCP）</h1>
+<p>noteMCP 客户端可以通过 executeToolAsync(...) 执行工具而不会阻塞线程，该方法被异步和响应式 AI Service 模式使用。 参见 非阻塞和响应式。</p>
+
+<p>LangChain4j 支持 Model Context Protocol（MCP），用于与能够提供和执行工具的 MCP 兼容服务器进行通信。 关于协议的通用信息可在 MCP 网站 上找到。</p>
+
+<p>note想要使用 Java 构建一个 MCP 服务器？ 参见 构建 Java MCP 服务器。</p>
+
+<p>协议规定了两种传输方式，这两种方式都被支持：</p>
+
+<ul><li>Streamable HTTP： 客户端发送 HTTP 请求，服务器以普通响应进行应答，或者在需要随时间发送多个响应时打开一个 SSE 流。</li><li>stdio：客户端 可以将 MCP 服务器作为本地子进程运行， 并通过标准输入/输出与其直接通信。 除此之外，LangChain4j 还实现了 WebSocket 传输。该传输未标准化，目前客户端的开发方式是与 Quarkus MCP Server 扩展 所实现的 WebSocket 传输兼容。 对于使用其他框架构建但暴露了 WebSocket 的 MCP 服务器，兼容性无法保证。</li></ul>
+
+<p>此外，LangChain4j 还支持 Docker stdio 传输，可以使用作为容器镜像分发的 stdio MCP 服务器。</p>
+
+<p>要让你的聊天模型或 AI 服务运行 MCP 服务器提供的工具， 你需要创建一个 MCP 工具提供者（tool provider）的实例。</p>
+
+<h2>创建 MCP 工具提供者</h2>
+
+<h3>MCP Transport（传输）</h3>
+
+<p>首先，你需要一个 MCP Transport 的实例。</p>
+
+<p>对于 stdio —— 以下示例展示了如何从一个 NPM 包将服务器作为子进程启动：</p>
+
+<pre><code>McpTransport transport = StdioMcpTransport.builder() .command(List.of(&quot;/usr/bin/npm&quot;, &quot;exec&quot;, &quot;@modelcontextprotocol/server-everything@0.6.2&quot;)) .logEvents(true) // 只有在希望在日志中查看流量时才需要 .build();</code></pre>
+
+<p>如果服务器需要在特定的项目目录中运行，可以在 stdio 传输构建器上配置 .workingDirectory(Path.of(&quot;/path/to/project&quot;))。 该目录在启动和重启时都会应用于服务器子进程。当省略时，子进程将继承当前进程的工作目录。</p>
+
+<p>对于 Streamable HTTP 传输，你需要提供服务器 POST 端点的 URL：</p>
+
+<pre><code>McpTransport transport = StreamableHttpMcpTransport.builder() .url(&quot;http://localhost:3001/mcp&quot;) .logRequests(true) // 如果你希望在日志中查看流量 .logResponses(true) .build();</code></pre>
+
+<p>注意：（仅限遗留协议）Streamable HTTP 传输可以可选地打开一个基于 GET 的辅助 SSE 流， 用于接收服务器主动发起的通知和请求。在构建器上使用 .subsidiaryChannel(true) 启用它。 在使用现代协议（2026-07-28）时，通知改为通过 subscriptions/listen 接收。 默认情况下它是禁用的。如果服务器不支持它，传输会记录警告并继续运行。 如果流在建立后中断，传输会自动重新连接（遵循服务器的重试值，默认 5 秒）。</p>
+
+<p>对于 WebSocket 传输：</p>
+
+<pre><code>McpTransport transport = WebSocketMcpTransport.builder() .url(&quot;ws://localhost:3001/mcp/ws&quot;) .logResponses(true) .logRequests(true) .build();</code></pre>
+
+<p>对于 Docker stdio 传输，首先需要在你的 pom.xml 中添加一个模块：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-mcp-docker&lt;/artifactId&gt;&lt;/dependency&gt;</code></pre>
+
+<p>然后你需要创建一个 Docker 传输：</p>
+
+<pre><code>McpTransport transport = DockerMcpTransport.builder() .image(&quot;mcp/time&quot;) .dockerHost(&quot;unix:///var/run/docker.sock&quot;) .logEvents(true) // 如果你希望在日志中查看流量 .build();</code></pre>
+
+<h3>MCP Client（客户端）</h3>
+
+<p>要从传输创建 MCP 客户端：</p>
+
+<pre><code>McpClient mcpClient = DefaultMcpClient.builder() .key(&quot;MyMCPClient&quot;) .transport(transport) .build();</code></pre>
+
+<p>注意，客户端 key 是可选的，但建议设置它，尤其是在存在多个 MCP 客户端、需要在它们之间进行区分时。</p>
+
+<h3>协议版本（Protocol Version）</h3>
+
+<p>MCP 客户端同时支持遗留协议（2025-11-25）和现代无状态协议（2026-07-28）。默认情况下，客户端会自动检测服务器的协议版本，在服务器支持的情况下优先使用 2026-07-28：</p>
+
+<pre><code>// 自动检测（默认行为）McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .build();// 强制使用现代协议McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .protocolVersion(&quot;2026-07-28&quot;) .build();// 强制使用遗留协议McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .protocolVersion(&quot;2025-11-25&quot;) .build();</code></pre>
+
+<p>检测会在客户端启动时增加一次额外的往返：它会发送一个 server/discover 请求， 如果响应是错误或在 protocolDetectionTimeout 内没有到达响应，则将该服务器视为遗留服务器。 该超时默认是 initializationTimeout（30 秒），因为作为子进程启动的服务器需要时间启动才能响应任何内容， 过早放弃会导致将现代服务器误判为遗留服务器。 由于静默（而非错误）导致的回退会被记录为警告，因为这种情况可能是服务器被误判了。</p>
+
+<pre><code>McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .protocolDetectionTimeout(Duration.ofSeconds(5)) // 你已知服务器能快速响应 .build();</code></pre>
+
+<p>显式设置 protocolVersion 会完全跳过检测。当你已经知道服务器使用哪个协议版本时，这是值得做的； 当某些较旧的 MCP 服务器实现在收到未知请求时会终止连接而不是返回错误时，这也是一种解决方案。</p>
+
+<h3>MCP Tool Provider（工具提供者）</h3>
+
+<p>最后，你从客户端创建一个 MCP 工具提供者：</p>
+
+<pre><code>McpToolProvider toolProvider = McpToolProvider.builder() .mcpClients(mcpClient) .build();</code></pre>
+
+<p>注意，一个 MCP 工具提供者可以同时使用多个客户端。 如果你利用这一点，你还可以指定工具提供者在从特定服务器检索工具失败时的行为 —— 这可以通过 builder.failIfOneServerFails(boolean) 方法完成。默认值为 false， 这意味着工具提供者将忽略来自一个服务器的错误，并继续使用其他服务器。如果将其设置为 true，则任何服务器的失败都会导致工具提供者抛出异常。</p>
+
+<p>此外，MCP 服务器通常可能提供数十个工具，而给定的 AI 服务可能只需要其中几个， 这既能防止使用不需要的工具，也能减少产生幻觉的可能性。McpToolProvider 允许你按名称过滤这些工具，如下所示：</p>
+
+<pre><code>McpToolProvider toolProvider = McpToolProvider.builder() .mcpClients(mcpClient) .filterToolNames(&quot;get_issue&quot;, &quot;get_issue_comments&quot;, &quot;list_issues&quot;) .build();</code></pre>
+
+<p>通过这种方式，使用此 ToolProvider 配置的 AI 服务只能使用上述 3 个工具，使其能够读取现有 issue，但防止创建新 issue。 更一般地，ToolProvider 允许你通过 BiPredicate&lt;McpClient, ToolSpecification&gt; 过滤工具。 当多个 MCP 客户端暴露同名但名称冲突的工具时，这也很有用。 例如，下面的 ToolProvider 从两个 MCP 客户端获取工具，但由于它们都有一个名为 echoInteger 的工具，它只从 key 为 numeric-mcp 的 MCP 客户端获取该工具：</p>
+
+<pre><code>McpToolProvider toolProvider = McpToolProvider.builder() .mcpClients(mcpClient1, mcpClient2) .filter((mcpClient, tool) -&gt; !tool.name().startsWith(&quot;echoInteger&quot;) || mcpClient.key().equals(&quot;numeric-mcp&quot;)) .build();</code></pre>
+
+<p>注意，在同一个 McpToolProvider 构建器上多次调用 filter 方法将导致所有过滤器的合取（AND）。</p>
+
+<p>为了让应用程序能够在运行时连接或断开 MCP 服务器， 还可以向现有的 McpToolProvider 实例动态添加和移除客户端及过滤器。</p>
+
+<p>要将工具提供者绑定到 AI 服务，只需使用 AI 服务构建器的 toolProvider 方法：</p>
+
+<pre><code>Bot bot = AiServices.builder(Bot.class) .chatModel(model) .toolProvider(toolProvider) .build();</code></pre>
+
+<p>或者，你可以使用 Map&lt;ToolSpecification, ToolExecutor&gt; 提供工具。</p>
+
+<pre><code>Map&lt;ToolSpecification, ToolExecutor&gt; tools = mcpClient.listTools().stream().collect(Collectors.toMap( tool -&gt; tool, tool -&gt; new McpToolExecutor(mcpClient)));</code></pre>
+
+<p>要将工具绑定到 AI 服务，只需使用 AI 服务构建器的 tools 方法：</p>
+
+<pre><code>Bot bot = AiServices.builder(Bot.class) .chatModel(model) .tools(tools) .build();</code></pre>
+
+<p>关于 LangChain4j 中工具支持的更多信息可以在这里找到。</p>
+
+<h3>MCP 工具名称映射（MCP Tool Name Mapping）</h3>
+
+<p>如果你使用多个 MCP 服务器，并且它们暴露的工具名称冲突（或者你只是想调整一个不合适的名称）， 应用工具名称映射函数可能会很有用。这可以通过在创建 McpToolProvider 时指定 BiFunction&lt;McpClient, ToolSpecification, String&gt; 来完成。</p>
+
+<p>例如：</p>
+
+<pre><code>McpToolProvider toolProvider = McpToolProvider.builder() .mcpClients(mcpClient1, mcpClient2) .toolNameMapper((client, toolSpec) -&gt; { // 将所有工具名称前缀加上 MCP 客户端的名称和一个下划线 return client.key() + &quot;_&quot; + toolSpec.name(); }) .build();</code></pre>
+
+<p>此后，工具提供者返回的 ToolSpecification 对象将包含映射后的（逻辑）名称， 但生成的 ToolExecutor 对象将固定在调用工具时将原始（物理）名称传递给服务器。</p>
+
+<h3>MCP 工具规范映射（MCP Tool Specification Mapping）</h3>
+
+<p>类似于上面的 MCP 工具映射，可以映射完整的 ToolSpecification：</p>
+
+<pre><code>McpToolProvider toolProvider = McpToolProvider.builder() .mcpClients(mcpClient) .toolSpecificationMapper((client, toolSpec) -&gt; { // 将所有工具名称前缀加上 &quot;myprefix_&quot;，并将描述转换为大写 return toolSpec.toBuilder() .name(&quot;myprefix_&quot; + toolSpec.name()) .description(toolSpec.description().toUpperCase()) .build(); }) .build();</code></pre>
+
+<h3>MCP 工具元数据（MCP tool metadata）</h3>
+
+<p>MCP 协议允许服务器为每个工具提供额外的元数据，可以采用注解的形式， 也可以采用工具定义中的 _meta 字段的形式。 LangChain4j 通过存储在 ToolSpecification.metadata() 方法内部的 map 暴露所有这些元数据。 注解使用作为常量存储在 dev.langchain4j.mcp.client.McpToolMetadataKeys 类中的键存储在 map 中。 _meta 字段的内容使用其原始键存储，JSON 值被序列化为嵌套 map。</p>
+
+<p>直接存在于 MCP 工具定义中的 title 字段在元数据 map 中通过 McpToolMetadataKeys.TITLE 键暴露， 以便与从注解中获取的 title 区分 —— 后者通过 McpToolMetadataKeys.ANNOTATION_TITLE 键暴露。</p>
+
+<p>如果工具有图标，它们在元数据 map 中通过 McpToolMetadataKeys.ICONS 键暴露。</p>
+
+<h3>MCP 工具结果元数据（MCP tool result metadata）</h3>
+
+<p>除了实际结果之外，MCP 服务器还可以在工具调用的响应上附加 _meta 对象。 这对于你的应用程序需要但 LLM 不需要的数据很有用，例如工具创建的记录的标识符，或者你的 UI 应该渲染的小部件。</p>
+
+<p>_meta 对象的条目通过 ToolExecutionResult.attributes() 暴露，使用其原始键，JSON 值转换为嵌套的 map。它们永远不会被发送给 LLM。 MCP 规范保留的键（例如 io.modelcontextprotocol/serverInfo）会被跳过，因为它们描述的是协议交互而非工具结果。</p>
+
+<p>直接在客户端上调用工具时，属性始终可用：</p>
+
+<pre><code>ToolExecutionResult result = mcpClient.executeTool(toolExecutionRequest);Object widget = result.attributes().get(&quot;example.org/widget&quot;);</code></pre>
+
+<p>当工具由 AI 服务调用时，默认情况下属性会被丢弃， 因为它们的大小和内容由 MCP 服务器控制。 要保留它们，请在工具提供者上启用 returnToolResultAttributes：</p>
+
+<pre><code>McpToolProvider toolProvider = McpToolProvider.builder() .mcpClients(mcpClient) .returnToolResultAttributes(true) .build();</code></pre>
+
+<p>然后可以从结果的工具执行中读取它们：</p>
+
+<pre><code>interface Assistant { Result&lt;String&gt; chat(String userMessage);}Result&lt;String&gt; result = assistant.chat(&quot;What is the weather in Munich?&quot;);for (ToolExecution toolExecution : result.toolExecutions()) { Object widget = toolExecution.attributes().get(&quot;example.org/widget&quot;);}</code></pre>
+
+<p>这些属性也会传播到 ToolExecutionResultMessage 中， 因此它们与消息一起存储在聊天记忆中。 当聊天记忆被持久化时请记住这一点，详见 工具结果属性。</p>
+
+<p>如果工具返回应用程序级错误（工具结果中 &quot;isError&quot;: true），则调用将以 McpApplicationErrorException 结束，它是 ToolExecutionException 的子类，且失败响应的 _meta 不可用。 它仍然会被传送到 McpClientListener.afterExecuteTool()，该方法接收完整的原始响应。</p>
+
+<p>应用程序级错误是 MCP 服务器告诉模型某个工具未成功的方式，因此其文本是为 LLM 编写的。 McpApplicationErrorException 因此实现了 ToolErrorVisibleToLlm：使用尊重它的工具执行错误处理器， 例如 ToolExecutionErrorHandler.failInvocationUnlessVisibleToLlm()， 服务器的文本会发送给 LLM，LLM 可以对其做出反应。使用该处理器时，协议错误（意味着调用本身出错）会使 AI Service 调用失败， 没有任何文本的应用程序级错误（这是一个普通的 ToolExecutionException）也会失败。 参见 错误处理。</p>
+
+<h3>作为 HTTP 头传输的工具参数（Tool parameters carried as HTTP headers）</h3>
+
+<p>在使用 2026-07-28 协议通过 Streamable HTTP 时，服务器可以要求将选定的工具参数除了作为请求体发送外，还作为 HTTP 头发送， 以便代理和网关可以在不解析请求体的情况下路由或授权调用。服务器使用工具输入模式中的 x-mcp-header 标记这样的参数：</p>
+
+<pre><code>{ &quot;name&quot;: &quot;query_database&quot;, &quot;inputSchema&quot;: { &quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: { &quot;tenant&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;x-mcp-header&quot;: &quot;X-Tenant-Id&quot; }, &quot;sql&quot;: { &quot;type&quot;: &quot;string&quot; } } }}</code></pre>
+
+<p>当工具被调用时，客户端会同时在请求体和 Mcp-Param-X-Tenant-Id HTTP 头中发送 tenant 的值。这是自动发生的，无需配置。 包含非 ASCII 字符等不适合放在头中的值，会按协议要求进行 Base64 编码。</p>
+
+<p>只有字符串、整数和布尔类型的参数可以这样标记，头名称必须是有效的 HTTP token，且同一个头名称不能被声明两次。 定义违反这些规则的工具将从 listTools() 中排除并记录警告，因为客户端无法判断这样的调用应该如何到达服务器。</p>
+
+<p>头名称是从工具定义中读取的，因此客户端需要在发送它们之前知道工具列表。 如果你在从未列出过工具的客户端上调用 executeTool()，则会省略这些头并记录警告；请先调用 listTools()。工具提供者会自动完成此操作。</p>
+
+<h2>提供 _meta 字段（Providing _meta fields）</h2>
+
+<p>MCP 协议允许客户端将 _meta 对象附加到发送给服务器的每个请求和通知的 params 上。 这可以用于传递 OpenTelemetry 跟踪上下文、自定义应用程序元数据或服务器可能需要的任何其他带外信息。</p>
+
+<p>要提供 _meta 字段，请在客户端构建器上注册一个 McpMetaSupplier。 该 supplier 在每次请求或通知之前被调用，返回的 map 将被放入 params._meta 中。与 HTTP 头不同，这适用于所有传输（stdio、HTTP、WebSocket）。</p>
+
+<pre><code>McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .metaSupplier(context -&gt; Map.of( &quot;traceparent&quot;, &quot;00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01&quot;, &quot;custom-key&quot;, &quot;custom-value&quot;)) .build();</code></pre>
+
+<p>supplier 接收一个 McpCallContext（可为空），其中包含 正在发送的消息，以及在适用时的 AI 服务调用的 InvocationContext。 这允许 supplier 根据正在执行的操作变化元数据。</p>
+
+<h2>日志（Logging）</h2>
+
+<p>MCP 协议还定义了服务器向客户端发送日志消息的方式。 默认情况下，客户端的行为是转换这些日志消息，并使用 SLF4J logger 将其记录。 如果要更改此行为，存在一个名为 dev.langchain4j.mcp.client.logging.McpLogMessageHandler 的接口，作为接收到的日志消息的回调。 如果你创建自己的 McpLogMessageHandler 实现，请将其传递给 MCP 客户端构建器：</p>
+
+<pre><code>McpClient mcpClient = new DefaultMcpClient.Builder() .transport(transport) .logHandler(new MyLogMessageHandler()) .build();</code></pre>
+
+<h2>MCP 监听器（MCP listeners）</h2>
+
+<p>MCP 客户端支持监听客户端生命周期内发生的事件的监听器。 dev.langchain4j.mcp.client.McpClientListener 接口作为 监听器实现的基础。可以将多个监听器注册到单个客户端上； 它们都将在每次工具调用、提示词渲染和资源访问之前和之后被调用。 在调用监听器时会注入相应的 McpCallContext。该对象 包含实际发送给服务器的 MCP 消息，以及在适用时的 InvocationContext 实例（仅当此 调用作为 AI 服务调用的一部分发生时）。</p>
+
+<p>可以逐个或批量添加监听器：</p>
+
+<pre><code>McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .addListener(new MyFirstListener()) .addListener(new MySecondListener()) .addListeners(List.of(new MyThirdListener(), new MyFourthListener())) .build();</code></pre>
+
+<h2>资源（Resources）</h2>
+
+<p>有两种使用资源的方式。应用程序可以调用 MCP 客户端的 资源相关方法以编程方式访问资源，或者可以选择通过合成工具将资源自动暴露给 LLM 调用 （一个用于获取资源列表的工具，一个用于获取资源内容的工具），以便聊天模型可以自行查阅资源。</p>
+
+<h3>以编程方式访问资源（Accessing resources programmatically）</h3>
+
+<p>要获取服务器上 MCP 资源的列表，请使用 client.listResources()，或在资源模板的情况下使用 client.listResourceTemplates()。 这将返回一个 McpResource 对象列表（或 McpResourceTemplate）。这些对象 包含资源的元数据，最重要的是 URI。</p>
+
+<p>要获取资源的实际内容，请使用 client.readResource(uri)，提供资源的 URI。 这将返回一个 McpReadResourceResult，其中包含 McpResourceContents 对象列表（单个 URI 上可能有多个资源内容， 例如如果 URI 表示一个目录）。每个 McpResourceContents 对象表示二进制 blob（McpBlobResourceContents）或文本（McpTextResourceContents）。</p>
+
+<h3>通过合成工具自动暴露资源（Exposing resources automatically via synthetic tools）</h3>
+
+<p>如果在构建 McpToolProvider 时使用构建器设置了 McpResourcesAsToolsPresenter 实例， MCP 工具提供者将自动向其 provideTools 方法的结果中添加两个合成工具， 以及由后端 MCP 服务器支持的&quot;常规&quot;工具。一个工具用于获取资源列表，另一个用于获取特定资源。 LangChain4j 提供了一个名为 DefaultMcpResourcesAsToolsPresenter 的默认实现，它添加这两个工具：</p>
+
+<p>注意：本节其余部分描述 DefaultMcpResourcesAsToolsPresenter。你可以插入你自己的实现，使其表现出不同的行为。</p>
+
+<ul><li>list_resources：列出由后端 MCP 服务器暴露的所有资源。此工具不接受任何参数。</li><li>get_resource：读取资源的内容。此工具接受两个共同标识资源的参数： MCP 服务器名称和 URI。 list_resources 的输出是一个 JSON 数组，如下所示：</li></ul>
+
+<pre><code>[ { &quot;mcpServer&quot; : &quot;alice&quot;, &quot;uri&quot; : &quot;file:///info&quot;, &quot;uriTemplate&quot; : null, &quot;name&quot; : &quot;basicInfo&quot;, &quot;description&quot; : &quot;Basic information about Alice&quot;, &quot;mimeType&quot; : &quot;text/plain&quot;}, { &quot;mcpServer&quot; : &quot;bob&quot;, &quot;uri&quot; : &quot;file:///info&quot;, &quot;uriTemplate&quot; : null, &quot;name&quot; : &quot;basicInfo&quot;, &quot;description&quot; : &quot;Basic information about Bob&quot;, &quot;mimeType&quot; : &quot;text/plain&quot;} ]</code></pre>
+
+<p>数组中的每个文档代表一个资源。每个资源由 uri 和 mcpServer 的组合标识， 其中 mcpServer 是在创建时分配给 MCP 客户端的 key 的值（参见 DefaultMcpClient.Builder#key）。 当聊天模型调用 list_resources 工具时， 它会收到此资源列表，然后可以决定调用 read_resource。 list_resources 和 get_resource 工具的默认描述在大多数情况下应该足以向 LLM 解释如何使用它们。但是，如果你需要 自定义这些工具及其参数的描述，可以使用 DefaultMcpResourcesAsToolsPresenter.Builder 的方法重写它们。</p>
+
+<h3>资源订阅（Resource subscriptions）</h3>
+
+<p>MCP 协议支持资源订阅， 允许客户端在服务器上的资源发生变化时收到通知。</p>
+
+<h4>遗留协议（2025-11-25）</h4>
+
+<p>要订阅特定资源的更新，请使用 client.subscribeToResource(uri)。 当服务器更新资源时，它会发送 notifications/resources/updated 通知。 要处理这些通知，请通过 onResourceUpdated 构建器方法注册回调：</p>
+
+<pre><code>McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .onResourceUpdated((client, uri) -&gt; { // 重新读取已更新的资源 McpReadResourceResult result = client.readResource(uri); // 处理更新后的内容... }) .build();// 订阅一个资源mcpClient.subscribeToResource(&quot;file:///status&quot;);// 之后，取消订阅mcpClient.unsubscribeFromResource(&quot;file:///status&quot;);</code></pre>
+
+<h4>现代协议（2026-07-28）</h4>
+
+<p>使用现代协议时，使用 subscribeToResources，它接受多个 URI 并返回订阅 ID：</p>
+
+<pre><code>long subId = mcpClient.subscribeToResources(List.of(&quot;file:///status&quot;, &quot;file:///config&quot;));// 之后，使用订阅 ID 取消订阅mcpClient.unsubscribeFromResources(subId);</code></pre>
+
+<p>服务器必须在能够通过订阅发送任何内容之前确认订阅，因此 subscribeToResources 会阻塞直到收到该确认。如果服务器拒绝 订阅，拒绝请求的 URI，或保持沉默，则调用会抛出异常，而不是返回一个永远无法传递任何内容的订阅 ID。 使用 resourcesTimeout 控制客户端等待确认的时间：</p>
+
+<pre><code>McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .resourcesTimeout(Duration.ofSeconds(10)) // 默认：60 秒 .build();</code></pre>
+
+<p>由于调用会阻塞，因此不要在 onResourceUpdated 回调中调用它： 这些回调运行在从服务器读取消息的线程上，这也是必须传递确认的线程。</p>
+
+<p>对于列表更改通知（工具列表、提示词列表、资源列表更改）， 客户端默认会自动订阅。你可以通过构建器标志控制这一点：</p>
+
+<pre><code>McpClient mcpClient = DefaultMcpClient.builder() .transport(transport) .subscribeToToolListChanges(true) // 默认：true .subscribeToPromptListChanges(true) // 默认：true .subscribeToResourceListChanges(true) // 默认：true .build();</code></pre>
+
+<h2>提示词（Prompts）</h2>
+
+<p>要从服务器获取 MCP 提示词的列表，请使用 client.listPrompts()。此方法返回 McpPrompts 的列表。 McpPrompt 包含有关提示词名称和参数的信息。</p>
+
+<p>要渲染提示词的实际内容，请使用 client.getPrompt(name, arguments)。 渲染的提示词可以包含一条到多条消息，这些消息表示为 McpPromptMessage 对象。 每个 McpPromptMessage 包含消息的角色（user、assistant 等） 以及消息的实际内容。目前支持的消息内容类型为： McpTextContent、McpImageContent 和 McpEmbeddedResource。</p>
+
+<p>你可以使用 McpPromptMessage.toChatMessage() 将其转换为来自 LangChain4j 核心 API 的通用 dev.langchain4j.data.message.ChatMessage。 不过这并非在所有情况下都可行。例如，如果提示词消息的角色是 assistant 且包含文本以外的内容，它将抛出异常。 将具有二进制 blob 内容的消息转换为 ChatMessage 在任何角色下都不受支持。</p>
+
+<h2>通过 Docker 使用 GitHub MCP 服务器（Using the GitHub MCP server through Docker）</h2>
+
+<p>现在让我们看看如何使用 Model Context Protocol（MCP）以标准化方式将 AI 模型与外部工具桥接起来。 下面的示例将通过 LangChain4j MCP 客户端与 GitHub 交互，从公共 GitHub 仓库获取并汇总最新的提交。 为此，我们无需重新发明轮子，我们可以使用 MCP GitHub 仓库中现有的 GitHub MCP 服务器实现。</p>
+
+<p>思路是构建一个 Java 应用程序，连接到在 Docker 中本地运行的 GitHub MCP 服务器，以获取并汇总最新的提交。 该示例使用 MCP 的 stdio 传输机制在我们的 Java 应用程序和 GitHub MCP 服务器之间进行通信。</p>
+
+<h2>在 Docker 中打包和执行 GitHub MCP 服务器（Packaging and Executing the GitHub MCP Server in Docker）</h2>
+
+<p>要与 GitHub 交互，我们首先需要在 Docker 中设置 GitHub MCP 服务器。 GitHub MCP 服务器提供了通过 Model Context Protocol 与 GitHub 交互的标准化接口。 它支持文件操作、仓库管理和搜索功能。</p>
+
+<p>要为我们的 GitHub MCP 服务器构建 Docker 镜像，你需要通过克隆仓库或下载代码的方式从 MCP 服务器 GitHub 仓库获取代码。 然后，导航到根目录并执行以下 Docker 命令：</p>
+
+<pre><code>docker build -t mcp/github -f src/github/Dockerfile .</code></pre>
+
+<p>该 Dockerfile 设置了必要的环境并安装了 GitHub MCP 服务器实现。 构建完成后，该镜像将在本地作为 mcp/github 可用。</p>
+
+<pre><code>docker image lsREPOSITORY TAG IMAGE ID SIZEmcp/github latest b141704170b1 173MB</code></pre>
+
+<h2>开发工具提供者（Developing the Tool Provider）</h2>
+
+<p>让我们创建一个名为 McpGithubToolsExample 的 Java 类，它使用 LangChain4j 连接到我们的 GitHub MCP 服务器。该类将：</p>
+
+<ul><li>在 Docker 容器中启动 GitHub MCP 服务器（docker 命令在 /usr/local/bin/docker 中可用）</li><li>使用 stdio 传输建立连接</li><li>使用 LLM 汇总 LangChain4j GitHub 仓库的最后 3 次提交 注意：在下面的代码中，我们通过环境变量 GITHUB_PERSONAL_ACCESS_TOKEN 传递 GitHub token。但对于某些不需要身份验证的公共仓库操作，这是可选的。</li></ul>
+
+<p>以下是实现：</p>
+
+<pre><code>public static void main(String[] args) throws Exception { ChatModel model = OpenAiChatModel.builder() .apiKey(System.getenv(&quot;OPENAI_API_KEY&quot;)) .modelName(&quot;gpt-4o-mini&quot;) .logRequests(true) .logResponses(true) .build(); McpTransport transport = new StdioMcpTransport.Builder() .command(List.of(&quot;/usr/local/bin/docker&quot;, &quot;run&quot;, &quot;-e&quot;, &quot;GITHUB_PERSONAL_ACCESS_TOKEN&quot;, &quot;-i&quot;, &quot;mcp/github&quot;)) .logEvents(true) .build(); McpClient mcpClient = new DefaultMcpClient.Builder() .transport(transport) .build(); ToolProvider toolProvider = McpToolProvider.builder() .mcpClients(List.of(mcpClient)) .build(); Bot bot = AiServices.builder(Bot.class) .chatModel(model) .toolProvider(toolProvider) .build(); try { String response = bot.chat(&quot;Summarize the last 3 commits of the LangChain4j GitHub repository&quot;); System.out.println(&quot;RESPONSE: &quot; + response); } finally { mcpClient.close(); }}</code></pre>
+
+<p>note并非所有 LLM 都同样支持工具。 理解、选择和正确使用工具的能力很大程度上取决于具体的模型及其能力。 某些模型可能根本不支持工具，而其他模型可能需要仔细的提示工程 或其他系统指令。</p>
+
+<p>注意：本示例使用 Docker，因此执行位于 /usr/local/bin/docker 的 Docker 命令（根据你的操作系统更改路径）。如果要使用 Podman 而不是 Docker，请相应地更改命令。</p>
+
+<h2>执行代码（Executing the Code）</h2>
+
+<p>要运行该示例，请确保你的系统上 Docker 已启动并在运行。 另外，请在环境变量 OPENAI_API_KEY 中设置你的 OpenAI API key。</p>
+
+<p>然后运行 Java 应用程序。你应该会收到一个汇总 LangChain4j GitHub 仓库最后 3 次提交的响应，例如：</p>
+
+<pre><code>Here are the summaries of the last three commits in the LangChain4j GitHub repository:1. **Commit [36951f9](https://github.com/langchain4j/langchain4j/commit/36951f9649c1beacd8b9fc2d910a2e23223e0d93)** (Date: 2025-02-05) - **Author:** Dmytro Liubarskyi - **Message:** Updated to `upload-pages-artifact@v3`. - **Details:** This commit updates the GitHub Action used for uploading pages artifacts to version 3.2. **Commit [6fcd19f](https://github.com/langchain4j/langchain4j/commit/6fcd19f50c8393729a0878d6125b0bb1967ac055)** (Date: 2025-02-05) - **Author:** Dmytro Liubarskyi - **Message:** Updated to `checkout@v4`, `deploy-pages@v4`, and `upload-pages-artifact@v4`. - **Details:** This commit updates multiple GitHub Actions to their version 4.3. **Commit [2e74049](https://github.com/langchain4j/langchain4j/commit/2e740495d2aa0f16ef1c05cfcc76f91aef6f6599)** (Date: 2025-02-05) - **Author:** Dmytro Liubarskyi - **Message:** Updated to `setup-node@v4` and `configure-pages@v4`. - **Details:** This commit updates the `setup-node` and `configure-pages` GitHub Actions to version 4.All commits were made by the same author, Dmytro Liubarskyi, on the same day, focusing on updating various GitHub Actions to newer versions.</code></pre>
+
+<h2>在没有 AI Services 的情况下使用 MCP（Using MCP without AI Services）</h2>
+
+<p>前面的示例展示了如何将 MCP 与高级 AI Services API 一起使用。但是，也可以通过低级 API 使用 MCP。 你可以手动使用你构建的 DefaultMcpClient 实例来针对服务器执行命令。一些示例：</p>
+
+<pre><code>// 从服务器获取工具列表List&lt;ToolSpecification&gt; toolSpecifications = mcpClient.listTools();// 构建并执行一个可以访问 MCP 工具的 ChatRequestChatRequest chatRequest = ChatRequest.builder() .messages(UserMessage.from(&quot;What will the weather be like in London tomorrow?&quot;)) .toolSpecifications(toolSpecifications) .build();ChatResponse response = chatModel.chat(chatRequest);AiMessage aiMessage = response.aiMessage();// 如果 LLM 请求调用工具，则将其转发给 MCP 服务器if(aiMessage.hasToolExecutionRequests()) { for (ToolExecutionRequest req : aiMessage.toolExecutionRequests()) { String resultString = mcpClient.executeTool(req); // 准备结果以将其添加到下一次 ChatRequest 的记忆中... ToolExecutionResultMessage resultMessage = ToolExecutionResultMessage.from(req.id(), req.name(), resultString); }}</code></pre>
+
+<p>如果你想直接以编程方式使用 MCP 客户端执行工具（在聊天之外）， 你需要手动构建一个 ToolExecutionRequest 实例：</p>
+
+<pre><code>// 要执行名为 &quot;tool1&quot;、参数为 &quot;a=b&quot; 的工具ToolExecutionRequest request = ToolExecutionRequest.builder() .name(&quot;tool1&quot;) .arguments(&quot;{\&quot;a\&quot;: \&quot;b\&quot;}&quot;) .build();String toolResult = mcpClient.executeTool(request);</code></pre>
+
+<h2>关于工具缓存的注意事项（Notes about Tool Caching）</h2>
+
+<p>DefaultMcpClient 维护一个 MCP 工具的内部缓存。一旦检索到， 除非服务器发送列表已更新的通知，否则不会再次从 MCP 服务器请求工具列表。 你可以通过调用 DefaultMcpClient.evictToolListCache() 手动清除此缓存。 如果你希望完全禁用缓存，请按如下方式配置客户端：</p>
+
+<pre><code>McpClient mcpClient = new DefaultMcpClient.Builder() .key(&quot;MyMCPClient&quot;) .transport(transport) .cacheToolList(false) .build();</code></pre>
+
+<h2>MCP Registry 客户端（MCP Registry client）</h2>
+
+<p>LangChain4j 还提供了一个可以与 MCP 注册表通信的独立客户端实现。目前只实现了 只读操作（你可以搜索 MCP 服务器，但管理和添加服务器 不受支持 —— 请使用官方工具来完成）。</p>
+
+<p>警告：发现 MCP 服务器并使用它们（尤其是在本地运行）可能会带来严重的安全风险。 在运行你在公共注册表中找到的任何 MCP 服务器之前，请确保你可以信任它。</p>
+
+<p>注册表客户端 位于 dev.langchain4j.mcp.registryclient 包中，可以这样初始化：</p>
+
+<pre><code>McpRegistryClient client = DefaultMcpRegistryClient.builder() .baseUrl(&quot;URL-OF-THE-REGISTRY&quot;) .build();</code></pre>
+
+<p>如果未提供 base URL，则将使用官方注册表作为默认值（https://registry.modelcontextprotocol.io）。 然后，要搜索 MCP 服务器，请使用 registry.listServers(McpServerListRequest) 方法。 McpServerListRequest 对象可以使用 McpServerListRequest.Builder 类构建。 LangChain4j 中的 Java API 紧密映射了官方 MCP Registry 参考文档中描述的 MCP 注册表的 REST API。</p>
+
+<div class="prev-next">
+  <a href="mcp-stdio-server.html"><div class="label">← 上一篇</div><div>构建 Java MCP 服务端</div></a>
+  <a href="image-models.html"><div class="label">下一篇 →</div><div>图像模型</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

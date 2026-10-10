@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教程总览 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<div class="meta-card">
+<h1>LangChain4j 教程（中文）</h1>
+<p>官方文档 32 篇核心教程的中文翻译 · 爬取自 docs.langchain4j.dev</p>
+</div>
+
+<p>欢迎使用 LangChain4j 中文教程。本站点收录了官方文档 Tutorials 分类下的全部 32 篇文章，按官方推荐的学习顺序整理，方便中文开发者快速查阅。</p>
+
+<h2>学习路线</h2>
+<ul>
+<li><strong>入门</strong>：先读「对话与语言模型」与「AI Services」，理解 LangChain4j 的两层抽象。</li>
+<li><strong>常用能力</strong>：再学「对话记忆」、「工具」、「RAG」、「结构化输出」，覆盖对话系统主要功能。</li>
+<li><strong>框架集成</strong>：根据项目框架选择「Spring Boot / Quarkus / Micronaut / Helidon / Payara Micro」集成。</li>
+<li><strong>生产化</strong>：阅读「日志」、「可观测性」、「测试与评估」，关注可观测性与可测试性。</li>
+<li><strong>进阶探索</strong>：根据需要了解「智能体」、「护栏」、「MCP」、「技能」、「模型路由」等实验性模块。</li>
+</ul>
+
+<h2>教程目录</h2>
+<h2>基础与核心 API</h2>
+<a class="lesson-card" href="chat-and-language-models.html">
+  <div class="title">对话与语言模型</div>
+  <div class="en">Chat and Language Models</div>
+</a>
+<a class="lesson-card" href="chat-memory.html">
+  <div class="title">对话记忆</div>
+  <div class="en">Chat Memory</div>
+</a>
+<a class="lesson-card" href="model-parameters.html">
+  <div class="title">模型参数</div>
+  <div class="en">Model Parameters</div>
+</a>
+<a class="lesson-card" href="response-streaming.html">
+  <div class="title">响应流式输出</div>
+  <div class="en">Response Streaming</div>
+</a>
+<a class="lesson-card" href="ai-services.html">
+  <div class="title">AI Services</div>
+  <div class="en">AI Services</div>
+</a>
+<a class="lesson-card" href="agents.html">
+  <div class="title">智能体与智能体 AI</div>
+  <div class="en">Agents and Agentic AI</div>
+</a>
+<a class="lesson-card" href="tools.html">
+  <div class="title">工具（函数调用）</div>
+  <div class="en">Tools (Function Calling)</div>
+</a>
+<a class="lesson-card" href="rag.html">
+  <div class="title">检索增强生成（RAG）</div>
+  <div class="en">RAG (Retrieval-Augmented Generation)</div>
+</a>
+<a class="lesson-card" href="structured-outputs.html">
+  <div class="title">结构化输出</div>
+  <div class="en">Structured Outputs</div>
+</a>
+<a class="lesson-card" href="guardrails.html">
+  <div class="title">护栏</div>
+  <div class="en">Guardrails</div>
+</a>
+<a class="lesson-card" href="classification.html">
+  <div class="title">分类</div>
+  <div class="en">Classification</div>
+</a>
+<a class="lesson-card" href="embedding-stores.html">
+  <div class="title">向量存储</div>
+  <div class="en">Embedding (Vector) Stores</div>
+</a>
+<h2>协议与扩展</h2>
+<a class="lesson-card" href="mcp-stdio-server.html">
+  <div class="title">构建 Java MCP 服务端</div>
+  <div class="en">Building a Java MCP server</div>
+</a>
+<a class="lesson-card" href="mcp.html">
+  <div class="title">模型上下文协议（MCP）</div>
+  <div class="en">Model Context Protocol (MCP)</div>
+</a>
+<a class="lesson-card" href="image-models.html">
+  <div class="title">图像模型</div>
+  <div class="en">Image Models</div>
+</a>
+<h2>框架集成</h2>
+<a class="lesson-card" href="spring-boot-integration.html">
+  <div class="title">Spring Boot 集成</div>
+  <div class="en">Spring Boot Integration</div>
+</a>
+<a class="lesson-card" href="quarkus-integration.html">
+  <div class="title">Quarkus 集成</div>
+  <div class="en">Quarkus Integration</div>
+</a>
+<a class="lesson-card" href="micronaut-integration.html">
+  <div class="title">Micronaut 集成</div>
+  <div class="en">Micronaut Integration</div>
+</a>
+<a class="lesson-card" href="helidon-integration.html">
+  <div class="title">Helidon 集成</div>
+  <div class="en">Helidon Integration</div>
+</a>
+<a class="lesson-card" href="payara-micro-integration.html">
+  <div class="title">Payara Micro 集成</div>
+  <div class="en">Payara Micro Integration</div>
+</a>
+<h2>语言与工具链</h2>
+<a class="lesson-card" href="kotlin.html">
+  <div class="title">Kotlin 支持</div>
+  <div class="en">Kotlin Support</div>
+</a>
+<a class="lesson-card" href="logging.html">
+  <div class="title">日志</div>
+  <div class="en">Logging</div>
+</a>
+<a class="lesson-card" href="json.html">
+  <div class="title">JSON 编码器</div>
+  <div class="en">JSON Codec</div>
+</a>
+<a class="lesson-card" href="jackson-3.html">
+  <div class="title">使用 Jackson 3</div>
+  <div class="en">Using Jackson 3</div>
+</a>
+<a class="lesson-card" href="observability.html">
+  <div class="title">可观测性</div>
+  <div class="en">Observability</div>
+</a>
+<a class="lesson-card" href="skills.html">
+  <div class="title">技能（Skills）</div>
+  <div class="en">Skills</div>
+</a>
+<a class="lesson-card" href="customizable-http-client.html">
+  <div class="title">可定制 HTTP 客户端</div>
+  <div class="en">Customizable HTTP Client</div>
+</a>
+<a class="lesson-card" href="testing-and-evaluation.html">
+  <div class="title">测试与评估</div>
+  <div class="en">Testing and Evaluation</div>
+</a>
+<h2>实验性与高级特性</h2>
+<a class="lesson-card" href="non-blocking.html">
+  <div class="title">非阻塞与响应式</div>
+  <div class="en">Non-blocking and Reactive</div>
+</a>
+<a class="lesson-card" href="decision-services.html">
+  <div class="title">决策服务</div>
+  <div class="en">Decision Services</div>
+</a>
+<a class="lesson-card" href="decision-models.html">
+  <div class="title">决策模型</div>
+  <div class="en">Decision Models</div>
+</a>
+<a class="lesson-card" href="model-routing.html">
+  <div class="title">模型路由</div>
+  <div class="en">Model Routing</div>
+</a>
+<hr>
+<p><em>📚 翻译日期：2026-10-10 · 来源：<a href="https://docs.langchain4j.dev/category/tutorials">docs.langchain4j.dev/category/tutorials</a></em></p>
+</main>
+</div>
+</body>
+</html>

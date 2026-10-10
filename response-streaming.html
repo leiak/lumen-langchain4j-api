@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>响应流式输出 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html" class="active">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 响应流式输出</nav>
+<h1>响应流式输出</h1>
+<p>注意：本页面介绍使用低级 LLM API 进行响应流式传输。 有关高级 LLM API，请参阅 AI Services。</p>
+
+<p>大语言模型（LLM）一次生成一个令牌的文本，因此许多 LLM 提供者提供了逐令牌流式传输响应的方式，而不是等待整个文本生成完毕。 这显著改善了用户体验，因为用户无需等待未知的时间，几乎可以立即开始阅读响应。</p>
+
+<p>对于 ChatModel 和 LanguageModel 接口，存在相应的 StreamingChatModel 和 StreamingLanguageModel 接口。 它们具有相似的 API，但可以流式传输响应。 它们接受 StreamingChatResponseHandler 接口的实现作为参数。</p>
+
+<pre><code>public interface StreamingChatResponseHandler { default void onPartialResponse(String partialResponse) {} default void onPartialResponse(PartialResponse partialResponse, PartialResponseContext context) {} default void onPartialThinking(PartialThinking partialThinking) {} default void onPartialThinking(PartialThinking partialThinking, PartialThinkingContext context) {} default void onPartialToolCall(PartialToolCall partialToolCall) {} default void onPartialToolCall(PartialToolCall partialToolCall, PartialToolCallContext context) {} default void onCompleteToolCall(CompleteToolCall completeToolCall) {} default void onUnmappedRawEvent(Object rawEvent) {} void onCompleteResponse(ChatResponse completeResponse); void onError(Throwable error);}</code></pre>
+
+<p>通过实现 StreamingChatResponseHandler，你可以为以下事件定义操作：</p>
+
+<ul><li>当生成下一个部分文本响应时：会调用 onPartialResponse(String) 或 onPartialResponse(PartialResponse, PartialResponseContext)（你可以实现其中任何一个方法）。 根据 LLM 提供者的不同，部分响应文本可以由一个或多个令牌组成。 例如，你可以在令牌可用时立即将其发送到 UI。</li><li>当生成下一个部分思考/推理文本时：会调用 onPartialThinking(PartialThinking) 或 onPartialThinking(PartialThinking, PartialThinkingContext)（你可以实现其中任何一个方法）。 根据 LLM 提供者的不同，部分思考文本可以由一个或多个令牌组成。</li><li>当生成下一个部分工具调用时：会调用 onPartialToolCall(PartialToolCall) 或 onPartialToolCall(PartialToolCall, PartialToolCallContext)（你可以实现其中任何一个方法）。</li><li>当 LLM 完成单个工具调用的流式传输时：会调用 onCompleteToolCall(CompleteToolCall)。</li><li>当提供者发出一个尚未通过上述类型化回调之一公开的原始流式传输事件时： 会调用 onUnmappedRawEvent(Object)。请参阅下面的&quot;未映射的原始事件&quot;。</li><li>当 LLM 完成生成时：会调用 onCompleteResponse(ChatResponse)。 ChatResponse 对象包含完整的响应（AiMessage）以及 ChatResponseMetadata。</li><li>当发生错误时：会调用 onError(Throwable error)。</li></ul>
+
+<p>以下是使用 StreamingChatModel 实现流式传输的示例：</p>
+
+<pre><code>StreamingChatModel model = OpenAiStreamingChatModel.builder() .apiKey(System.getenv(&quot;OPENAI_API_KEY&quot;)) .modelName(GPT_4_O_MINI) .build();String userMessage = &quot;Tell me a joke&quot;;model.chat(userMessage, new StreamingChatResponseHandler() { @Override public void onPartialResponse(String partialResponse) { System.out.println(&quot;onPartialResponse: &quot; + partialResponse); } @Override public void onPartialThinking(PartialThinking partialThinking) { System.out.println(&quot;onPartialThinking: &quot; + partialThinking); } @Override public void onPartialToolCall(PartialToolCall partialToolCall) { System.out.println(&quot;onPartialToolCall: &quot; + partialToolCall); } @Override public void onCompleteToolCall(CompleteToolCall completeToolCall) { System.out.println(&quot;onCompleteToolCall: &quot; + completeToolCall); } @Override public void onCompleteResponse(ChatResponse completeResponse) { System.out.println(&quot;onCompleteResponse: &quot; + completeResponse); } @Override public void onError(Throwable error) { error.printStackTrace(); }});</code></pre>
+
+<p>更紧凑的流式传输响应方式是使用 LambdaStreamingResponseHandler 类。 该实用程序类提供静态方法来使用 lambda 表达式创建 StreamingChatResponseHandler。 使用 lambda 流式传输响应的方法相当简单。 你只需使用定义如何处理部分响应的 lambda 表达式调用 onPartialResponse() 静态方法：</p>
+
+<pre><code>import static dev.langchain4j.model.LambdaStreamingResponseHandler.onPartialResponse;model.chat(&quot;Tell me a joke&quot;, onPartialResponse(System.out::print));</code></pre>
+
+<p>onPartialResponseAndError() 方法允许你为 onPartialResponse() 和 onError() 事件都定义操作：</p>
+
+<pre><code>import static dev.langchain4j.model.LambdaStreamingResponseHandler.onPartialResponseAndError;model.chat(&quot;Tell me a joke&quot;, onPartialResponseAndError(System.out::print, Throwable::printStackTrace));</code></pre>
+
+<h2>响应式 API</h2>
+
+<p>注意：实验性。API 带有 @Experimental 注解，可能会在未来的版本中发生变化。</p>
+
+<p>除了上面的基于处理程序的 API 之外，StreamingChatModel 还可以将相同的响应作为事件的 Flow.Publisher 提供给你，而不会阻塞调用线程：</p>
+
+<pre><code>Flow.Publisher&lt;ChatModelStreamingEvent&gt; publisher = model.chat(chatRequest);</code></pre>
+
+<p>该流在事件到达时发出 PartialThinking、PartialResponse、PartialToolCall 和 CompleteToolCall 事件，与任何 RawStreamingEvents 交错（请参阅下面的&quot;未映射的原始事件&quot;），然后发出一个携带组装好的 ChatResponse 的最终 CompleteResponse。一个方便的重载仅发出文本：</p>
+
+<pre><code>Flow.Publisher&lt;String&gt; textOnly = model.chat(&quot;Tell me a joke&quot;);</code></pre>
+
+<p>该发布者是冷发布者：在你订阅之前什么都不会发生，并且每次订阅都会发送一个新请求。 取消订阅将尽最大努力中止正在进行的 HTTP 调用。</p>
+
+<p>随着时间的推移可能会添加新的事件类型，因此请优雅地处理无法识别的事件类型，而不是编写没有默认分支的详尽类型 switch。</p>
+
+<p>注意：事件在模型自己的线程上传递 - 对于 HTTP 模型来说，是读取响应的传输 I/O 工作线程。 不要在 onNext 中阻塞或执行繁重的工作：它会使流停滞，并且在并发情况下，会降低每个正在进行的调用的吞吐量。 将此类工作卸载到你自己的执行器上。</p>
+
+<p>LLM 响应不能有意义地进行限流，因此实现会急切地消费它并通过有界缓冲区中继事件，而不是将你的需求传播到模型。请慷慨地请求（例如 Long.MAX_VALUE）；请求较少的订阅者可能会耗尽缓冲区并以错误终止。</p>
+
+<p>有关 AI Service 级别的等效 API - 它还公开工具执行和 RAG 内容 - 请参阅非阻塞和响应式。</p>
+
+<h2>未映射的原始事件</h2>
+
+<p>注意：这是一个面向高级用例的实验性功能。API 在未来可能会发生变化。</p>
+
+<p>大多数应用程序只需要上述类型化回调。但是，某些 LLM 提供者会发出 LangChain4j 尚未映射到专用回调的额外流式传输事件 - 例如，OpenAI 服务器端工具（如 web_search）的生命周期事件（response.web_search_call.in_progress、response.web_search_call.searching、response.web_search_call.completed）。</p>
+
+<p>onUnmappedRawEvent(Object rawEvent) 回调使你可以访问此类事件。它仅针对尚未通过某个类型化回调公开的事件调用（onPartialResponse、onPartialThinking、onPartialToolCall、onCompleteToolCall、onCompleteResponse）。 换句话说，部分响应、思考和工具调用不会作为未映射的原始事件重复，因此你可以消费两者而不会重复。</p>
+
+<p>rawEvent 的具体类型取决于提供者实现：</p>
+
+<p>| 提供者 | 原始事件类型 | | OpenAI、Anthropic、Google AI Gemini、Mistral、Ollama | dev.langchain4j.http.client.sse.ServerSentEvent | | OpenAI（官方）- Responses API | com.openai.models.responses.ResponseStreamEvent | | OpenAI（官方）- Chat Completions API | com.openai.models.chat.completions.ChatCompletionChunk | | Amazon Bedrock | software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput | | Google GenAI | com.google.genai.types.GenerateContentResponse |</p>
+
+<p>由于事件类型是特定于提供者的，你通常使用 instanceof 进行检查并进行转换：</p>
+
+<pre><code>model.chat(userMessage, new StreamingChatResponseHandler() { @Override public void onPartialResponse(String partialResponse) { System.out.println(&quot;onPartialResponse: &quot; + partialResponse); } @Override public void onUnmappedRawEvent(Object rawEvent) { if (rawEvent instanceof ServerSentEvent sse) { System.out.println(&quot;Raw SSE event: &quot; + sse.event() + &quot; -&gt; &quot; + sse.data()); } } @Override public void onCompleteResponse(ChatResponse completeResponse) { System.out.println(&quot;onCompleteResponse: &quot; + completeResponse); } @Override public void onError(Throwable error) { error.printStackTrace(); }});</code></pre>
+
+<p>使用 AI Services 时，相同的事件可通过 TokenStream.onUnmappedRawEvent(Consumer&lt;Object&gt;) 回调获得。</p>
+
+<h2>流式传输取消</h2>
+
+<p>如果你希望取消流式传输，可以通过以下方法之一执行：</p>
+
+<ul><li>onPartialResponse(PartialResponse, PartialResponseContext)</li><li>onPartialThinking(PartialThinking, PartialThinkingContext)</li><li>onPartialToolCall(PartialToolCall, PartialToolCallContext)</li></ul>
+
+<p>context 对象包含 StreamingHandle，可用于取消流式传输：</p>
+
+<pre><code>model.chat(userMessage, new StreamingChatResponseHandler() { @Override public void onPartialResponse(PartialResponse partialResponse, PartialResponseContext context) { process(partialResponse); if (shouldCancel()) { context.streamingHandle().cancel(); } } @Override public void onCompleteResponse(ChatResponse completeResponse) { System.out.println(&quot;onCompleteResponse: &quot; + completeResponse); } @Override public void onError(Throwable error) { error.printStackTrace(); }});</code></pre>
+
+<p>当调用 StreamingHandle.cancel() 时，LangChain4j 将关闭连接并停止流式传输。 一旦调用了 StreamingHandle.cancel()，StreamingChatResponseHandler 将不会收到任何进一步的回调。</p>
+
+<div class="prev-next">
+  <a href="model-parameters.html"><div class="label">← 上一篇</div><div>模型参数</div></a>
+  <a href="ai-services.html"><div class="label">下一篇 →</div><div>AI Services</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

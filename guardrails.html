@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>护栏 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html" class="active">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / 护栏</nav>
+<h1>护栏</h1>
+<p>注意：Guardrails（护栏）是一个实验性功能。其 API 和行为在未来的版本中可能会发生变化。</p>
+
+<p>护栏（Guardrails）是一种机制，可以让你验证大语言模型（LLM）的输入和输出，以确保它们符合你的预期。你可以使用护栏完成以下一些事情：</p>
+
+<ul><li>验证用户输入是否超出范围</li><li>确保输入在调用大语言模型之前满足某些条件（即防范提示词注入攻击）</li><li>确保输出格式正确（例如，是一个具有正确模式的 JSON 文档）</li><li>确保大语言模型的输出符合业务规则和约束（例如，如果是公司 X 的聊天机器人，则响应中不应包含任何对竞争对手 Y 的引用）。</li><li>检测幻觉 以上只是一些示例。你还可以使用护栏完成许多其他事情。</li></ul>
+
+<p>注意：护栏仅在使用 AI Services 时可用。它们是一个更高层次的构造，无法应用于 ChatModel 或 StreamingChatModel。</p>
+
+<p>;</p>
+
+<p>该实现最初在 Quarkus LangChain4j 扩展中完成，并被反向移植到这里。</p>
+
+<h2>实现护栏</h2>
+
+<p>理想情况下，护栏实现应该遵循单一职责原则，这意味着每个护栏类应该只验证一件事。然后，将多个护栏链接在一起，以防范多种情况。</p>
+
+<p>护栏在链中的顺序很重要。链中第一个失败的护栏将触发整体的失败。确保能够捕获最多失败的护栏位于链的早期，而那些失败概率较低的更具体的护栏则放在链的末尾。</p>
+
+<p>可以重写其验证文本的护栏可以声明在链中的任何位置。它们不需要为了其重写内容能够到达调用者而被声明为最后一个。详细信息请参阅《链中可重写的护栏》。</p>
+
+<p>还请记住，护栏自身也可以调用其他服务，甚至调用其他大语言模型交互。如果这些类型的护栏具有执行开销或金钱成本，请务必将其纳入考量。你可能希望将成本更高的护栏放在链的末尾。</p>
+
+<p>注意：&quot;昂贵&quot;一词可以指执行需要一些时间，或者与之相关的金钱价值。</p>
+
+<h3>链中可重写的护栏</h3>
+
+<p>护栏的功能不仅仅是接受或拒绝它所接收到的文本。通过返回带有重写的成功（successWith(...)），它会替换链中后续护栏以及最终调用者所看到的文本。这就是编辑、屏蔽和格式修复类护栏的工作方式。</p>
+
+<p>重写按照以下规则在链中进行组合。这些规则同时适用于输入和输出护栏，无论操作是同步的还是异步/流式的：</p>
+
+<ul><li>位于可重写护栏之后的每个护栏验证的是重写后的文本，而不是原始文本。</li><li>重写会在后续的普通 success() 之后保留。success() 表示&quot;我接收到的文本是可接受的&quot;，后续护栏接收到的文本已经是重写后的文本，因此批准它不会恢复到原始文本。</li><li>后发生的重写会覆盖先发生的重写。重写按链顺序组合，因此最后一个重写文本的护栏胜出。</li><li>因此，可重写的护栏无需是链中的最后一个护栏，其重写结果就能返回给调用者。</li></ul>
+
+<p>注意：一旦输出护栏链中的任何护栏重写了输出，后面的 fatal with retry 或 fatal with reprompt 结果就不被允许，因为大语言模型将被要求为已经被重写的文本产生新的响应。在这种情况下，执行将以 OutputGuardrailException 中止，其消息包含 &quot;Retry or reprompt is not allowed after a rewritten output&quot;。</p>
+
+<h2>输入护栏（Input Guardrails）</h2>
+
+<p>输入护栏是在调用大语言模型之前调用的函数。输入护栏的失败会阻止大语言模型被调用。输入护栏是调用大语言模型之前的最后一步。它们在任何 RAG（检索增强生成）操作完成之后被调用。</p>
+
+<h3>实现输入护栏</h3>
+
+<p>输入护栏通过实现 InputGuardrail 接口来实现。InputGuardrail 接口有两个 validate 方法变体，至少需要实现其中一个：</p>
+
+<pre><code>InputGuardrailResult validate(UserMessage userMessage);InputGuardrailResult validate(InputGuardrailRequest params);</code></pre>
+
+<p>第一个变体用于简单的护栏，或者当护栏只需要访问 UserMessage 时使用。</p>
+
+<p>第二个变体用于需要更多信息的更复杂的护栏，例如聊天记忆/历史、用户消息模板、增强结果或传递给模板的变量。有关更多信息，请参阅 InputGuardrailRequest。</p>
+
+<p>以下是你可以做的一些事情的示例：</p>
+
+<ul><li>检查增强结果中的文档数量是否足够</li><li>确保用户没有重复提问同一个问题</li><li>缓解潜在的提示词注入攻击</li><li>使用社区的 Prompt Repetition 模块重写符合条件的单文本输入</li></ul>
+
+<p>无论操作是同步的还是异步/流式的，都可以使用输入护栏。</p>
+
+<h3>输入护栏的结果</h3>
+
+<p>输入护栏可以具有以下结果。InputGuardrail 接口上有一些辅助方法可以提供这些结果：</p>
+
+<p>| 结果（Outcome） | InputGuardrail 上的辅助方法 | 描述（Description） | | success | success() | - 输入有效。 - 链中的下一个护栏被执行。 - 如果最后一个护栏通过，则会调用大语言模型。 - 如果链中较早的护栏重写了用户消息，success 表示重写后的用户消息是有效的。重写会被保留。详见《链中可重写的护栏》。 | | 成功并带有替代结果（success with alternate result） | successWith(String) | - 与 success 类似，但在进入下一步（链中的下一个护栏或调用大语言模型）之前会修改用户消息。 - 由护栏进行的重写会覆盖链中较早护栏所做的任何重写。 | | 失败（failure） | failure(String) 或 failure(String, Throwable) | - 输入无效，但链中的下一个护栏会继续执行，以累积所有可能的验证问题。 - 大语言模型不会被调用。 - 如果传入了 Throwable，消费者可以捕获 InputGuardrailException 并检查其原因。它将是在此处传入的 Throwable。 | | 致命错误（fatal） | fatal(String) 或 fatal(String, Throwable) | - 输入无效，执行以 InputGuardrailException 中止。 - 大语言模型不会被调用。 - 如果传入了 Throwable，消费者可以捕获 InputGuardrailException 并检查其原因。它将是在此处传入的 Throwable。 |</p>
+
+<h3>声明输入护栏</h3>
+
+<p>有多种声明输入护栏的方式，按优先级顺序列出如下：</p>
+
+<ul><li>直接在 AiServices builder 上设置的 InputGuardrail 实现类名或实例。</li><li>放置在单个 AI Service 方法上的 @InputGuardrails 注解。</li><li>放置在 AI Service 类上的 @InputGuardrails 注解。 无论它们是如何声明的，输入护栏始终按照它们在列表中出现的顺序执行。被列表中任何护栏重写的用户消息对其后续的护栏可见，除非后续的护栏再次重写它，否则它也会对大语言模型可见。</li></ul>
+
+<h4>AiServices builder</h4>
+
+<p>直接在 AiServices builder 上设置的 InputGuardrail 实现类名或实例具有最高优先级，这意味着如果通过其他任何方式声明了输入护栏，那么直接设置在 builder 上的将被使用。</p>
+
+<pre><code>public interface Assistant { String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .inputGuardrailClasses(FirstInputGuardrail.class, SecondInputGuardrail.class) .build();</code></pre>
+
+<p>或者</p>
+
+<pre><code>public interface Assistant { String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .inputGuardrails(new FirstInputGuardrail(), new SecondInputGuardrail()) .build();</code></pre>
+
+<p>信息：如果你想要一个现成的、实验性的输入护栏，它使用提示词重复（prompt repetition）重写符合条件的单文本输入，请参阅社区的 Prompt Repetition 模块。</p>
+
+<p>在第一种场景中，传递的是实现 InputGuardrail 的类。这些类的新实例是通过反射动态创建的。</p>
+
+<p>信息：类到实例的转换方式可以被自定义。例如，使用依赖注入的框架（如 Quarkus 或 Spring）可以使用扩展点来基于它们管理类实例的方式来提供实例，而不是每次都通过反射创建新实例。</p>
+
+<h4>单个 AI Service 方法上的注解</h4>
+
+<p>放置在单个 AI Service 方法上的 @InputGuardrails 注解具有次高优先级。</p>
+
+<pre><code>public interface Assistant { @InputGuardrails({ FirstInputGuardrail.class, SecondInputGuardrail.class }) String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.create(Assistant.class, chatModel);</code></pre>
+
+<p>在此示例中，只有 chat 方法具有护栏。</p>
+
+<ul><li>在 chat 方法上，首先调用 FirstInputGuardrail。</li><li>只有当它成功时，才会调用大语言模型。</li><li>仅当 FirstInputGuardrail 未产生致命结果时，才会调用 SecondInputGuardrail。</li><li>FirstInputGuardrail 或 SecondInputGuardrail 都可以重写用户消息。</li><li>如果 FirstInputGuardrail 重写了用户消息，则 SecondInputGuardrail 将接收新的用户消息作为输入。</li></ul>
+
+<p>doSomethingElse 方法没有任何护栏。</p>
+
+<h4>AI Service 类上的注解</h4>
+
+<p>放置在 AI Service 类上的 @InputGuardrails 注解具有最低优先级。</p>
+
+<pre><code>@InputGuardrails({ FirstInputGuardrail.class, SecondInputGuardrail.class })public interface Assistant { String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.create(Assistant.class, chatModel);</code></pre>
+
+<p>在此示例中，chat 和 doSomethingElse 方法都具有护栏。</p>
+
+<ul><li>与上一个示例相同，首先调用 FirstInputGuardrail。</li><li>只有当它成功时，才会调用大语言模型。</li><li>仅当 FirstInputGuardrail 未产生致命结果时，才会调用 SecondInputGuardrail。</li><li>FirstInputGuardrail 或 SecondInputGuardrail 都可以重写用户消息。</li><li>如果 FirstInputGuardrail 重写了用户消息，则 SecondInputGuardrail 将接收新的用户消息作为输入。</li></ul>
+
+<h3>单元测试输入护栏</h3>
+
+<p>langchain4j-test 模块中提供了一些基于 AssertJ 的单元测试实用工具。</p>
+
+<ul><li>Maven</li><li>Gradle (Groovy)</li><li>Gradle (Kotlin)</li></ul>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-test&lt;/artifactId&gt; &lt;scope&gt;test&lt;/scope&gt;&lt;/dependency&gt;</code></pre>
+
+<pre><code>testImplementation &#x27;dev.langchain4j:langchain4j-test&#x27;</code></pre>
+
+<pre><code>testImplementation(&quot;dev.langchain4j:langchain4j-test&quot;)</code></pre>
+
+<p>一旦你添加了该依赖，就可以执行以下这些类型的验证：</p>
+
+<pre><code>import static dev.langchain4j.test.guardrail.GuardrailAssertions.assertThat;import dev.langchain4j.data.message.UserMessage;import dev.langchain4j.guardrail.GuardrailResult.Result;class Tests { MyInputGuardrail inputGuardrail = new MyInputGuardrail(); @Test void test() { var userMessage = UserMessage.from(&quot;Some user message&quot;); var result = inputGuardrail.validate(userMessage); // 以下只是你可以做的一些示例 assertThat(result) .isSuccessful() .hasResult(Result.FATAL) .hasFailures() .hasSingleFailureWithMessage(&quot;Prompt injection detected&quot;) .assertSingleFailureSatisfied(failure -&gt; assertThat(failure)...) .withFailures()..... }}</code></pre>
+
+<p>信息：有关更多详细信息，请参阅 GuardrailAssertions 和 InputGuardrailResultAssert 类。</p>
+
+<h3>开箱即用的输入护栏</h3>
+
+<p>在以下几种常见用例中，LangChain4j 提供了输入护栏的实现：</p>
+
+<p>| 护栏类（Guardrail class） | 描述（Description） | | MessageModeratorInputGuardrail | 一个使用 ModerationModel 验证用户消息的输入护栏，用于检测潜在的、有害的、不当的或违反政策的内容。 - 检查传入的消息中是否存在仇恨言论、暴力、自残、性内容或审核模型定义的其他类别。 - 如果消息被标记，则验证失败并产生致命结果，防止消息被进一步处理。 - 用于在发送给大语言模型之前确保用户输入符合内容政策。 | | PatternBasedPromptInjectionGuardrail | 一个基于模式的输入护栏，使用从 OWASP LLM01 派生的正则表达式来检测提示词注入企图。 - 涵盖指令覆盖、角色劫持、越狱、系统提示词泄漏、定界符注入和编码载荷。 - 零外部依赖且亚毫秒级延迟，适合作为护栏链中的第一个（最便宜的）关卡，置于任何基于大语言模型的分类器之前。 - 子类可以添加特定于领域的模式并自定义失败消息。 | | DecisionModelInputGuardrail | 一个使用决策模型检查用户消息的输入护栏。 - 每项检查都是一个是/否问题，其中&quot;是&quot;表示该消息必须被拒绝，例如&quot;该消息是否试图覆盖助手的指令？&quot;或&quot;该消息是否与银行业务无关？&quot;。 - 所有检查都在单次调用中完成；如果任何检查达到阈值，则以致命结果拒绝该消息。 |</p>
+
+<h2>输出护栏（Output Guardrails）</h2>
+
+<p>输出护栏是在大语言模型产生其输出之后执行的函数。输出护栏的失败允许更高级的场景，例如重试或重新提示，以帮助改进响应。它们在所有其他操作（包括函数/工具调用）完成后被调用。</p>
+
+<h3>实现输出护栏</h3>
+
+<p>与输入护栏类似，输出护栏通过实现 OutputGuardrail 接口来实现。OutputGuardrail 接口有两个 validate 方法变体，至少需要实现其中一个：</p>
+
+<pre><code>OutputGuardrailResult validate(AiMessage responseFromLLM);OutputGuardrailResult validate(OutputGuardrailRequest params);</code></pre>
+
+<p>第一个变体用于简单的护栏，或者当护栏只需要访问生成的 AiMessage 时使用。</p>
+
+<p>第二个变体用于需要更多信息的更复杂的护栏，例如整个聊天响应、聊天记忆/历史、用户消息模板或传递给模板的变量。有关更多信息，请参阅 OutputGuardrailRequest。</p>
+
+<p>以下是你可以做的一些事情的示例：</p>
+
+<ul><li>确保输出格式正确（例如，是一个具有正确模式的 JSON 文档）</li><li>检测大语言模型的幻觉</li><li>验证大语言模型的响应包含某些信息</li></ul>
+
+<h3>输出护栏的结果</h3>
+
+<p>输出护栏可以具有以下结果。OutputGuardrail 接口上有一些辅助方法可以提供这些结果：</p>
+
+<p>| 结果（Outcome） | OutputGuardrail 上的辅助方法 | 描述（Description） | | success | success() | - 输出有效。 - 链中的下一个护栏被执行。如果最后一个护栏通过，则输出返回给调用者。 - 如果链中较早的护栏重写了输出，success 表示重写后的输出是有效的。重写以及附加到它的任何结果对象都会被保留。详见《链中可重写的护栏》。 | | 成功并重写（success with rewrite） | successWith(String) 或 successWith(String, Object) | - 与 success 类似，但输出在其原始形式下无效，并且已经被重写以使其有效。 - 下一个护栏针对重写后的输出执行。如果最后一个护栏通过，则输出返回给调用者。 - 由护栏进行的重写会覆盖链中较早护栏所做的任何重写。 - 使用 successWith(String, Object) 时，结果对象与其所派生的重写文本一起传递。因此，仅重写文本的后续护栏（successWith(String)）会覆盖该结果对象并丢弃它，因为该结果对象不再对应于当前文本。而后续的普通 success() 不会丢弃它。 | | 失败（failure） | failure(String) 或 failure(String, Throwable) | - 输出无效，但链中的下一个护栏会继续执行，以累积所有可能的验证问题。 - 验证失败作为 OutputGuardrailException 返回给用户。 | | 致命错误（fatal） | fatal(String) 或 fatal(String, Throwable) | 输出无效，执行以抛给调用者的 OutputGuardrailException 中止。 | | 致命错误并重试（fatal with retry） | retry(String) 或 retry(String, Throwable) | - 与 fatal 类似，但使用与原始调用相同的提示词和聊天历史再次调用大语言模型。 - 如果在可配置的重试次数后失败仍然存在，则执行以抛给调用者的 OutputGuardrailException 中止。 - 如果护栏在重试后通过，则整个护栏链会从头开始重新执行。 | | 致命错误并重新提示（fatal with reprompt） | reprompt(String, String) 或 reprompt(String, Throwable, String) | - 与 fatal with retry 类似，但使用护栏提供的新提示词再次调用大语言模型。 - 在这种情况下，护栏提供一个附加消息附加到先前的用户消息，然后使用新的用户消息和原始的聊天历史向大语言模型发送新请求。 - 如果在可配置的重试次数后失败仍然存在，则执行以抛给调用者的 OutputGuardrailException 中止。 - 如果护栏在重新提示后通过，则整个护栏链会从头开始重新执行。 |</p>
+
+<p>重试或重新提示会重新发送原始调用的会话（系统消息、用户消息、任何工具调用和结果，以及被拒绝的响应），无论 AI Service 是否具有聊天记忆。如果没有聊天记忆，则会话仅在调用期间保留。</p>
+
+<h3>声明输出护栏</h3>
+
+<p>有多种声明输出护栏的方式，按优先级顺序列出如下：</p>
+
+<ul><li>直接在 AiServices builder 上设置的 OutputGuardrail 实现类名或实例。</li><li>放置在单个 AI Service 方法上的 @OutputGuardrails 注解。</li><li>放置在 AI Service 类上的 @OutputGuardrails 注解。 无论它们是如何声明的，输出护栏始终按照它们在列表中出现的顺序执行。被列表中任何护栏重写的输出对其后续的护栏可见，除非后续的护栏再次重写它，否则它也会对调用者可见。</li></ul>
+
+<h4>AiServices builder</h4>
+
+<p>直接在 AiServices builder 上设置的 OutputGuardrail 实现类名或实例具有最高优先级，这意味着如果通过其他任何方式声明了输出护栏，那么设置在 builder 上的将被使用。</p>
+
+<pre><code>public interface Assistant { String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .outputGuardrailClasses(FirstOutputGuardrail.class, SecondOutputGuardrail.class) .build();</code></pre>
+
+<p>或者</p>
+
+<pre><code>public interface Assistant { String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .outputGuardrails(new FirstOutputGuardrail(), new SecondOutputGuardrail()) .build();</code></pre>
+
+<p>在第一种场景中，传递的是实现 OutputGuardrail 的类。这些类的新实例是通过反射动态创建的。</p>
+
+<p>信息：类到实例的转换方式可以被自定义。例如，使用依赖注入的框架（如 Quarkus 或 Spring）可以使用扩展点来基于它们管理类实例的方式来提供实例，而不是每次都通过反射创建新实例。</p>
+
+<h4>单个 AI Service 方法上的注解</h4>
+
+<p>放置在单个 AI Service 方法上的 @OutputGuardrails 注解具有次高优先级。</p>
+
+<pre><code>public interface Assistant { @OutputGuardrails({ FirstOutputGuardrail.class, SecondOutputGuardrail.class }) String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.create(Assistant.class, chatModel);</code></pre>
+
+<p>在此示例中，只有 chat 方法具有护栏。</p>
+
+<ul><li>在 chat 方法上，首先调用 FirstOutputGuardrail。</li><li>只有当它成功时，结果才会返回给调用者。仅当 FirstOutputGuardrail 未产生 fatal、fatal with retry 或 fatal with reprompt 结果时，才会调用 SecondOutputGuardrail。</li><li>SecondOutputGuardrail 将接收 FirstOutputGuardrail 的输出。</li><li>如果 SecondOutputGuardrail 在重试或重新提示后成功，则 FirstOutputGuardrail 和 SecondOutputGuardrail 都会被重新执行。</li></ul>
+
+<p>doSomethingElse 方法没有任何护栏。</p>
+
+<h4>AI Service 类上的注解</h4>
+
+<p>放置在 AI Service 类上的 @OutputGuardrails 注解具有最低优先级。</p>
+
+<pre><code>@OutputGuardrails({ FirstOutputGuardrail.class, SecondOutputGuardrail.class })public interface Assistant { String chat(String question); String doSomethingElse(String question);}var assistant = AiServices.create(Assistant.class, chatModel);</code></pre>
+
+<p>在此示例中，chat 和 doSomethingElse 方法都具有护栏。</p>
+
+<ul><li>与上一个示例相同，首先调用 FirstOutputGuardrail。</li><li>只有当它成功时，结果才会返回给调用者。仅当 FirstOutputGuardrail 未产生 fatal、fatal with retry 或 fatal with reprompt 结果时，才会调用 SecondOutputGuardrail。</li><li>SecondOutputGuardrail 将接收 FirstOutputGuardrail 的输出。</li><li>如果 SecondOutputGuardrail 在重试或重新提示后成功，则 FirstOutputGuardrail 和 SecondOutputGuardrail 都会被重新执行。</li></ul>
+
+<h4>配置</h4>
+
+<p>输出护栏具有以下可以提供的附加配置：</p>
+
+<p>| 配置（Configuration） | 描述（Description） | | maxRetries | - 在执行重试或重新提示时输出护栏的最大重试次数。 - 默认为 2。 - 设置为 0 以禁用重试。 |</p>
+
+<h5>单个 AI Service 方法上的注解</h5>
+
+<pre><code>public interface MethodLevelAssistant { @OutputGuardrails( value = { FirstOutputGuardrail.class, SecondOutputGuardrail.class }, maxRetries = 10 ) String chat(String question);}var assistant = AiServices.create(MethodLevelAssistant.class, chatModel);</code></pre>
+
+<h5>AI Service 类上的注解</h5>
+
+<pre><code>@OutputGuardrails( value = { FirstOutputGuardrail.class, SecondOutputGuardrail.class }, maxRetries = 10)public interface ClassLevelAssistant { String chat(String question);}var assistant = AiServices.create(ClassLevelAssistant.class, chatModel);</code></pre>
+
+<h5>AiServices builder</h5>
+
+<pre><code>public interface Assistant { String chat(String message);}var outputGuardrailsConfig = OutputGuardrailsConfig.builder() .maxRetries(10) .build();var assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .outputGuardrailsConfig(outputGuardrailsConfig) .outputGuardrailClasss(FirstOutputGuardrail.class, SecondOutputGuardrail.class) .build();</code></pre>
+
+<h3>流式响应上的输出护栏</h3>
+
+<p>输出护栏也可以用于具有流式响应的操作：</p>
+
+<pre><code>public interface StreamingAssistant { @OutputGuardrails({ FirstOutputGuardrail.class, SecondOutputGuardrail.class }) TokenStream streamingChat(String message);}</code></pre>
+
+<p>在这种情况下，输出护栏将在整个流完成时被执行，更具体地说，是在 TokenStream.onCompleteResponse 被调用时执行。onPartialResponse 将被缓冲，并在护栏成功后被重放。</p>
+
+<p>在链中的重试或重新提示最终成功的情况下，整个链将被同步重新执行。每个护栏将按照原始顺序依次重新执行。一旦链完成，结果将传递给 TokenStream.onCompleteResponse。</p>
+
+<h3>开箱即用的输出护栏</h3>
+
+<p>在以下几种常见用例中，LangChain4j 提供了输出护栏的实现：</p>
+
+<p>| 护栏类（Guardrail class） | 描述（Description） | | JsonExtractorOutputGuardrail | 一个输出护栏，用于检查响应是否可以从 JSON 成功反序列化为某种类型的对象。 - 使用 Jackson ObjectMapper 尝试反序列化一个对象。 - 如果响应无法反序列化为预期的对象类型，则会重新提示大语言模型。 - 可以直接使用，也可以被扩展和自定义（有几个 protected 方法可以被重写以自定义行为）。 | | DecisionModelOutputGuardrail | 一个使用决策模型检查模型响应的输出护栏。 - 每项检查都是一个是/否问题，其中&quot;是&quot;表示响应必须被拒绝，例如&quot;响应是否泄露了个人数据？&quot;。决策模型还会接收最后一条用户消息。 - 被拒绝的响应会以致命结果失败，或者，如果已配置，则会重新提示模型。 |</p>
+
+<h3>单元测试输出护栏</h3>
+
+<p>langchain4j-test 模块中提供了一些基于 AssertJ 的单元测试实用工具。</p>
+
+<ul><li>Maven</li><li>Gradle (Groovy)</li><li>Gradle (Kotlin)</li></ul>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-test&lt;/artifactId&gt; &lt;scope&gt;test&lt;/scope&gt;&lt;/dependency&gt;</code></pre>
+
+<pre><code>testImplementation &#x27;dev.langchain4j:langchain4j-test&#x27;</code></pre>
+
+<pre><code>testImplementation(&quot;dev.langchain4j:langchain4j-test&quot;)</code></pre>
+
+<p>一旦你添加了该依赖，就可以执行以下这些类型的验证：</p>
+
+<pre><code>import static dev.langchain4j.test.guardrail.GuardrailAssertions.assertThat;import dev.langchain4j.data.message.AiMessage;import dev.langchain4j.guardrail.GuardrailResult.Result;class Tests { MyOutputGuardrail outputGuardrail = new MyOutputGuardrail(); @Test void test() { var aiMessage = AiMessage.from(&quot;Some output&quot;); var result = outputGuardrail.validate(aiMessage); // 以下只是你可以做的一些示例 assertThat(result) .isSuccessful() .hasResult(Result.FATAL) .hasFailures() .hasSingleFailureWithMessage(&quot;Hallucination detected!&quot;) .hasSingleFailureWithMessageAndReprompt(&quot;Hallucination detected!&quot;, &quot;Please LLM don&#x27;t hallucinate!&quot;) .assertSingleFailureSatisfied(failure -&gt; assertThat(failure)...) .withFailures()..... }}</code></pre>
+
+<p>信息：有关更多详细信息，请参阅 GuardrailAssertions 和 OutputGuardrailResultAssert 类。</p>
+
+<p>注意：执行 I/O 的护栏可以实现 validateAsync(...) ，这样当 AI Service 以非阻塞模式使用时，它不会阻塞线程。输入和输出护栏（包括工具感知的重新提示）支持 异步和响应式模式。 请参阅《非阻塞与响应式》。</p>
+
+<h2>混合与匹配</h2>
+
+<p>你可以随意混合和匹配输入和输出护栏！</p>
+
+<pre><code>public class MyObjectJsonOutputGuardrail extends JsonExtractorOutputGuardrail&lt;MyObject&gt; { public MyObjectJsonOutputGuardrail() { super(MyObject.class); }}@InputGuardrails({ FirstInputGuardrail.class, SecondInputGuardrail.class })@OutputGuardrails(value = SomeOutputGuardrail.class, maxRetries = 5)public interface Assistant { String chat(String message); @InputGuardrails(PatternBasedPromptInjectionGuardrail.class) @OutputGuardrails(MyObjectJsonOutputGuardrail.class) MyObject chatAndReturnJson(String message);}var outputGuardrailsConfig = OutputGuardrailsConfig.builder() .maxRetries(10) .build();var assistant = AiServices.builder(Assistant.class) .chatModel(chatModel) .inputGuardrails(new AnotherInputGuardrail()) .outputGuardrailsConfig(outputGuardrailsConfig) .build();</code></pre>
+
+<p>在此示例中，由于 AnotherInputGuardrail 是设置在 AiServices builder 上的，所以 Assistant 上的所有方法都具有这一个输入护栏。此外，由于配置也是设置在 AiServices builder 上的，所以所有输出护栏都具有 maxRetries 值 == 10。</p>
+
+<p>chat 方法具有一个输出护栏 SomeOutputGuardrail，其 maxRetries 值 == 10。</p>
+
+<p>chatAndReturnJson 方法具有一个输出护栏 MyObjectJsonOutputGuardrail，其 maxRetries 值 == 10。</p>
+
+<h2>扩展点</h2>
+
+<p>护栏系统是以可组合的方式构建的，因此它可以在其他下游框架（如 Quarkus 或 Spring Boot）中被扩展和重用。本节描述了提供的一些扩展点或&quot;钩子&quot;。</p>
+
+<p>所有这些扩展点都使用 Java 服务提供者接口（Java SPI）。</p>
+
+<p>| 扩展点接口（Extension point interface） | 用途（Purpose） | | ClassInstanceFactory | 提供类的实例。 - 旨在将实例的创建/检索委托给其他方式。 - 如果未提供，则使用反射通过默认构造函数创建一个实例。 - 其他框架（如 Quarkus 或 Spring）可能会使用它们自己的 bean 容器来提供类的实例。这些框架将提供一个实现。 - 一个 Quarkus 实现可能看起来像 CDIClassInstanceFactory - 一个 Spring 实现可能看起来像 ApplicationContextClassInstanceFactory | | ClassMetadataProviderFactory | 提供对类元数据的访问。 - 用于扫描 AiService 接口上的方法，并查找和处理 @InputGuardrails/@OutputGuardrails 注解。 - 如果未找到其他实现，ReflectionBasedClassMetadataProviderFactory 是默认实现，它使用反射提供类元数据。 | | GuardrailServiceBuilderFactory | 为构建 GuardrailService 实例提供 builder 实例。如果应用程序或框架需要自定义构建 GuardrailService 实例的方式，则会实现此接口。 | | InputGuardrailsConfigBuilderFactory | - 用于覆盖和/或扩展默认 InputGuardrailsConfigBuilder 的 SPI。 - 其他框架可能会提供它们自己的实现，其中包含输入护栏的额外附加配置。 - 还将允许其他框架通过其他机制（例如属性文件）驱动输入护栏的配置。 | | OutputGuardrailsConfigBuilderFactory | - 用于覆盖和/或扩展默认 OutputGuardrailsConfigBuilder 的 SPI。 - 其他框架可能会提供它们自己的实现，其中包含输出护栏的额外附加配置。 - 还将允许其他框架通过其他机制（例如属性文件）驱动输出护栏的配置。 | | InputGuardrailExecutorBuilderFactory | - 用于覆盖和/或扩展默认 InputGuardrailExecutorBuilder 的 SPI，后者负责构建 <a href="https://github.com/langchain4j/langchain4j/blob/main/langchain4j-core/src/main/java/dev/langchain4j/guardrail/InputGuardrailExecutor.java"><code>InputGuardrailExecutor</code></a> 实例。 | | OutputGuardrailExecutorBuilderFactory | - 用于覆盖和/或扩展默认 OutputGuardrailExecutorBuilder 的 SPI，后者负责构建 <a href="https://github.com/langchain4j/langchain4j/blob/main/langchain4j-core/src/main/java/dev/langchain4j/guardrail/OutputGuardrailExecutor.java"><code>OutputGuardrailExecutor</code></a> 实例。 |</p>
+
+<div class="prev-next">
+  <a href="structured-outputs.html"><div class="label">← 上一篇</div><div>结构化输出</div></a>
+  <a href="classification.html"><div class="label">下一篇 →</div><div>分类</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>

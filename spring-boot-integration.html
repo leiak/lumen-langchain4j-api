@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spring Boot 集成 | LangChain4j 教程（中文）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.65;
+}
+.layout { display: flex; min-height: 100vh; }
+aside {
+  width: 280px; background: #0f172a; color: #cbd5e1;
+  padding: 24px 16px; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh;
+}
+aside h2 {
+  font-size: 14px; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 24px 0 8px;
+}
+aside h2:first-child { margin-top: 0; }
+aside a {
+  display: block; color: #cbd5e1; text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  transition: background 0.15s;
+}
+aside a:hover, aside a.active { background: #1e293b; color: #fff; }
+main {
+  flex: 1; padding: 32px 48px; max-width: 1000px; margin: 0 auto;
+  background: white; min-height: 100vh;
+}
+nav.breadcrumb {
+  font-size: 13px; color: #64748b; margin-bottom: 16px;
+}
+nav.breadcrumb a { color: #2563eb; text-decoration: none; }
+h1 {
+  font-size: 28px; color: #0f172a; border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px; margin-top: 0;
+}
+h2 {
+  font-size: 22px; color: #1e293b; margin-top: 32px;
+  border-left: 4px solid #3b82f6; padding-left: 12px;
+}
+h3 {
+  font-size: 18px; color: #334155; margin-top: 24px;
+}
+h4 { font-size: 16px; color: #475569; margin-top: 20px; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 28px; }
+li { margin: 4px 0; }
+code {
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: #be185d;
+}
+pre {
+  background: #0f172a; color: #e2e8f0; padding: 16px;
+  border-radius: 8px; overflow-x: auto; line-height: 1.5;
+  font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote {
+  border-left: 4px solid #94a3b8; padding: 8px 16px;
+  color: #475569; background: #f8fafc; margin: 16px 0;
+}
+table {
+  border-collapse: collapse; width: 100%; margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;
+}
+th { background: #f1f5f9; font-weight: 600; }
+tr:nth-child(even) { background: #f8fafc; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: white;
+  font-size: 13px; margin-bottom: 16px;
+}
+.search-box::placeholder { color: #64748b; }
+.meta-card {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white; padding: 32px; border-radius: 12px;
+  margin-bottom: 24px;
+}
+.meta-card h1 { color: white; border: 0; margin: 0 0 8px; }
+.meta-card p { margin: 0; opacity: 0.9; }
+.lesson-card {
+  display: block; padding: 16px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin: 8px 0; text-decoration: none;
+  color: #1e293b; transition: all 0.15s;
+}
+.lesson-card:hover {
+  border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+  transform: translateY(-1px);
+}
+.lesson-card .title { font-weight: 600; font-size: 16px; }
+.lesson-card .en { color: #64748b; font-size: 13px; margin-top: 4px; }
+.lesson-card .cat {
+  display: inline-block; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  margin-top: 8px;
+}
+.tag-experimental {
+  background: #fef3c7; color: #92400e; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px; margin-left: 8px;
+}
+.prev-next {
+  display: flex; justify-content: space-between;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #e2e8f0; gap: 16px;
+}
+.prev-next a {
+  padding: 12px 20px; border: 1px solid #e2e8f0;
+  border-radius: 8px; text-decoration: none; color: #2563eb;
+  flex: 1; max-width: 45%;
+}
+.prev-next a:hover { background: #eff6ff; border-color: #3b82f6; }
+.prev-next .label { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+<input class="search-box" type="text" placeholder="🔍 搜索..." oninput="
+  const q = this.value.toLowerCase();
+  this.parentElement.querySelectorAll('a').forEach(a => {
+    a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+">
+<h2>🏠 首页</h2><a href="index.html">教程总览</a><h2>基础与核心 API</h2><a href="chat-and-language-models.html">对话与语言模型</a><a href="chat-memory.html">对话记忆</a><a href="model-parameters.html">模型参数</a><a href="response-streaming.html">响应流式输出</a><a href="ai-services.html">AI Services</a><a href="agents.html">智能体与智能体 AI</a><a href="tools.html">工具（函数调用）</a><a href="rag.html">检索增强生成（RAG）</a><a href="structured-outputs.html">结构化输出</a><a href="guardrails.html">护栏</a><a href="classification.html">分类</a><a href="embedding-stores.html">向量存储</a><h2>协议与扩展</h2><a href="mcp-stdio-server.html">构建 Java MCP 服务端</a><a href="mcp.html">模型上下文协议（MCP）</a><a href="image-models.html">图像模型</a><h2>框架集成</h2><a href="spring-boot-integration.html" class="active">Spring Boot 集成</a><a href="quarkus-integration.html">Quarkus 集成</a><a href="micronaut-integration.html">Micronaut 集成</a><a href="helidon-integration.html">Helidon 集成</a><a href="payara-micro-integration.html">Payara Micro 集成</a><h2>语言与工具链</h2><a href="kotlin.html">Kotlin 支持</a><a href="logging.html">日志</a><a href="json.html">JSON 编码器</a><a href="jackson-3.html">使用 Jackson 3</a><a href="observability.html">可观测性</a><a href="skills.html">技能（Skills）</a><a href="customizable-http-client.html">可定制 HTTP 客户端</a><a href="testing-and-evaluation.html">测试与评估</a><h2>实验性与高级特性</h2><a href="non-blocking.html">非阻塞与响应式</a><a href="decision-services.html">决策服务</a><a href="decision-models.html">决策模型</a><a href="model-routing.html">模型路由</a>
+</aside>
+<main>
+<nav class="breadcrumb"><a href="index.html">首页</a> / Spring Boot 集成</nav>
+<h1>Spring Boot 集成</h1>
+<p>LangChain4j 为以下场景提供了 Spring Boot 启动器：</p>
+
+<ul><li>常用的集成</li><li>声明式 AI Services</li></ul>
+
+<h2>Spring Boot 启动器</h2>
+
+<p>Spring Boot 启动器可通过配置文件帮助你创建和配置 大语言模型， 嵌入模型， 向量存储， 以及其他核心 LangChain4j 组件。</p>
+
+<p>要使用某个 Spring Boot 启动器， 请导入相应的依赖。</p>
+
+<p>Spring Boot 启动器依赖的命名规范为：</p>
+
+<ul><li>langchain4j-{integration-name}-spring-boot4-starter 用于 Spring Boot 4</li><li>langchain4j-{integration-name}-spring-boot-starter 用于 Spring Boot 3</li></ul>
+
+<p>例如，对于 OpenAI（langchain4j-open-ai）：</p>
+
+<p>Spring Boot 4：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-open-ai-spring-boot4-starter&lt;/artifactId&gt; &lt;version&gt;1.22.0-beta32&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<p>Spring Boot 3：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-open-ai-spring-boot-starter&lt;/artifactId&gt; &lt;version&gt;1.22.0-beta32&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<p>然后，你可以在 application.properties 文件中按如下方式配置模型参数：</p>
+
+<pre><code>langchain4j.open-ai.chat-model.api-key=${OPENAI_API_KEY}langchain4j.open-ai.chat-model.model-name=gpt-4olangchain4j.open-ai.chat-model.log-requests=truelangchain4j.open-ai.chat-model.log-responses=true...</code></pre>
+
+<p>在这种情况下，会自动创建一个 OpenAiChatModel 实例（ChatModel 接口的一个实现）， 你可以在需要的地方自动注入它：</p>
+
+<pre><code>@RestControllerpublic class ChatController { ChatModel chatModel; public ChatController(ChatModel chatModel) { this.chatModel = chatModel; } @GetMapping(&quot;/chat&quot;) public String model(@RequestParam(value = &quot;message&quot;, defaultValue = &quot;Hello&quot;) String message) { return chatModel.chat(message); }}</code></pre>
+
+<p>如果你需要一个 StreamingChatModel 实例， 请使用 streaming-chat-model 属性而非 chat-model 属性：</p>
+
+<pre><code>langchain4j.open-ai.streaming-chat-model.api-key=${OPENAI_API_KEY}...</code></pre>
+
+<h2>用于声明式 AI Services 的 Spring Boot 启动器</h2>
+
+<p>LangChain4j 提供了一个用于自动配置的 Spring Boot 启动器， 支持 AI Services、检索增强生成（RAG）、工具调用等。</p>
+
+<p>假设你已经导入了上述某个集成启动器，请接着导入 langchain4j-spring-boot4-starter（Spring Boot 4）或 langchain4j-spring-boot-starter（Spring Boot 3）：</p>
+
+<p>Spring Boot 4：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-spring-boot4-starter&lt;/artifactId&gt; &lt;version&gt;1.22.0-beta32&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<p>Spring Boot 3：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-spring-boot-starter&lt;/artifactId&gt; &lt;version&gt;1.22.0-beta32&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<p>现在你可以定义 AI Service 接口，并使用 @AiService 对其进行注解：</p>
+
+<pre><code>@AiServiceinterface Assistant { @SystemMessage(&quot;You are a polite assistant&quot;) String chat(String userMessage);}</code></pre>
+
+<p>你可以将其视作一个标准的 Spring Boot @Service，但具备 AI 能力。</p>
+
+<p>应用启动时，LangChain4j 启动器会扫描类路径， 找到所有使用 @AiService 注解的接口。 对于每一个发现的 AI Service，它会使用应用上下文中所有可用的 LangChain4j 组件 创建该接口的一个实现，并将其注册为 Bean， 以便你在需要的地方自动注入它：</p>
+
+<pre><code>@RestControllerclass AssistantController { @Autowired Assistant assistant; @GetMapping(&quot;/chat&quot;) public String chat(String message) { return assistant.chat(message); }}</code></pre>
+
+<h3>自动组件装配</h3>
+
+<p>如果应用上下文中存在以下组件，它们将被自动装配到 AI Service 中：</p>
+
+<ul><li>ChatModel</li><li>StreamingChatModel</li><li>ChatMemory</li><li>ChatMemoryProvider</li><li>ContentRetriever</li><li>RetrievalAugmentor</li><li>ToolProvider</li><li>ToolExecutionErrorHandler 与 ToolArgumentsErrorHandler（参见错误处理）</li><li>任何 @Component 或 @Service 类中使用 @Tool 注解的所有方法</li></ul>
+
+<p>示例：</p>
+
+<pre><code>@Componentpublic class BookingTools { private final BookingService bookingService; public BookingTools(BookingService bookingService) { this.bookingService = bookingService; } @Tool public Booking getBookingDetails(String bookingNumber, String customerName, String customerSurname) { return bookingService.getBookingDetails(bookingNumber, customerName, customerSurname); } @Tool public void cancelBooking(String bookingNumber, String customerName, String customerSurname) { bookingService.cancelBooking(bookingNumber, customerName, customerSurname); }}</code></pre>
+
+<p>注意：如果应用上下文中存在多个同类型的组件，应用启动将会失败。 此时，请使用显式装配模式（详见下文）。</p>
+
+<h3>显式组件装配</h3>
+
+<p>如果你有多个 AI Service，并希望为每个 AI Service 装配不同的 LangChain4j 组件， 可以通过显式装配模式（@AiService(wiringMode = EXPLICIT)）指定要使用的组件。</p>
+
+<p>假设我们配置了两个 ChatModel：</p>
+
+<pre><code># OpenAIlangchain4j.open-ai.chat-model.api-key=${OPENAI_API_KEY}langchain4j.open-ai.chat-model.model-name=gpt-4o-mini# Ollamalangchain4j.ollama.chat-model.base-url=http://localhost:11434langchain4j.ollama.chat-model.model-name=llama3.1</code></pre>
+
+<pre><code>@AiService(wiringMode = EXPLICIT, chatModel = &quot;openAiChatModel&quot;)interface OpenAiAssistant { @SystemMessage(&quot;You are a polite assistant&quot;) String chat(String userMessage);}@AiService(wiringMode = EXPLICIT, chatModel = &quot;ollamaChatModel&quot;)interface OllamaAssistant { @SystemMessage(&quot;You are a polite assistant&quot;) String chat(String userMessage);}</code></pre>
+
+<p>注意：在这种情况下，你必须显式指定所有组件。</p>
+
+<h4>通过配置选择组件</h4>
+
+<p>除了硬编码 Bean 名称之外，你还可以使用属性占位符， 从而可以通过配置（例如根据不同的环境或 profile）改变装配到 AI Service 中的组件：</p>
+
+<pre><code>my-app.assistant.chat-model-bean=ollamaChatModelmy-app.assistant.tool-beans=weatherTools,calendarTools</code></pre>
+
+<pre><code>@AiService( wiringMode = EXPLICIT, chatModel = &quot;${my-app.assistant.chat-model-bean:openAiChatModel}&quot;, tools = &quot;${my-app.assistant.tool-beans}&quot;)interface Assistant { String chat(String userMessage);}</code></pre>
+
+<p>需要注意以下几点：</p>
+
+<ul><li>占位符必须解析为一个 Bean 名称（例如 ollamaChatModel），而不是 LLM 模型的名称（例如 llama3.1）。 模型名称在 ChatModel Bean 本身进行配置（例如 langchain4j.ollama.chat-model.model-name）。</li><li>可以在冒号后指定默认值：${my-app.assistant.chat-model-bean:openAiChatModel}。</li><li>如果占位符无法解析且没有默认值，则应用启动失败。</li><li>如果占位符解析为空值，则该属性将被视为未设置。</li><li>对于 tools，占位符可以解析为多个以逗号分隔的 Bean 名称。</li></ul>
+
+<p>更多详情可参见此处 （Spring Boot 4 版本使用相同的 API）。</p>
+
+<h3>监听 AI Service 注册事件</h3>
+
+<p>以声明式方式完成 AI Service 的开发后，你可以通过实现 ApplicationListener&lt;AiServiceRegisteredEvent&gt; 接口来监听 AiServiceRegisteredEvent 事件。 当 AI Service 在 Spring 上下文中注册时将触发该事件， 你可以在运行时获取所有已注册的 AI Service 及其工具的相关信息。 示例如下：</p>
+
+<pre><code>@Componentclass AiServiceRegisteredEventListener implements ApplicationListener&lt;AiServiceRegisteredEvent&gt; { @Override public void onApplicationEvent(AiServiceRegisteredEvent event) { Class&lt;?&gt; aiServiceClass = event.aiServiceClass(); List&lt;ToolSpecification&gt; toolSpecifications = event.toolSpecifications(); for (int i = 0; i &lt; toolSpecifications.size(); i++) { System.out.printf(&quot;[%s]: [Tool-%s]: %s%n&quot;, aiServiceClass.getSimpleName(), i + 1, toolSpecifications.get(i)); } }}</code></pre>
+
+<h2>Flux</h2>
+
+<p>在流式响应场景下，你可以使用 Flux&lt;String&gt; 作为 AI Service 的返回类型：</p>
+
+<pre><code>@AiServiceinterface Assistant { @SystemMessage(&quot;You are a polite assistant&quot;) Flux&lt;String&gt; chat(String userMessage);}</code></pre>
+
+<p>为此，请导入 langchain4j-reactor 模块。 更多细节参见此处。</p>
+
+<p>该模块还为非阻塞模式提供了 Mono&lt;T&gt; 与 Flux&lt;AiServiceStreamingEvent&gt;， 并且可以通过设置 langchain4j.executor.use-spring-task-executor=true， 让启动器将 LangChain4j 的异步工作路由到 Spring 自带的任务执行器， 从而使链路追踪、MDC 和安全上下文能够跟随异步调用传递。</p>
+
+<p>OpenAI、Mistral AI 和 Ollama 启动器使用 Spring 的 HTTP 客户端发送请求： 阻塞调用使用 RestClient，非阻塞模式使用 WebClient。因此，当你使用上述启动器 以及支持非阻塞模式的提供商时（参见提供商支持），需要将 WebClient 放在类路径上。 Flux&lt;String&gt; 与 TokenStream 不需要 WebClient。</p>
+
+<ul><li>Spring Boot 4：添加 spring-boot-starter-webclient。</li><li>Spring Boot 3：添加 org.springframework:spring-webflux。如果你的应用不是 Web 应用（没有 spring-boot-starter-web），还需要设置 spring.main.web-application-type=none， 因为 Spring Boot 会将类路径上包含 spring-webflux 的应用视为响应式 Web 应用。 除非你的应用是一个 WebFlux 应用，否则不要为此目的引入 spring-boot-starter-webflux： 它还会引入一个 Web 服务器。在没有 WebClient 的情况下，非阻塞调用会抛出 AsyncNotSupportedException，并提示需要添加哪些依赖。</li></ul>
+
+<p>非阻塞请求由应用的 WebClient.Builder 构建，正如阻塞请求由 RestClient.Builder 构建一样。 因此，在每个 Builder 上配置的过滤器、默认请求头与可观测性设置都会生效， 为你的内部服务添加凭证的过滤器同样会作用于对模型提供商的请求。 两个 Builder 是相互独立配置的：对其中一个的自定义不会影响另一个。 对于非阻塞请求，Spring Boot 配置使用（包含其连接器自定义器）的连接器 会与 LangChain4j 中配置的超时组合使用；Spring Boot 其他 HTTP 客户端设置 （例如 SSL bundles）不会被应用。如果应用中存在多个 WebClient.Builder Bean， 且其中没有标记为 @Primary 的 Bean，LangChain4j 将改用一个新的 WebClient.builder()。 如果想为 LangChain4j 提供专用的 Builder，可以声明一个 WebClientBuilderHolder Bean：</p>
+
+<pre><code>@BeanWebClientBuilderHolder langchain4jWebClientBuilder() { return WebClientBuilderHolder.of(WebClient.builder());}</code></pre>
+
+<h2>可观测性</h2>
+
+<p>要为 ChatModel 或 StreamingChatModel Bean 启用可观测性， 需要声明一个或多个 ChatModelListener Bean：</p>
+
+<pre><code>@Configurationclass MyConfiguration { @Bean ChatModelListener chatModelListener() { return new ChatModelListener() { private static final Logger log = LoggerFactory.getLogger(ChatModelListener.class); @Override public void onRequest(ChatModelRequestContext requestContext) { log.info(&quot;onRequest(): {}&quot;, requestContext.chatRequest()); } @Override public void onResponse(ChatModelResponseContext responseContext) { log.info(&quot;onResponse(): {}&quot;, responseContext.chatResponse()); } @Override public void onError(ChatModelErrorContext errorContext) { log.info(&quot;onError(): {}&quot;, errorContext.error().getMessage()); } }; }}</code></pre>
+
+<p>应用上下文中每一个 ChatModelListener Bean 都将被自动注入到 由我们的 Spring Boot 启动器创建的所有 ChatModel 与 StreamingChatModel Bean 中。</p>
+
+<h3>Micrometer 指标</h3>
+
+<p>将 langchain4j-micrometer-metrics 依赖添加到你的项目中：</p>
+
+<p>Maven：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-micrometer-metrics&lt;/artifactId&gt; &lt;version&gt;1.22.0-beta32&lt;/version&gt;&lt;/dependency&gt;</code></pre>
+
+<p>Gradle：</p>
+
+<pre><code>implementation &#x27;dev.langchain4j:langchain4j-micrometer-metrics:1.22.0-beta32&#x27;</code></pre>
+
+<h4>Micrometer（Actuator）配置</h4>
+
+<p>你的项目还应包含必要的 Actuator 依赖。 例如，如果你正在使用 Spring Boot，可以将以下依赖添加到你的 pom.xml 中：</p>
+
+<p>Maven：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt; &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;&lt;/dependency&gt;</code></pre>
+
+<p>Gradle：</p>
+
+<pre><code>implementation &#x27;org.springframework.boot:spring-boot-starter-actuator&#x27;</code></pre>
+
+<p>在你的配置文件中启用 /metrics Actuator 端点。</p>
+
+<p>application.properties：</p>
+
+<pre><code>management.endpoints.web.exposure.include=metrics</code></pre>
+
+<p>application.yaml：</p>
+
+<pre><code>management: endpoints: web: exposure: include: metrics</code></pre>
+
+<h4>配置 MicrometerMetricsChatModelListener Bean</h4>
+
+<p>在 Spring Boot 应用中，你可以将该监听器定义为 Bean 并注入 MeterRegistry：</p>
+
+<pre><code>import dev.langchain4j.micrometer.metrics.listeners.MicrometerMetricsChatModelListener;import io.micrometer.core.instrument.MeterRegistry;import org.springframework.context.annotation.Bean;import org.springframework.context.annotation.Configuration;@Configurationpublic class MetricsConfig { @Bean public MicrometerMetricsChatModelListener listener(MeterRegistry meterRegistry) { return new MicrometerMetricsChatModelListener(meterRegistry); }}</code></pre>
+
+<h4>查看指标</h4>
+
+<p>你可以通过访问应用的 /actuator/metrics 端点查看指标。</p>
+
+<p>例如，如果你的应用运行在 localhost:8080， 可以访问 http://localhost:8080/actuator/metrics 查看指标。</p>
+
+<h5>Token 使用量指标</h5>
+
+<p>在以下地址查看 token 使用量指标：</p>
+
+<pre><code>http://localhost:8080/actuator/metrics/gen_ai.client.token.usage</code></pre>
+
+<h5>按 Token 类型过滤</h5>
+
+<p>gen_ai.token.type 标签用于指示这些 token 是用于输入还是输出：</p>
+
+<p>| Token 类型 | 端点 | | 输入 token | /actuator/metrics/gen_ai.client.token.usage?tag=gen_ai.token.type:input | | 输出 token | /actuator/metrics/gen_ai.client.token.usage?tag=gen_ai.token.type:output |</p>
+
+<p>注意：gen_ai.client.token.usage 指标是一个直方图（DistributionSummary）。 不带任何标签的端点显示跨所有 token 类型、模型与提供商的聚合统计（计数、总数、最大值）。</p>
+
+<h3>Micrometer Observation API</h3>
+
+<p>通过 Micrometer Observation API 实现 ChatModelListener， 添加以下依赖即可透明地生成指标与链路追踪：</p>
+
+<p>Maven：</p>
+
+<pre><code>&lt;dependency&gt; &lt;groupId&gt;dev.langchain4j&lt;/groupId&gt; &lt;artifactId&gt;langchain4j-observation&lt;/artifactId&gt;&lt;/dependency&gt;</code></pre>
+
+<p>Gradle：</p>
+
+<pre><code>implementation &#x27;dev.langchain4j:langchain4j-observation&#x27;</code></pre>
+
+<p>你需要按如下方式实例化 Observation 监听器……</p>
+
+<h4>配置 ObservationChatModelListener Bean</h4>
+
+<pre><code>@Configurationpublic class ObservationConfig { @Bean public ObservationChatModelListener listener(ObservationRegistry observationRegistry, MeterRegistry meterRegistry) { return new ObservationChatModelListener(observationRegistry, meterRegistry); }}</code></pre>
+
+<p>该依赖需要如上文所述对 SpringBoot Actuator 进行配置。</p>
+
+<p>如果对 SpringBoot 应用有其他可观测性方面的需求，请参考： 构建你的第一个可观测应用</p>
+
+<p>有关 langchain4j-observation 库的更多细节，请查阅可观测性文档。</p>
+
+<h2>测试</h2>
+
+<ul><li>客服智能体的集成测试示例</li></ul>
+
+<h2>支持的版本</h2>
+
+<p>LangChain4j 的 Spring Boot 集成需要 Java 17，并同时支持：</p>
+
+<ul><li>Spring Boot 4（4.0+）—— 使用以 -spring-boot4-starter 为后缀的启动器</li><li>Spring Boot 3（3.5+）—— 使用以 -spring-boot-starter 为后缀的启动器，符合 Spring Boot OSS 支持策略</li></ul>
+
+<p>两个系列的启动器同步发布，并使用相同的版本号。请选择与你项目中 Spring Boot 版本相匹配的启动器套件。</p>
+
+<h2>示例</h2>
+
+<ul><li>使用 ChatModel API 的底层 Spring Boot 示例</li><li>使用 AI Services 的高级 Spring Boot 示例</li><li>使用 Spring Boot 的客服智能体示例</li></ul>
+
+<div class="prev-next">
+  <a href="image-models.html"><div class="label">← 上一篇</div><div>图像模型</div></a>
+  <a href="quarkus-integration.html"><div class="label">下一篇 →</div><div>Quarkus 集成</div></a>
+</div>
+</main>
+</div>
+</body>
+</html>
